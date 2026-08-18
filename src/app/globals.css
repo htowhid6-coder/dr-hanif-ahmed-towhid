@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #12241f;
+  --color-muted: #3f4d48;
+  --color-accent: #2f6f5f;
+  --color-accent-2: #8a8f92;
+  --color-panel: rgba(255, 255, 255, 0.62);
+  --color-panel-border: rgba(255, 255, 255, 0.55);
+  --color-line: rgba(18, 36, 31, 0.12);
+  --color-footer-bg: rgba(18, 36, 31, 0.55);
+
+  --font-sans: var(--font-hind), sans-serif;
+  --font-serif: var(--font-playfair), serif;
+}
+
+/* Custom styles and utilities */
+@utility glass-panel {
+  background-color: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+}
+
+body {
+  background-color: #edfdf6;
+  color: var(--color-ink);
+}
+
+@keyframes breathing {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+.animate-breathing {
+  animation: breathing 10s ease-in-out infinite;
+}
+
+@keyframes floating {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-12px) scale(1.03);
+  }
+}
+
+.animate-floating {
+  animation: floating 7s ease-in-out infinite;
+}
+
+@keyframes float-gentle {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-float-gentle {
+  animation: float-gentle 5s ease-in-out infinite;
+}
+
+/* Custom scrollbar for symptom list */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(47, 111, 95, 0.5);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(47, 111, 95, 0.8);
+}
+

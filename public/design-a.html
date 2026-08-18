@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design A — Neon Glass Cards</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    font-family: 'Inter', sans-serif;
+    padding: 40px 20px;
+  }
+  .card-container {
+    max-width: 620px;
+    width: 100%;
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 28px;
+    padding: 36px;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+  }
+  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #5eead4; margin-bottom: 12px; }
+  .badge::before { content: ''; width: 24px; height: 2px; background: #5eead4; }
+  h2 { font-family: 'Playfair Display', serif; font-size: 32px; color: #f1f5f9; margin-bottom: 8px; line-height: 1.2; }
+  .subtitle { font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 24px; display: flex; align-items: center; gap: 8px; }
+  .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; position: relative; }
+  .pulse-dot::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; background: #10b981; opacity: 0; animation: pulse-ring 2s ease-out infinite; }
+  @keyframes pulse-ring { 0% { opacity: 0.6; transform: scale(1); } 100% { opacity: 0; transform: scale(2.2); } }
+
+  .disease-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+  .disease-card {
+    position: relative;
+    padding: 16px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+  }
+  .disease-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #2F6F5F, #5eead4, transparent);
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .disease-card:hover::before { opacity: 1; }
+  .disease-card:hover {
+    background: rgba(47, 111, 94, 0.1);
+    border-color: rgba(47, 111, 94, 0.4);
+    transform: translateY(-3px);
+    box-shadow: 0 0 25px rgba(47, 111, 94, 0.15), 0 10px 40px rgba(0,0,0,0.3);
+  }
+  .card-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 10px;
+    background: rgba(94, 234, 212, 0.1);
+    color: #5eead4;
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    transition: all 0.3s;
+  }
+  .disease-card:hover .card-num {
+    background: #2F6F5F;
+    color: white;
+    box-shadow: 0 0 15px rgba(47,111,94,0.4);
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #e2e8f0;
+    line-height: 1.4;
+    transition: color 0.3s;
+  }
+  .disease-card:hover .card-title { color: #5eead4; }
+  .card-arrow {
+    position: absolute;
+    top: 16px; right: 16px;
+    color: rgba(255,255,255,0.15);
+    font-size: 14px;
+    transition: all 0.3s;
+  }
+  .disease-card:hover .card-arrow { color: #5eead4; transform: translateX(3px); }
+
+  .footer-strip { display: flex; align-items: center; justify-content: space-between; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .stat { font-size: 10px; color: #5eead4; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+  .view-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #2F6F5F, #1a4a3e);
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s;
+    border: 1px solid rgba(94,234,212,0.2);
+  }
+  .view-all:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(47,111,94,0.4); }
+  .design-label { position: fixed; top: 20px; left: 20px; background: rgba(47,111,94,0.9); color: white; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; z-index: 100; }
+</style>
+</head>
+<body>
+  <div class="design-label">Design A — Neon Glass Cards</div>
+  <div class="card-container">
+    <div class="badge">Diseases We Treat</div>
+    <h2>Diseases We Treat</h2>
+    <div class="subtitle">
+      <span class="pulse-dot"></span>
+      Tap any condition for instant clinical insights
+    </div>
+
+    <div class="disease-grid">
+      <div class="disease-card">
+        <span class="card-num">01</span>
+        <span class="card-arrow">→</span>
+        <div class="card-title">Diabetes (DM)</div>
+      </div>
+      <div class="disease-card">
+        <span class="card-num">02</span>
+        <span class="card-arrow">→</span>
+        <div class="card-title">Hypertension (HTN)</div>
+      </div>
+      <div class="disease-card">
+        <span class="card-num">03</span>
+        <span class="card-arrow">→</span>
+        <div class="card-title">Dyslipidemia</div>
+      </div>
+      <div class="disease-card">
+        <span class="card-num">04</span>
+        <span class="card-arrow">→</span>
+        <div class="card-title">Ischemic Heart Disease</div>
+      </div>
+      <div class="disease-card">
+        <span class="card-num">05</span>
+        <span class="card-arrow">→</span>
+        <div class="card-title">Fatty Liver Disease</div>
+      </div>
+      <div class="disease-card">
+        <span class="card-num">06</span>
+        <span class="card-arrow">→</span>
+        <div class="card-title">Enteric Fever (Typhoid)</div>
+      </div>
+    </div>
+
+    <div class="footer-strip">
+      <span class="stat">15 Diseases • Evidence-based care</span>
+      <a href="#" class="view-all">View All 15 Diseases →</a>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design C — Clinical Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f5f9;
+    font-family: 'Inter', sans-serif;
+    padding: 40px 20px;
+  }
+  .card-container {
+    max-width: 620px;
+    width: 100%;
+    background: white;
+    border-radius: 24px;
+    padding: 0;
+    box-shadow: 0 4px 40px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+    overflow: hidden;
+  }
+
+  .card-header {
+    background: linear-gradient(135deg, #2F6F5F 0%, #1a4a3e 100%);
+    padding: 28px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card-header::after {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 150px; height: 150px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+  }
+  .header-eyebrow {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 8px;
+  }
+  .card-header h2 {
+    font-size: 26px;
+    font-weight: 800;
+    color: white;
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+  }
+  .header-sub { font-size: 12px; color: rgba(255,255,255,0.7); font-weight: 500; }
+  .stat-pills {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .stat-pill {
+    padding: 4px 12px;
+    border-radius: 100px;
+    background: rgba(255,255,255,0.12);
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    backdrop-filter: blur(8px);
+  }
+
+  .disease-list { padding: 8px 12px; }
+  .disease-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    border: 1.5px solid transparent;
+  }
+  .disease-item:hover {
+    background: #f0fdf4;
+    border-color: rgba(47,111,94,0.15);
+    transform: translateX(4px);
+  }
+  .disease-item + .disease-item { border-top: none; }
+  .disease-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 50%;
+    transform: translateY(-50%);
+    width: 3px; height: 0;
+    background: #2F6F5F;
+    border-radius: 4px;
+    transition: height 0.3s;
+  }
+  .disease-item:hover::before { height: 60%; }
+
+  .item-num {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 800;
+    color: #2F6F5F;
+    transition: all 0.3s;
+    flex-shrink: 0;
+  }
+  .disease-item:hover .item-num {
+    background: linear-gradient(135deg, #2F6F5F, #3b9b7d);
+    color: white;
+    box-shadow: 0 4px 12px rgba(47,111,94,0.3);
+    transform: scale(1.05);
+  }
+  .item-content { flex: 1; }
+  .item-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e293b;
+    transition: color 0.3s;
+  }
+  .disease-item:hover .item-title { color: #2F6F5F; }
+  .item-category {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 500;
+    margin-top: 2px;
+  }
+  .item-arrow {
+    color: #cbd5e1;
+    font-size: 16px;
+    transition: all 0.3s;
+    opacity: 0;
+  }
+  .disease-item:hover .item-arrow { opacity: 1; color: #2F6F5F; transform: translateX(3px); }
+
+  .card-footer {
+    padding: 16px 32px 24px;
+    text-align: center;
+  }
+  .view-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #2F6F5F, #1f5244);
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(47,111,94,0.3);
+  }
+  .view-all:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(47,111,94,0.4); }
+  .design-label { position: fixed; top: 20px; left: 20px; background: rgba(47,111,94,0.9); color: white; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; z-index: 100; }
+</style>
+</head>
+<body>
+  <div class="design-label">Design C — Clinical Dashboard</div>
+  <div class="card-container">
+    <div class="card-header">
+      <div class="header-eyebrow">Clinical Conditions</div>
+      <h2>Diseases We Treat</h2>
+      <p class="header-sub">Expert diagnosis and evidence-based treatment plans</p>
+      <div class="stat-pills">
+        <span class="stat-pill">🏥 15 Conditions</span>
+        <span class="stat-pill">👨‍⚕️ Specialist Care</span>
+        <span class="stat-pill">📋 Personalized Plans</span>
+      </div>
+    </div>
+
+    <div class="disease-list">
+      <div class="disease-item">
+        <div class="item-num">01</div>
+        <div class="item-content">
+          <div class="item-title">Diabetes (DM)</div>
+          <div class="item-category">Metabolic & Endocrine</div>
+        </div>
+        <span class="item-arrow">→</span>
+      </div>
+      <div class="disease-item">
+        <div class="item-num">02</div>
+        <div class="item-content">
+          <div class="item-title">Hypertension (HTN)</div>
+          <div class="item-category">Cardiovascular</div>
+        </div>
+        <span class="item-arrow">→</span>
+      </div>
+      <div class="disease-item">
+        <div class="item-num">03</div>
+        <div class="item-content">
+          <div class="item-title">Dyslipidemia (High Cholesterol)</div>
+          <div class="item-category">Metabolic & Lipid</div>
+        </div>
+        <span class="item-arrow">→</span>
+      </div>
+      <div class="disease-item">
+        <div class="item-num">04</div>
+        <div class="item-content">
+          <div class="item-title">Ischemic Heart Disease (IHD)</div>
+          <div class="item-category">Cardio-Thoracic</div>
+        </div>
+        <span class="item-arrow">→</span>
+      </div>
+      <div class="disease-item">
+        <div class="item-num">05</div>
+        <div class="item-content">
+          <div class="item-title">Fatty Liver Disease</div>
+          <div class="item-category">Hepatology</div>
+        </div>
+        <span class="item-arrow">→</span>
+      </div>
+      <div class="disease-item">
+        <div class="item-num">06</div>
+        <div class="item-content">
+          <div class="item-title">Enteric Fever (Typhoid)</div>
+          <div class="item-category">Infectious Disease</div>
+        </div>
+        <span class="item-arrow">→</span>
+      </div>
+    </div>
+
+    <div class="card-footer">
+      <a href="#" class="view-all">View All 15 Diseases →</a>
+    </div>
+  </div>
+</body>
+</html>
