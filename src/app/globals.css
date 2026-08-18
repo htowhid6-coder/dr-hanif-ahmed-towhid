@@ -79,3 +79,38 @@ body {
   background: rgba(47, 111, 95, 0.8);
 }
 
+/* 3D Interactive Reviews Animations */
+@keyframes flyInCard {
+  0% {
+    opacity: 0;
+    transform: perspective(1000px) translate3d(-120px, 40px, -80px) rotateY(-18deg) rotateZ(-4deg) scale(0.85);
+  }
+  60% {
+    opacity: 1;
+    transform: perspective(1000px) translate3d(8px, -4px, 10px) rotateY(2deg) rotateZ(1deg) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1000px) translate3d(0, 0, 0) rotateY(0deg) rotateZ(0deg) scale(1);
+  }
+}
+
+.animate-fly-in-card {
+  animation: flyInCard 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes softGlow {
+  0%, 100% {
+    box-shadow: 0 0 25px rgba(47, 111, 95, 0.15), 0 0 45px rgba(16, 185, 129, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(47, 111, 95, 0.25), 0 0 65px rgba(16, 185, 129, 0.18);
+  }
+}
+
+.animate-soft-glow {
+  animation: softGlow 4s ease-in-out infinite;
+}
+
+
+

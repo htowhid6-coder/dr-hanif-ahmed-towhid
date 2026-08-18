@@ -9,15 +9,51 @@ import { GlassPanel } from '@/components/GlassPanel';
 import { DiseaseModal } from '@/components/DiseaseModal';
 import { SymptomQuestionSection } from '@/components/SymptomQuestionSection';
 import { SymptomCheckerSection } from '@/components/SymptomCheckerSection';
+import { InteractiveReviewsSection } from '@/components/InteractiveReviewsSection';
 import { diseaseData, Disease } from '@/locales/diseaseData';
 import Link from 'next/link';
 import { MessageCircle, Phone, PhoneCall, ArrowRight, Activity, Quote, MapPin } from 'lucide-react';
+import supabase from '@/lib/supabase';
+
+interface Review {
+  id?: string;
+  reviewer_name_en: string;
+  reviewer_name_bn: string;
+  reviewer_title_en: string;
+  reviewer_title_bn: string;
+  review_text_en: string;
+  review_text_bn: string;
+  initials: string;
+}
+
+const defaultReviews: Review[] = [
+  {
+    reviewer_name_en: 'Abul Hasan',
+    reviewer_name_bn: 'আবুল হাসান',
+    reviewer_title_en: 'Sylhet Sadar',
+    reviewer_title_bn: 'সিলেট সদর',
+    review_text_en: 'I struggled with unmanaged blood sugar for years. Dr. Hanif\'s continuous tracking and lifestyle modifications did wonders. Highly recommended.',
+    review_text_bn: 'দীর্ঘ ৩ বছর ধরে অনিয়ন্ত্রিত ডায়াবেটিসে ভুগছিলাম। পপুলার চেম্বারে ডা. হানিফ স্যারের সুনির্দিষ্ট পরামর্শ ও জীবনযাত্রায় পরিবর্তন আনার পর এখন আমার ব্লাড সুগার সম্পূর্ণ নিয়ন্ত্রণে। স্যার অত্যন্ত ধৈর্য ধরে শোনেন এবং বুঝিয়ে বলেন.',
+    initials: 'AH'
+  },
+  {
+    reviewer_name_en: 'Sultana Begum',
+    reviewer_name_bn: 'সুলতানা বেগম',
+    reviewer_title_en: 'Shahjalal Uposhohor',
+    reviewer_title_bn: 'শাহজালাল উপশহর',
+    review_text_en: 'I suffered from recurring fevers and typhoid for a long time. Following Dr. Hanif\'s correct diagnosis and treatment, I am now fully recovered. A very caring and reliable doctor.',
+    review_text_bn: 'দীর্ঘদিন ধরে ঘন ঘন তীব্র জ্বর ও টাইফয়েডে ভুগছিলাম। স্যারের সঠিক রোগ নির্ণয় ও অ্যান্টিবায়োটিকের সঠিক ব্যবহারে আমি এখন সম্পূর্ণ সুস্থ। অত্যন্ত আন্তরিক ও ভরসা পাওয়ার মতো একজন চিকিৎসক.',
+    initials: 'SB'
+  }
+];
 
 export default function Home() {
   const { language, t } = useLanguage();
   const [selectedDisease, setSelectedDisease] = useState<Disease | null>(null);
   const [bioInView, setBioInView] = useState(false);
+  const [reviews, setReviews] = useState<Review[]>(defaultReviews);
   const bioRef = useRef<HTMLElement | null>(null);
+
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -35,6 +71,26 @@ export default function Home() {
 
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    async function loadReviews() {
+      try {
+        const { data, error } = await supabase
+          .from('reviews')
+          .select('*')
+          .order('created_at', { ascending: true });
+        
+        if (error) throw error;
+        if (data && data.length > 0) {
+          setReviews(data);
+        }
+      } catch (err) {
+        console.error("Error loading reviews from Supabase:", err);
+      }
+    }
+    loadReviews();
+  }, []);
+
 
   const openDiseaseModal = (slug: string) => {
     const disease = diseaseData.find((d) => d.slug === slug);
@@ -59,7 +115,7 @@ export default function Home() {
         {/* Background Image Layer - Full Width Edge to Edge */}
         <div className="absolute inset-0 z-0 overflow-hidden">
           <img
-            src="/doctor-consultation-bg.jpg"
+            src="/doctor-consultation-bg.png"
             alt={language === 'bn' ? 'ক্লিনিক্যাল চেম্বার পরিবেশ' : 'Doctor Consultation Room'}
             className={`w-full h-full object-cover object-center transition-transform duration-1000 ease-out ${
               bioInView ? 'scale-100' : 'scale-105'
@@ -125,55 +181,8 @@ export default function Home() {
       <div className="relative z-10 bg-background w-full py-16 px-6 md:px-12 flex flex-col gap-20 max-w-7xl mx-auto">
 
 
-        {/* Testimonials / Patient Trust */}
-        <section className="flex flex-col gap-8">
-          <div className="text-center max-w-xl mx-auto flex flex-col gap-2">
-            <span className="text-xs font-semibold uppercase tracking-widest text-accent">
-              {language === 'bn' ? 'রোগীদের আস্থা ও সুস্থতার গল্প' : 'Patient Reviews & Trust'}
-            </span>
-            <h2 className="font-serif text-3xl font-bold text-ink">
-              {language === 'bn' ? 'রোগীদের আরোগ্য ও অভিজ্ঞতা' : 'Stories of Recovery'}
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <GlassPanel className="flex flex-col justify-between gap-4 relative">
-              <Quote className="w-6 h-6 text-accent/25 absolute top-4 right-4" />
-              <p className="text-sm text-muted italic leading-relaxed pt-2">
-                {language === 'bn'
-                  ? '"দীর্ঘ ৩ বছর ধরে অনিয়ন্ত্রিত ডায়াবেটিসে ভুগছিলাম। পপুলার চেম্বারে ডা. হানিফ স্যারের সুনির্দিষ্ট পরামর্শ ও জীবনযাত্রায় পরিবর্তন আনার পর এখন আমার ব্লাড সুগার সম্পূর্ণ নিয়ন্ত্রণে। স্যার অত্যন্ত ধৈর্য ধরে শোনেন এবং বুঝিয়ে বলেন."'
-                  : '"I struggled with unmanaged blood sugar for years. Dr. Hanif\'s continuous tracking and lifestyle modifications did wonders. Highly recommended."'}
-              </p>
-              <div className="flex items-center gap-3 mt-2 border-t border-line pt-3">
-                <span className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-xs font-bold text-accent">
-                  AH
-                </span>
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold text-ink">{language === 'bn' ? 'আবুল হাসান' : 'Abul Hasan'}</span>
-                  <span className="text-[10px] text-muted">{language === 'bn' ? 'সিলেট সদর' : 'Sylhet Sadar'}</span>
-                </div>
-              </div>
-            </GlassPanel>
-
-            <GlassPanel className="flex flex-col justify-between gap-4 relative">
-              <Quote className="w-6 h-6 text-accent/25 absolute top-4 right-4" />
-              <p className="text-sm text-muted italic leading-relaxed pt-2">
-                {language === 'bn'
-                  ? '"দীর্ঘদিন ধরে ঘন ঘন তীব্র জ্বর ও টাইফয়েডে ভুগছিলাম। স্যারের সঠিক রোগ নির্ণয় ও অ্যান্টিবায়োটিকের সঠিক ব্যবহারে আমি এখন সম্পূর্ণ সুস্থ। অত্যন্ত আন্তরিক ও ভরসা পাওয়ার মতো একজন চিকিৎসক."'
-                  : '"I suffered from recurring fevers and typhoid for a long time. Following Dr. Hanif\'s correct diagnosis and treatment, I am now fully recovered. A very caring and reliable doctor."'}
-              </p>
-              <div className="flex items-center gap-3 mt-2 border-t border-line pt-3">
-                <span className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-xs font-bold text-accent">
-                  SB
-                </span>
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold text-ink">Sultana Begum</span>
-                  <span className="text-[10px] text-muted">{language === 'bn' ? 'শাহজালাল উপশহর' : 'Shahjalal Uposhohor'}</span>
-                </div>
-              </div>
-            </GlassPanel>
-          </div>
-        </section>
+        {/* Testimonials / Patient Trust - 3D Interactive Experience */}
+        <InteractiveReviewsSection reviews={reviews} language={language} />
 
         {/* Urgent Appointment CTA Card */}
         <section className="glass-panel p-8 md:p-12 rounded-3xl bg-accent/10 border border-accent/20 flex flex-col md:flex-row justify-between items-center gap-6 shadow-md">

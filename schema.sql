@@ -119,3 +119,23 @@ CREATE POLICY "Allow public insert messages" ON public.messages FOR INSERT WITH 
 -- Only authenticated admins can view messages (SELECT)
 CREATE POLICY "Allow auth read messages" ON public.messages FOR SELECT TO authenticated USING (true);
 
+-- 7. Patient Reviews Table
+CREATE TABLE IF NOT EXISTS public.reviews (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  reviewer_name_en VARCHAR(255) NOT NULL,
+  reviewer_name_bn VARCHAR(255) NOT NULL,
+  reviewer_title_en VARCHAR(255) NOT NULL,
+  reviewer_title_bn VARCHAR(255) NOT NULL,
+  review_text_en TEXT NOT NULL,
+  review_text_bn TEXT NOT NULL,
+  initials VARCHAR(10) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
+
+-- Set up Access Policies (RLS) for Reviews
+CREATE POLICY "Allow public read reviews" ON public.reviews FOR SELECT USING (true);
+CREATE POLICY "Allow auth write reviews" ON public.reviews FOR ALL TO authenticated USING (true);
+
+

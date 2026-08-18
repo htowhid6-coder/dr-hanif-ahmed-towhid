@@ -1,0 +1,53 @@
+1. Need to correct disease and symptom based website
+
+One section about disease (homepage)
+ 
+Headline/title: Diseases we treat 
+(each disease will have 300 words details 
+but language has to be super easy to understand for 
+general people,; for bangla, the words will be those 
+which is usually used by local Bangladeshi)
+ডিজিস এর নাম গুলো বাংলার ক্ষেত্রে বাংলায় উচ্চারণ হবে, মানে 
+Diabetes (DM)= ডায়াবেটিস
+Dyslipidemia = ডিসলিপিডেমিয়া 
+Ischemic Heard Disease = ইস্কেমিক হার্ট ডিজিস 
+
+The diseases : 
+Diabetes (DM) 
+Hypertension (HTN)
+Enteric Fever
+Urinary Tract Infection (UTI)
+Dyslipidemia 
+Fatty Liver Disease
+Ischemic Heard Disease
+Asthma 
+Cronic Obstructive Pulmonary Disorder (COPD)
+Knee Osteoarthritis 
+Stroke 
+Irritable Bowel Syndrome (IBS)
+Peptic Ulcer Disease
+Obesity 
+Migraine
+
+
+Another Section for symptoms
+
+Are you having these issues? (homepage)
+English Symptom	Bengali Meaning (Bangladeshi Patient Language)
+Fever	জ্বর
+Low Back Pain	কোমর ব্যথা
+Knee Pain	হাঁটু ব্যথা
+Fatigue	শরীর ম্যাজম্যাজ করা বা অতিরিক্ত দুর্বল লাগা (ক্লান্তি ভাব)
+Headache	মাথা ব্যথা
+Restlessness	অস্থিরতা লাগা বা ছটফটানি
+Palpitation	বুক ধড়ফড় করা
+Anxiety	দুশ্চিন্তা হওয়া বা মনের ভেতর ভয়-ভয় ভাব হওয়া
+Upper Abdominal Discomfort	পেটের ওপরের দিকে অস্বস্তি লাগা বা পেট ভারী হওয়া
+Epigastric Pain	পেটের ঠিক ওপরের অংশে (বুকের ঠিক নিচে) ব্যথা হওয়া
+Cough	কাশি
+Exertional Breathlessness	একটু হাঁটাহাঁটি বা পরিশ্রম করলেই শ্বাসকষ্ট হওয়া (হাঁপিয়ে ওঠা)
+Chest Pain	বুকে ব্যথা
+Dysuria	প্রস্রাবে জ্বালাপোড়া হওয়া বা প্রস্রাবের সময় ব্যথা হওয়া
+
+
+Homepage- Specialist intriduction- Image (full width screen)

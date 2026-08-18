@@ -18,7 +18,7 @@ export default function AdminDashboard() {
   const [loginError, setLoginError] = useState('');
 
   // Tab State
-  const [activeTab, setActiveTab] = useState<'profile' | 'chamber' | 'blog' | 'messages'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'chamber' | 'blog' | 'messages' | 'reviews'>('profile');
   const [messages, setMessages] = useState<any[]>([]);
 
   // Profile Form States
@@ -56,14 +56,29 @@ export default function AdminDashboard() {
     readTime: '5 min read',
   });
 
+  // Reviews states
+  const [adminReviews, setAdminReviews] = useState<any[]>([]);
+  const [selectedReview, setSelectedReview] = useState<any | null>(null);
+  const [reviewForm, setReviewForm] = useState({
+    nameEn: '',
+    nameBn: '',
+    titleEn: '',
+    titleBn: '',
+    textEn: '',
+    textBn: '',
+    initials: '',
+  });
+
   // Fetch Supabase data on login
   useEffect(() => {
     if (isLoggedIn) {
       fetchProfileAndChamber();
       fetchSupabaseBlogs();
       fetchMessages();
+      fetchReviews();
     }
   }, [isLoggedIn]);
+
 
   const fetchMessages = async () => {
     try {
@@ -78,6 +93,166 @@ export default function AdminDashboard() {
       }
     } catch (err) {
       console.error("Error loading messages:", err);
+    }
+  };
+
+  const fetchReviews = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      if (data) {
+        setAdminReviews(data);
+      }
+    } catch (err) {
+      console.error("Error loading reviews:", err);
+    }
+  };
+
+  const handleEditReview = (review: any) => {
+    setSelectedReview(review);
+    setReviewForm({
+      nameEn: review.reviewer_name_en,
+      nameBn: review.reviewer_name_bn,
+      titleEn: review.reviewer_title_en,
+      titleBn: review.reviewer_title_bn,
+      textEn: review.review_text_en,
+      textBn: review.review_text_bn,
+      initials: review.initials,
+    });
+  };
+
+  const handleSaveReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    let computedInitials = reviewForm.initials.trim();
+    if (!computedInitials) {
+      const name = reviewForm.nameEn.trim();
+      if (name) {
+        const parts = name.split(/\s+/);
+        if (parts.length === 1) {
+          computedInitials = parts[0].slice(0, 2).toUpperCase();
+        } else {
+          computedInitials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        }
+      } else {
+        computedInitials = 'PT';
+      }
+    }
+
+    const reviewPayload = {
+      reviewer_name_en: reviewForm.nameEn,
+      reviewer_name_bn: reviewForm.nameBn,
+      reviewer_title_en: reviewForm.titleEn,
+      reviewer_title_bn: reviewForm.titleBn,
+      review_text_en: reviewForm.textEn,
+      review_text_bn: reviewForm.textBn,
+      initials: computedInitials,
+    };
+
+    try {
+      if (selectedReview) {
+        const { error } = await supabase
+          .from('reviews')
+          .update(reviewPayload)
+          .eq('id', selectedReview.id);
+
+        if (error) throw error;
+        alert(language === 'bn' ? 'রিভিউ সফলভাবে আপডেট করা হয়েছে!' : 'Review updated successfully!');
+      } else {
+        const { error } = await supabase
+          .from('reviews')
+          .insert([reviewPayload]);
+
+        if (error) throw error;
+        alert(language === 'bn' ? 'নতুন রিভিউ যুক্ত করা হয়েছে!' : 'New review added successfully!');
+      }
+
+      setSelectedReview(null);
+      setReviewForm({
+        nameEn: '',
+        nameBn: '',
+        titleEn: '',
+        titleBn: '',
+        textEn: '',
+        textBn: '',
+        initials: '',
+      });
+      fetchReviews();
+    } catch (err) {
+      console.error(err);
+      alert(language === 'bn' ? 'রিভিউ সেভ করতে সমস্যা হয়েছে!' : 'Failed to save review!');
+    }
+  };
+
+  const handleDeleteReview = async (review: any) => {
+    if (!confirm(language === 'bn' ? 'আপনি কি নিশ্চিতভাবে এই রিভিউটি ডিলিট করতে চান?' : 'Are you sure you want to delete this review?')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('reviews')
+        .delete()
+        .eq('id', review.id);
+
+      if (error) throw error;
+
+      alert(language === 'bn' ? 'রিভিউটি সফলভাবে ডিলিট করা হয়েছে!' : 'Review deleted successfully!');
+      setSelectedReview(null);
+      setReviewForm({
+        nameEn: '',
+        nameBn: '',
+        titleEn: '',
+        titleBn: '',
+        textEn: '',
+        textBn: '',
+        initials: '',
+      });
+      fetchReviews();
+    } catch (err) {
+      console.error(err);
+      alert(language === 'bn' ? 'ডিলিট করতে সমস্যা হয়েছে!' : 'Failed to delete review!');
+    }
+  };
+
+  const seedDefaultReviews = async () => {
+    try {
+      const defaultReviewsSeed = [
+        {
+          reviewer_name_en: 'Abul Hasan',
+          reviewer_name_bn: 'আবুল হাসান',
+          reviewer_title_en: 'Sylhet Sadar',
+          reviewer_title_bn: 'সিলেট সদর',
+          review_text_en: 'I struggled with unmanaged blood sugar for years. Dr. Hanif\'s continuous tracking and lifestyle modifications did wonders. Highly recommended.',
+          review_text_bn: 'দীর্ঘ ৩ বছর ধরে অনিয়ন্ত্রিত ডায়াবেটিসে ভুগছিলাম। পপুলার চেম্বারে ডা. হানিফ স্যারের সুনির্দিষ্ট পরামর্শ ও জীবনযাত্রায় পরিবর্তন আনার পর এখন আমার ব্লাড সুগার সম্পূর্ণ নিয়ন্ত্রণে। স্যার অত্যন্ত ধৈর্য ধরে শোনেন এবং বুঝিয়ে বলেন.',
+          initials: 'AH'
+        },
+        {
+          reviewer_name_en: 'Sultana Begum',
+          reviewer_name_bn: 'সুলতানা বেগম',
+          reviewer_title_en: 'Shahjalal Uposhohor',
+          reviewer_title_bn: 'শাহজালাল উপশহর',
+          review_text_en: 'I suffered from recurring fevers and typhoid for a long time. Following Dr. Hanif\'s correct diagnosis and treatment, I am now fully recovered. A very caring and reliable doctor.',
+          review_text_bn: 'দীর্ঘদিন ধরে ঘন ঘন তীব্র জ্বর ও টাইফয়েডে ভুগছিলাম। স্যারের সঠিক রোগ নির্ণয় ও অ্যান্টিবায়োটিকের সঠিক ব্যবহারে আমি এখন সম্পূর্ণ সুস্থ। অত্যন্ত আন্তরিক ও ভরসা পাওয়ার মতো একজন চিকিৎসক.',
+          initials: 'SB'
+        }
+      ];
+
+      const { error } = await supabase
+        .from('reviews')
+        .insert(defaultReviewsSeed);
+
+      if (error) throw error;
+
+      alert(language === 'bn' ? 'ডিফল্ট রিভিউ সফলভাবে ডেটাবেজে যুক্ত করা হয়েছে!' : 'Default reviews seeded successfully!');
+      fetchReviews();
+    } catch (err) {
+      console.error(err);
+      alert(language === 'bn' ? 'ডিফল্ট রিভিউ যুক্ত করতে সমস্যা হয়েছে!' : 'Failed to seed default reviews!');
     }
   };
 
@@ -476,7 +651,7 @@ export default function AdminDashboard() {
 
         {/* Navigation Tabs */}
         <div className="flex border-b border-line gap-2 flex-wrap">
-          {(['profile', 'chamber', 'blog', 'messages'] as const).map((tab) => (
+          {(['profile', 'chamber', 'blog', 'reviews', 'messages'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -490,6 +665,8 @@ export default function AdminDashboard() {
                 ? language === 'bn' ? 'চেম্বার তথ্য' : 'Chamber Info'
                 : tab === 'blog'
                 ? language === 'bn' ? 'ব্লগ ম্যানেজার' : 'Blog Manager'
+                : tab === 'reviews'
+                ? language === 'bn' ? 'রিভিউ ম্যানেজার' : 'Reviews Manager'
                 : language === 'bn' ? 'রোগীর বার্তা' : 'Patient Messages'}
             </button>
           ))}
@@ -839,6 +1016,226 @@ export default function AdminDashboard() {
                       >
                         <Trash2 className="w-4 h-4" />
                         <span>Delete</span>
+                      </button>
+                    )}
+                  </div>
+                </form>
+              </GlassPanel>
+            </div>
+          </div>
+        )}
+
+        {/* TAB: REVIEWS MANAGER */}
+        {activeTab === 'reviews' && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-300">
+            {/* Reviews List */}
+            <div className="lg:col-span-5 flex flex-col gap-3">
+              <div className="flex justify-between items-center flex-wrap gap-2">
+                <h3 className="font-serif text-sm font-bold text-ink">
+                  {language === 'bn' ? 'রোগী রিভিউ তালিকা' : 'Patient Reviews'}
+                </h3>
+                <div className="flex gap-1.5">
+                  {adminReviews.length === 0 && (
+                    <button
+                      type="button"
+                      onClick={seedDefaultReviews}
+                      className="px-2 py-1 bg-accent/10 text-accent border border-accent/20 text-[9px] font-bold rounded-lg cursor-pointer"
+                      title={language === 'bn' ? 'ডাটাবেজে ডিফল্ট রিভিউ যুক্ত করুন' : 'Seed default reviews to Supabase'}
+                    >
+                      {language === 'bn' ? 'ডিফল্ট লোড করুন' : 'Seed Default'}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedReview(null);
+                      setReviewForm({
+                        nameEn: '',
+                        nameBn: '',
+                        titleEn: '',
+                        titleBn: '',
+                        textEn: '',
+                        textBn: '',
+                        initials: '',
+                      });
+                    }}
+                    className="px-2.5 py-1 bg-accent text-white text-[9px] font-bold rounded-lg cursor-pointer"
+                  >
+                    + Add New
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto pr-1">
+                {adminReviews.length === 0 ? (
+                  <div className="py-8 text-center text-muted text-xs border border-panel-border/30 rounded-xl bg-white/10">
+                    {language === 'bn' ? 'কোনো রিভিউ পাওয়া যায়নি।' : 'No reviews found.'}
+                  </div>
+                ) : (
+                  adminReviews.map((rev) => (
+                    <div
+                      key={rev.id}
+                      onClick={() => handleEditReview(rev)}
+                      className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                        selectedReview?.id === rev.id
+                          ? 'border-accent bg-accent/5'
+                          : 'border-panel-border bg-white/20 hover:bg-white/40'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start gap-2">
+                        <h4 className="text-xs font-bold text-ink line-clamp-1">
+                          {language === 'bn' ? rev.reviewer_name_bn : rev.reviewer_name_en}
+                        </h4>
+                        <span className="text-[9.5px] bg-accent/10 text-accent px-1.5 rounded font-mono font-bold">
+                          {rev.initials}
+                        </span>
+                      </div>
+                      <span className="text-[9px] text-muted block mt-1">
+                        {language === 'bn' ? rev.reviewer_title_bn : rev.reviewer_title_en}
+                      </span>
+                      <p className="text-[11px] text-ink/75 line-clamp-2 mt-1.5 italic bg-white/10 p-1.5 rounded border border-panel-border/20">
+                        "{language === 'bn' ? rev.review_text_bn : rev.review_text_en}"
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Review Form */}
+            <div className="lg:col-span-7">
+              <GlassPanel className="p-5 flex flex-col gap-4">
+                <h3 className="font-serif text-sm font-bold text-ink border-b border-line pb-1.5">
+                  {selectedReview 
+                    ? (language === 'bn' ? 'রিভিউ সম্পাদন করুন' : 'Edit Review') 
+                    : (language === 'bn' ? 'নতুন রিভিউ যুক্ত করুন' : 'Add New Review')}
+                </h3>
+
+                <form onSubmit={handleSaveReview} className="flex flex-col gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-ink">
+                        Reviewer Name (English)
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={reviewForm.nameEn}
+                        onChange={(e) => setReviewForm({ ...reviewForm, nameEn: e.target.value })}
+                        className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                        placeholder="e.g. Abul Hasan"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-ink">
+                        রিভিউয়ারের নাম (বাংলা)
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={reviewForm.nameBn}
+                        onChange={(e) => setReviewForm({ ...reviewForm, nameBn: e.target.value })}
+                        className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                        placeholder="যেমন: আবুল হাসান"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-ink">
+                        Location / Title (English)
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={reviewForm.titleEn}
+                        onChange={(e) => setReviewForm({ ...reviewForm, titleEn: e.target.value })}
+                        className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                        placeholder="e.g. Sylhet Sadar"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-ink">
+                        অবস্থান / পদবী (বাংলা)
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={reviewForm.titleBn}
+                        onChange={(e) => setReviewForm({ ...reviewForm, titleBn: e.target.value })}
+                        className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                        placeholder="যেমন: সিলেট সদর"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-ink">
+                        Reviewer Initials (Optional - Auto-generated if blank)
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={4}
+                        value={reviewForm.initials}
+                        onChange={(e) => setReviewForm({ ...reviewForm, initials: e.target.value })}
+                        className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                        placeholder="e.g. AH"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-ink">
+                      Review Content (English)
+                    </label>
+                    <textarea
+                      required
+                      rows={3}
+                      value={reviewForm.textEn}
+                      onChange={(e) => setReviewForm({ ...reviewForm, textEn: e.target.value })}
+                      className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                      placeholder="Enter patient testimonial in English..."
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-ink">
+                      রিভিউ বিবরণ (বাংলা)
+                    </label>
+                    <textarea
+                      required
+                      rows={3}
+                      value={reviewForm.textBn}
+                      onChange={(e) => setReviewForm({ ...reviewForm, textBn: e.target.value })}
+                      className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                      placeholder="রোগীর সুস্থতার বিবরণ বাংলায় লিখুন..."
+                    />
+                  </div>
+
+                  <div className="flex gap-3 mt-2">
+                    <button
+                      type="submit"
+                      className="flex-1 py-3 bg-accent text-white font-semibold text-xs rounded-xl shadow-md hover:bg-ink transition-colors cursor-pointer text-center inline-flex items-center justify-center gap-2"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>
+                        {selectedReview
+                          ? (language === 'bn' ? 'রিভিউ আপডেট করুন' : 'Update Review')
+                          : (language === 'bn' ? 'রিভিউ সংরক্ষণ করুন' : 'Save Review')}
+                      </span>
+                    </button>
+                    {selectedReview && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteReview(selectedReview)}
+                        className="py-3 px-4 bg-red-50 border border-red-200 text-red-600 font-semibold text-xs rounded-xl hover:bg-red-100 transition-colors cursor-pointer text-center inline-flex items-center justify-center gap-1.5"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>{language === 'bn' ? 'ডিলিট' : 'Delete'}</span>
                       </button>
                     )}
                   </div>

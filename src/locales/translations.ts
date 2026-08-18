@@ -3,8 +3,8 @@ export const translations = {
     nav: {
       home: "Home",
       about: "About",
-      services: "Services",
-      conditions: "Conditions",
+      conditions: "Diseases We Treat",
+      symptoms: "Symptoms",
       blog: "Blog",
       faq: "FAQ",
       contact: "Contact",
@@ -38,7 +38,7 @@ export const translations = {
       fcps_desc: "Fellow of the College of Physicians and Surgeons, Session January-2026",
     },
     conditions: {
-      eyebrow: "Conditions Treated",
+      eyebrow: "Diseases We Treat",
       title: "Diabetes, Hypertension, Thyroid, and More.",
       diabetes: "Diabetes & Sugar Control",
       hypertension: "Hypertension & High Blood Pressure",
@@ -97,8 +97,8 @@ export const translations = {
     nav: {
       home: "হোম",
       about: "ডাক্তারের পরিচিতি",
-      services: "চিকিৎসাসেবা",
-      conditions: "রোগ ও লক্ষণ",
+      conditions: "চিকিৎসাধীন রোগসমূহ",
+      symptoms: "লক্ষণসমূহ",
       blog: "স্বাস্থ্য পরামর্শ",
       faq: "সাধারণ জিজ্ঞাসা",
       contact: "চেম্বার ও সিরিয়াল",
@@ -132,7 +132,7 @@ export const translations = {
       fcps_desc: "বাংলাদেশ কলেজ অব ফিজিশিয়ানস অ্যান্ড সার্জনস, সেশন: জানুয়ারি-২০২৬",
     },
     conditions: {
-      eyebrow: "যেসব রোগের চিকিৎসা দেওয়া হয়",
+      eyebrow: "চিকিৎসাধীন রোগসমূহ",
       title: "ডায়াবেটিস, উচ্চ রক্তচাপ, থাইরয়েড ও জটিল মেডিসিন সমস্যা।",
       diabetes: "ডায়াবেটিস ও ব্লাড সুগার নিয়ন্ত্রণ",
       hypertension: "উচ্চ রক্তচাপ ও স্ট্রোক প্রতিরোধ",

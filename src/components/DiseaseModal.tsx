@@ -43,6 +43,17 @@ export const DiseaseModal: React.FC<DiseaseModalProps> = ({ disease, onClose }) 
           <X className="w-5 h-5" />
         </button>
 
+        {/* Disease Image Preview */}
+        {disease.image && (
+          <div className="relative w-full h-44 sm:h-52 rounded-2xl overflow-hidden bg-slate-100 border border-panel-border shadow-inner">
+            <img
+              src={disease.image}
+              alt={disease.title[language]}
+              className="w-full h-full object-cover object-center"
+            />
+          </div>
+        )}
+
         {/* Title */}
         <div>
           <span className="text-xs font-semibold uppercase tracking-widest text-accent mb-1 block">
@@ -99,7 +110,7 @@ export const DiseaseModal: React.FC<DiseaseModalProps> = ({ disease, onClose }) 
             {t('conditions.close')}
           </button>
           <Link
-            href={`/conditions/${disease.slug}`}
+            href={`/diseases/${disease.slug}`}
             onClick={onClose}
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-accent hover:bg-ink text-white font-semibold text-xs text-center shadow-md hover:-translate-y-0.5 transition-all cursor-pointer"
           >

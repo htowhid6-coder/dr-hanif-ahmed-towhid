@@ -1,5 +1,6 @@
 export interface Disease {
   slug: string;
+  image: string;
   title: { en: string; bn: string };
   shortDesc: { en: string; bn: string };
   fullDesc: { en: string; bn: string };
@@ -10,6 +11,7 @@ export interface Disease {
 export const diseaseData: Disease[] = [
   {
     slug: 'diabetes',
+    image: '/Diseases_Images/diabetes.jpg',
     title: { en: 'Diabetes (DM)', bn: 'ডায়াবেটিস (Diabetes - DM)' },
     shortDesc: {
       en: 'Comprehensive blood sugar control, insulin optimization, and prevention of kidney, eye, and nerve complications.',
@@ -38,6 +40,7 @@ Dr. Hanif Ahmed Towhid specializes in comprehensive diabetes assessment. His cli
   },
   {
     slug: 'hypertension',
+    image: '/Diseases_Images/hypertension.png',
     title: { en: 'Hypertension (HTN)', bn: 'উচ্চ রক্তচাপ / হাইপারটেনশন (HTN)' },
     shortDesc: {
       en: 'Silent killer prevention, cardiovascular risk profiling, and personalized blood pressure management.',
@@ -65,7 +68,39 @@ Dr. Hanif provides systematic blood pressure evaluation, identifying primary vs.
     },
   },
   {
+    slug: 'thyroid',
+    image: '/Diseases_Images/thyroid.png',
+    title: { en: 'Thyroid Disorders', bn: 'থাইরয়েড ও হরমোনজনিত সমস্যা (Thyroid Disorders)' },
+    shortDesc: {
+      en: 'Specialized diagnosis for Hypothyroidism, Hyperthyroidism, Goiter, and comprehensive TSH/FT4 hormone management.',
+      bn: 'হাইপোথাইরয়েডিজম, হাইপারথাইরয়েডিজম, গলগণ্ড এবং হরমোনের তারতম্যের সঠিক নির্ণয় ও দীর্ঘমেয়াদী চিকিৎসা।',
+    },
+    fullDesc: {
+      en: `Thyroid disorders encompass a spectrum of conditions affecting the butterfly-shaped thyroid gland located at the base of the neck. The thyroid secretes triiodothyronine (T3) and thyroxine (T4) hormones, which regulate metabolism, heart rate, body temperature, energy expenditure, and menstrual regularity in women.
+
+The two main disorders are Hypothyroidism (underactive thyroid gland failing to produce sufficient hormone, leading to extreme fatigue, unexplained weight gain, severe cold sensitivity, dry skin, hair thinning, constipation, and depression) and Hyperthyroidism (overactive thyroid gland producing excessive hormone, resulting in rapid weight loss, heat intolerance, hand tremors, palpitations, anxiety, and sleep disturbances).
+
+Dr. Hanif Ahmed Towhid provides precise diagnostic hormonal profiling including Serum TSH, Free T3 (FT3), Free T4 (FT4), and thyroid ultrasonography. He prescribes customized levothyroxine replacement therapy with periodic dose titration for hypothyroidism and antithyroid medical regimens for hyperthyroidism, guiding patients toward complete metabolic balance and vitality.`,
+      bn: `থাইরয়েড সমস্যা হলো গলার সামনের অংশে অবস্থিত প্রজাপতি আকৃতির থাইরয়েড গ্রন্থির হরমোনজনিত রোগ। থাইরয়েড গ্রন্থি থেকে নিঃসৃত হরমোন আমাদের শরীরের মেটাবলিজম বা হজমক্রিয়া, হৃদস্পন্দন, শরীরের তাপমাত্রা, শক্তি এবং নারীদের ক্ষেত্রে মাসিক চক্র নিয়ন্ত্রণ করে।
+
+থাইরয়েডের প্রধান দুটি সমস্যা হলো:
+১. হাইপোথাইরয়েডিজম (Hypothyroidism): যখন থাইরয়েড গ্রন্থি পর্যাপ্ত হরমোন তৈরি করতে পারে না। এর ফলে কম খাওয়া সত্ত্বেও দ্রুত ওজন বৃদ্ধি, অতিরিক্ত দুর্বলতা ও ক্লান্তি, শীত সহ্য করতে না পারা, চুল পড়া, ত্বক খসখসে হওয়া, কোষ্ঠকাঠিন্য এবং বিষণ্ণতা দেখা দেয়।
+২. হাইপারথাইরয়েডিজম (Hyperthyroidism): যখন থাইরয়েড গ্রন্থি থেকে অতিরিক্ত হরমোন তৈরি হয়। এর ফলে প্রচুর খাওয়া সত্ত্বেও দ্রুত ওজন হ্রাস, তীব্র গরম লাগা, হাত কাঁপা, বুক ধড়ফড় করা, অতিরিক্ত ঘাম ও মেজাজ খিটখিটে হওয়া দেখা দেয়।
+
+ডা. হানিফ আহমেদ তৌহিদ রক্তের TSH ও হরমোন টেস্টের মাধ্যমে নির্ভুল মাত্রা নির্ধারণ করে ওষুধের সঠিক ডোজ প্রেসক্রাইব করেন এবং নিয়মিত ফলোআপের মাধ্যমে হরমোনের স্বাভাবিক ভারসাম্য বজায় রাখেন।`,
+    },
+    symptoms: {
+      en: ['Unexplained weight changes (weight gain in hypo, weight loss in hyper)', 'Chronic fatigue, lethargy, or extreme hyperactivity/anxiety', 'Cold intolerance (feeling cold easily) or heat intolerance', 'Hair thinning, brittle nails, and dry scaly skin', 'Irregular menstrual cycles, heavy periods, or fertility difficulties', 'Hand tremors and palpitations or slow resting pulse'],
+      bn: ['অকারণে ওজন বৃদ্ধি বা হঠাৎ ওজন দ্রুত কমে যাওয়া', 'সার্বক্ষণিক ক্লান্তি, ঘুম ঘুম ভাব বা অতিরিক্ত অস্থিরতা', 'অতিরিক্ত শীত বা অতিরিক্ত গরম সহ্য করতে না পারা', 'প্রচুর পরিমাণে চুল পড়া ও ত্বক খসখসে হওয়া', 'নারীদের অনিয়মিত মাসিক ও মেজাজের দ্রুত পরিবর্তন', 'হাত কাঁপা এবং হুটহাট বুক ধড়ফড় করা'],
+    },
+    treatments: {
+      en: ['Customized Levothyroxine replacement therapy with periodic TSH titration', 'Antithyroid pharmacotherapy (Methimazole/Carbimazole) for hyperthyroidism', 'High-resolution Thyroid Ultrasonography and Anti-TPO antibody screening', 'Nutritional guidance ensuring adequate iodine and selenium intake', 'Regular 6 to 12-week hormonal follow-up audits'],
+      bn: ['হাইপোথাইরয়েডিজমের জন্য প্রতিদিন সকালে খালি পেটে সঠিক মাত্রায় থাইরয়েডের ওষুধ সেবন', 'হাইপারথাইরয়েডিজমের জন্য উপযুক্ত অ্যান্টিথাইরয়েড ওষুধের প্রয়োগ', 'নিয়মিত TSH ও হরমোন টেস্টের মাধ্যমে ওষুধের মাত্রা পুনর্নির্ধারণ', 'আয়োডিন ও পুষ্টিকর সুষম খাদ্যাভ্যাসের পরামর্শ', 'গর্ভকালীন সময়ে থাইরয়েডের বিশেষ যত্ন ও পর্যবেক্ষণ'],
+    },
+  },
+  {
     slug: 'enteric-fever',
+    image: '/Diseases_Images/enteric-fever.png',
     title: { en: 'Enteric Fever (Typhoid)', bn: 'এন্টেরিক ফিভার / টাইফয়েড (Enteric Fever)' },
     shortDesc: {
       en: 'Accurate diagnosis and targeted antibiotic therapy for Salmonella typhoid and paratyphoid infections.',
@@ -94,6 +129,7 @@ Dr. Hanif emphasizes precise microbiological and blood diagnosis (such as early 
   },
   {
     slug: 'uti',
+    image: '/Diseases_Images/uti.png',
     title: { en: 'Urinary Tract Infection (UTI)', bn: 'ইউরিনারি ট্র্যাক্ট ইনফেকশন / ইউটিআই (UTI)' },
     shortDesc: {
       en: 'Diagnosis and evidence-based treatment of burning sensation, painful urination, and recurrent bladder infections.',
@@ -122,6 +158,7 @@ Dr. Hanif provides comprehensive diagnostic evaluations including urine routine 
   },
   {
     slug: 'dyslipidemia',
+    image: '/Diseases_Images/dyslipidemia.png',
     title: { en: 'Dyslipidemia (High Cholesterol)', bn: 'ডিসলিপিডেমিয়া (Dyslipidemia / রক্তে চর্বি বৃদ্ধি)' },
     shortDesc: {
       en: 'Managing high triglycerides, LDL cholesterol, and lipid abnormalities to prevent heart attacks and blocked arteries.',
@@ -150,6 +187,7 @@ Dr. Hanif conducts detailed fasting lipid profile audits, evaluating 10-year ath
   },
   {
     slug: 'fatty-liver',
+    image: '/Diseases_Images/fatty-liver.png',
     title: { en: 'Fatty Liver Disease', bn: 'ফ্যাটি লিভার ডিজিজ (Fatty Liver Disease)' },
     shortDesc: {
       en: 'Diagnosis of Grade 1-3 liver fat accumulation, liver enzyme management, and metabolic health restoration.',
@@ -178,6 +216,7 @@ Dr. Hanif utilizes high-resolution ultrasonography and comprehensive liver enzym
   },
   {
     slug: 'ischemic-heart-disease',
+    image: '/Diseases_Images/ischemic-heart-disease.png',
     title: { en: 'Ischemic Heart Disease (IHD)', bn: 'ইস্কেমিক হার্ট ডিজিজ (Ischemic Heart Disease)' },
     shortDesc: {
       en: 'Comprehensive medical therapy for reduced blood flow to the heart, chest angina, and coronary artery disease prevention.',
@@ -206,6 +245,7 @@ Dr. Hanif provides comprehensive medical management for patients with chronic st
   },
   {
     slug: 'asthma',
+    image: '/Diseases_Images/Asthma.png',
     title: { en: 'Asthma', bn: 'অ্যাজমা বা হাঁপানি (Asthma)' },
     shortDesc: {
       en: 'Long-term airway control, inhaler technique optimization, and emergency acute wheezing management.',
@@ -234,6 +274,7 @@ Dr. Hanif focuses on achieving complete asthma control and preventing emergency 
   },
   {
     slug: 'copd',
+    image: '/Diseases_Images/copd.png',
     title: { en: 'Chronic Obstructive Pulmonary Disorder (COPD)', bn: 'সিওপিডি (COPD)' },
     shortDesc: {
       en: 'Specialized care for smoking-related airway damage, chronic cough, and exertional breathlessness.',
@@ -262,6 +303,7 @@ Dr. Hanif provides structured COPD assessment, categorizing patients based on sy
   },
   {
     slug: 'knee-osteoarthritis',
+    image: '/Diseases_Images/knee-osteoarthritis.png',
     title: { en: 'Knee Osteoarthritis', bn: 'হাঁটুর অস্টিওআর্থ্রাইটিস (Knee Osteoarthritis)' },
     shortDesc: {
       en: 'Joint cartilage protection, pain management, and mobility restoration without kidney-damaging painkillers.',
@@ -290,6 +332,7 @@ Dr. Hanif focuses on protecting kidney function by preventing the chronic, unsup
   },
   {
     slug: 'stroke',
+    image: '/Diseases_Images/stroke.png',
     title: { en: 'Stroke', bn: 'স্ট্রোক (Stroke)' },
     shortDesc: {
       en: 'Post-stroke medical rehabilitation, blood pressure control, and secondary stroke recurrence prevention.',
@@ -318,6 +361,7 @@ Dr. Hanif provides dedicated post-acute medical management and secondary stroke 
   },
   {
     slug: 'ibs',
+    image: '/Diseases_Images/ibs.png',
     title: { en: 'Irritable Bowel Syndrome (IBS)', bn: 'আইবিএস (IBS / ইরিটেবল বাওয়েল সিন্ড্রোম)' },
     shortDesc: {
       en: 'Relief from chronic bloating, alternating constipation and diarrhea, and gut-brain nervous sensitivity.',
@@ -346,6 +390,7 @@ Dr. Hanif emphasizes rational, empathetic diagnosis, ruling out red-flag organic
   },
   {
     slug: 'peptic-ulcer',
+    image: '/Diseases_Images/peptic-ulcer.png',
     title: { en: 'Peptic Ulcer Disease', bn: 'পেপটিক আলসার ডিজিজ (Peptic Ulcer Disease)' },
     shortDesc: {
       en: 'H. pylori eradication, gastric acid control, and treatment of severe upper abdominal burning pain.',
@@ -374,6 +419,7 @@ Dr. Hanif provides comprehensive gastrointestinal assessments, diagnosing H. pyl
   },
   {
     slug: 'obesity',
+    image: '/Diseases_Images/obesity.png',
     title: { en: 'Obesity & Weight Management', bn: 'স্থূলতা বা অতিরিক্ত ওজন (Obesity / ওবেসিটি)' },
     shortDesc: {
       en: 'Scientific metabolic weight reduction plans, visceral fat assessment, and related chronic disease prevention.',
@@ -402,6 +448,7 @@ Dr. Hanif approaches obesity as a multi-system medical challenge rather than a s
   },
   {
     slug: 'migraine',
+    image: '/Diseases_Images/migraine.jpg',
     title: { en: 'Migraine & Chronic Headaches', bn: 'মাইগ্রেন (Migraine / তীব্র মাথাব্যথা)' },
     shortDesc: {
       en: 'Preventive neurological therapies, acute migraine attack relief, and trigger identification counseling.',
@@ -426,46 +473,6 @@ Dr. Hanif provides comprehensive headache evaluations to differentiate migraines
     treatments: {
       en: ['Acute attack abortive therapy (Triptans, targeted NSAIDs, antiemetics) taken at onset', 'Daily prophylactic preventive pharmacotherapy to reduce attack frequency and intensity', 'Trigger identification diary to isolate dietary, sleep, and environmental triggers', 'Sleep hygiene, stress-management techniques, and hydration counseling', 'Screening for secondary causes of headache via neurological evaluation'],
       bn: ['ব্যথা শুরু হওয়া মাত্রই তা বন্ধ করতে নিরাপদ ও দ্রুত কার্যকর ওষুধের প্রয়োগ', 'ঘন ঘন মাইগ্রেন হওয়া রোধে চিকিৎসকের নির্দেশনায় নিয়মিত প্রিভেন্টিভ ওষুধ সেবন', 'যেসব কারণে ব্যথা বাড়ে (রোদ, না খেয়ে থাকা, ঘুমের অনিয়ম) তা খুঁজে বের করে পরিহার করা', 'নিয়মিত পরিমিত ঘুম ও পর্যাপ্ত পানি পানের অভ্যাস গড়ে তোলা', 'দীর্ঘস্থায়ী মাথাব্যথার অন্যান্য স্নায়বিক কারণ নিখুঁতভাবে পরীক্ষা ও নিশ্চিতকরণ'],
-    },
-  },
-];
-
-export interface Service {
-  slug: string;
-  title: { en: string; bn: string };
-  shortDesc: { en: string; bn: string };
-  fullDesc: { en: string; bn: string };
-}
-
-export const servicesData: Service[] = [
-  {
-    slug: 'general-medicine',
-    title: {
-      en: 'General Internal Medicine',
-      bn: 'জেনারেল ইন্টারনাল মেডিসিন ও বহুরোগের চিকিৎসা',
-    },
-    shortDesc: {
-      en: 'Comprehensive diagnosis and evidence-based treatment of multi-system adult diseases.',
-      bn: 'প্রাপ্তবয়স্কদের বহুমুখী ও জটিল অভ্যন্তরীণ শারীরিক রোগের নির্ভুল নির্ণয় ও আধুনিক চিকিৎসা।',
-    },
-    fullDesc: {
-      en: 'General internal medicine focuses on diagnosing and managing complex adult illnesses affecting multiple organ systems. Dr. Hanif provides comprehensive clinical evaluations, laboratory workup coordination, and personalized therapeutic regimens.',
-      bn: 'জেনারেল ইন্টারনাল মেডিসিন প্রাপ্তবয়স্কদের বিভিন্ন জটিল ও দীর্ঘমেয়াদী রোগের সঠিক কারণ নির্ণয় ও চিকিৎসার ক্ষেত্রে অত্যন্ত গুরুত্বপূর্ণ। ডা. হানিফ সার্বিক শারীরিক পরীক্ষা এবং নির্ভুল ল্যাব ডায়াগনস্টিকের মাধ্যমে রোগীর ব্যক্তিগত চিকিৎসার পরিকল্পনা করেন।',
-    },
-  },
-  {
-    slug: 'preventive-health',
-    title: {
-      en: 'Preventive Health Screening',
-      bn: 'প্রতিরোধমূলক স্বাস্থ্য পরীক্ষা ও স্ক্রীনিং',
-    },
-    shortDesc: {
-      en: 'Cardiac risk profiling, diabetic screens, and hypertension control reviews.',
-      bn: 'হৃদরোগের ঝুঁকি নিরূপণ, ডায়াবেটিস স্ক্রীনিং এবং উচ্চ রক্তচাপ নিয়ন্ত্রণের সুনির্দিষ্ট পর্যবেক্ষণ।',
-    },
-    fullDesc: {
-      en: 'Preventive health screening identifies metabolic and cardiovascular abnormalities before irreversible damage occurs. Early intervention through lifestyle guidance and early medical therapies saves lives.',
-      bn: 'প্রতিরোধমূলক স্বাস্থ্য পরীক্ষা কোনো বড় রোগ দেখা দেওয়ার আগেই তা শনাক্ত করতে সাহায্য করে। প্রাথমিক অবস্থাতেই রক্তচাপ, সুগার ও কোলেস্টেরল পরীক্ষা করে সঠিক ব্যবস্থা গ্রহণ করলে ভবিষ্যতের বহু মারাত্মক ঝুঁকি এড়ানো সম্ভব।',
     },
   },
 ];

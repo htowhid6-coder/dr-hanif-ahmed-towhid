@@ -100,28 +100,56 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
     },
     {
       id: 'doctor-intro',
-      eyebrow: t('doctorIntro.eyebrow'),
       title: t('doctorIntro.name'),
       lead: (
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-          <div className="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0 rounded-2xl overflow-hidden shadow-md border-2 border-white/70 bg-accent/10">
+        <div className="flex flex-col sm:flex-row items-center sm:items-stretch gap-6 pt-1">
+          {/* Doctor Portrait Image: Much Larger, Grand Presence (~42%-44% Width on Desktop) */}
+          <div className="relative w-56 sm:w-[42%] md:w-[44%] min-w-[200px] max-w-[280px] aspect-[3.2/4.4] sm:aspect-auto sm:min-h-[290px] shrink-0 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border-2 border-white bg-slate-100 group mx-auto sm:mx-0">
             <img
               src="/doctor-hero.png"
               alt={t('doctorIntro.name')}
-              className="w-full h-full object-cover object-top"
+              className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute bottom-3 left-3 right-3">
+              <span className="text-[10px] sm:text-[11px] font-bold text-white uppercase tracking-wider bg-slate-900/85 backdrop-blur-md px-2.5 py-1 rounded-xl block text-center shadow-md border border-white/20">
+                {language === 'bn' ? 'মেডিসিন বিশেষজ্ঞ' : 'Medicine Specialist'}
+              </span>
+            </div>
           </div>
-          <div className="flex flex-col justify-center gap-1.5 text-center sm:text-left">
-            <span className="font-bold text-accent text-sm md:text-base tracking-wide">
-              {t('doctorIntro.degrees')}
-            </span>
-            <span className="text-xs md:text-sm text-muted leading-snug">
-              {t('doctorIntro.designation')}
-            </span>
-            <span className="inline-flex items-center justify-center sm:justify-start gap-1.5 text-xs text-accent font-semibold mt-1">
-              <span className="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
-              {t('chamber.hours')}
-            </span>
+
+          {/* Doctor Details: Roomy & Elegantly Formatted */}
+          <div className="flex-1 flex flex-col justify-start gap-4 text-center sm:text-left py-0.5">
+            {/* Specialty Badge + Degrees + Designation */}
+            <div className="flex flex-col gap-2">
+              <div className="inline-flex items-center justify-center sm:justify-start gap-2">
+                <span className="px-3 py-1 rounded-full bg-accent/10 border border-accent/25 text-accent text-xs sm:text-sm font-bold tracking-wide">
+                  {language === 'bn' ? 'মেডিসিন বিশেষজ্ঞ' : 'Medicine Specialist'}
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <h3 className="font-serif font-bold text-accent text-base sm:text-lg md:text-xl tracking-wide">
+                  {t('doctorIntro.degrees')}
+                </h3>
+                <p className="text-sm sm:text-base text-ink font-semibold leading-snug">
+                  {t('doctorIntro.designation')}
+                </p>
+              </div>
+            </div>
+
+            {/* Chamber & Visiting Hours Highlight Box */}
+            <div className="flex flex-col gap-1.5 p-3.5 sm:p-4 rounded-2xl bg-white/80 border border-white/90 shadow-xs">
+              <div className="inline-flex items-center justify-center sm:justify-start gap-2 text-xs sm:text-sm md:text-base text-ink font-bold">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                <span>{t('chamber.hours')}</span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
+                {language === 'bn' 
+                  ? 'পপুলার মেডিকেল সেন্টার লিমিটেড (রুম-৬০৫), নিউ মেডিকেল রোড, কাজলশাহ, সিলেট।' 
+                  : 'Popular Medical Center Ltd. (Room 605), New Medical Road, Kazalshah, Sylhet.'}
+              </p>
+            </div>
           </div>
         </div>
       ),
@@ -202,31 +230,81 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
         </div>
       ),
       secondaryCta: language === 'bn' ? 'সকল রোগ দেখুন (১৫টি) →' : 'View All 15 Diseases →',
-      secondaryCtaHref: '/conditions',
+      secondaryCtaHref: '/diseases',
     },
     {
       id: 'chamber',
       eyebrow: t('chamber.eyebrow'),
       title: t('chamber.title'),
       lead: (
-        <span className="flex flex-col gap-2 text-sm leading-relaxed text-muted">
-          <span className="flex items-start gap-2">
-            <MapPin className="w-4 h-4 text-accent mt-0.5 shrink-0" />
-            <span>{t('chamber.address')}</span>
-          </span>
-          <span className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-accent shrink-0" />
-            <span>{t('chamber.hours')}</span>
-          </span>
-          <span className="flex items-center gap-2">
-            <Phone className="w-4 h-4 text-accent shrink-0" />
-            <span>{t('chamber.ticket')}</span>
-          </span>
-        </span>
+        <div className="flex flex-col gap-3.5 pt-1">
+          {/* Card 1: Location & Room */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-white/70 hover:bg-white border border-white/80 hover:border-accent/40 shadow-xs hover:shadow-md transition-all duration-300 flex items-start gap-3.5 group">
+            <div className="w-10 h-10 rounded-xl bg-accent/10 text-accent group-hover:bg-accent group-hover:text-white flex items-center justify-center shrink-0 transition-colors shadow-2xs">
+              <MapPin className="w-5 h-5" />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-sm font-bold text-ink group-hover:text-accent transition-colors">
+                  {language === 'bn' ? '৬ষ্ঠ তলা, রুম নং-৬০৫' : '6th Floor, Room No-605'}
+                </span>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60">
+                  {language === 'bn' ? 'প্রধান চেম্বার' : 'Main Chamber'}
+                </span>
+              </div>
+              <p className="text-[11px] sm:text-xs text-muted leading-relaxed">
+                {language === 'bn' ? 'নিউ মেডিকেল রোড, কাজলশাহ, সিলেট।' : 'New Medical Road, Kazalshah, Sylhet.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Card 2: Visiting Hours */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-white/70 hover:bg-white border border-white/80 hover:border-emerald-400/40 shadow-xs hover:shadow-md transition-all duration-300 flex items-start gap-3.5 group">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white flex items-center justify-center shrink-0 transition-colors shadow-2xs">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-sm font-bold text-ink">
+                  {language === 'bn' ? 'প্রতিদিন বিকাল ৫:০০টা – রাত ৯:০০টা' : '5:00 PM – 9:00 PM (Daily)'}
+                </span>
+              </div>
+              <p className="text-[11px] sm:text-xs text-rose-600 font-semibold flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                {language === 'bn' ? 'শুক্রবার চেম্বার বন্ধ থাকে' : 'Friday Closed'}
+              </p>
+            </div>
+          </div>
+
+          {/* Card 3: Hotline & Ticket Booking */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-teal-50/70 via-white to-emerald-50/70 hover:from-teal-50 hover:to-emerald-50 border border-teal-200/70 hover:border-accent shadow-xs hover:shadow-md transition-all duration-300 flex items-start gap-3.5 group">
+            <div className="w-10 h-10 rounded-xl bg-teal-600/10 text-teal-700 group-hover:bg-teal-700 group-hover:text-white flex items-center justify-center shrink-0 transition-colors shadow-2xs">
+              <Phone className="w-5 h-5" />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <div className="flex items-center gap-2">
+                <a
+                  href="tel:01346132486"
+                  className="text-xs sm:text-sm font-mono font-bold text-accent hover:text-ink transition-colors cursor-pointer"
+                >
+                  01346-132486
+                </a>
+                <span className="text-[10px] font-bold text-teal-800 bg-teal-100/80 px-2 py-0.5 rounded-md">
+                  {language === 'bn' ? 'সিরিয়াল হটলাইন' : 'Serial Hotline'}
+                </span>
+              </div>
+              <p className="text-[11px] sm:text-xs text-muted">
+                {language === 'bn' ? 'সকাল ৯:০০টার পর কল করে সিরিয়াল বুকিং নিশ্চিত করুন' : 'Call after 9:00 AM to confirm your appointment serial'}
+              </p>
+            </div>
+          </div>
+        </div>
       ),
       cta: t('chamber.button'),
       ctaHref: 'https://wa.me/8801346132486',
       ctaType: 'whatsapp',
+      secondaryCta: language === 'bn' ? 'সরাসরি কল করুন' : 'Direct Call',
+      secondaryCtaHref: 'tel:01346132486',
     },
   ];
 
@@ -237,7 +315,7 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
         <picture>
           <source media="(max-width: 760px)" srcSet="/hero-mobile.jpeg" />
           <img
-            src="/hero-desktop.jpeg"
+            src="/hero-desktop.png"
             className="w-full h-full object-cover object-center md:object-[78%_58%] animate-floating"
             alt="Medical equipment, blood pressure cuff and diagnostic tools"
           />
@@ -273,11 +351,11 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
             ref={(el) => {
               sectionRefs.current[idx] = el;
             }}
-            className="min-h-screen w-full flex items-center px-6 md:px-[6vw] relative py-20"
+            className="min-h-screen w-full flex items-center justify-center sm:justify-start px-2 sm:px-6 md:px-[6vw] relative py-16 sm:py-20"
           >
             {/* Scroll Reveal Animation Styles */}
-            <div className="w-full max-w-[66%] sm:max-w-[640px] mr-auto opacity-0 translate-y-10 transition-all duration-[1000ms] cubic-bezier(0.22, 0.9, 0.3, 1) [.in-view_&]:opacity-100 [.in-view_&]:translate-y-0">
-              <GlassPanel className="flex flex-col gap-6">
+            <div className={`w-[70vw] sm:w-full ${sec.id === 'doctor-intro' || sec.id === 'chamber' ? 'max-w-[70vw] sm:max-w-[720px] md:max-w-[740px]' : 'max-w-[70vw] sm:max-w-[640px]'} mx-auto sm:mx-0 sm:mr-auto opacity-0 translate-y-10 transition-all duration-[1000ms] cubic-bezier(0.22, 0.9, 0.3, 1) [.in-view_&]:opacity-100 [.in-view_&]:translate-y-0`}>
+              <GlassPanel className="flex flex-col gap-4 sm:gap-6">
                 <div>
                   {sec.eyebrow && (
                     <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-accent mb-2">

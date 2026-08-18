@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
 import {
   Thermometer,
@@ -49,7 +50,7 @@ export const symptomsList: SymptomItem[] = [
     organBn: 'রোগ প্রতিরোধ ব্যবস্থা',
     noteEn: 'High fever, recurring chills, viral dengue or typhoid infections requiring precise diagnostic blood counts.',
     noteBn: 'তীব্র জ্বর, কাঁপুনি, ডেঙ্গু বা টাইফয়েডের মতো সংক্রামক ব্যাধি যা সঠিক রক্ত পরীক্ষার মাধ্যমে নির্ণয় করা হয়।',
-    image: '/symptoms/fever.jpg',
+    image: '/symptoms/fever.png',
     icon: Thermometer,
   },
   {
@@ -63,7 +64,7 @@ export const symptomsList: SymptomItem[] = [
     organBn: 'কোমর ও পেশিতন্ত্র',
     noteEn: 'Chronic lumbar stiffness, nerve root irritation, disc pressure or posture-induced spinal pain.',
     noteBn: 'দীর্ঘস্থায়ী কোমর ব্যথা, নার্ভের চাপ বা বসার ভঙ্গিমাজনিত মেরুদণ্ডের সমস্যা ও বাতব্যথা।',
-    image: '/symptoms/low-back-pain.jpg',
+    image: '/symptoms/low-back-pain.png',
     icon: Activity,
   },
   {
@@ -77,7 +78,7 @@ export const symptomsList: SymptomItem[] = [
     organBn: 'হাঁটুর জয়েন্ট ও তরুণাস্থি',
     noteEn: 'Osteoarthritis, uric acid / gout deposition, cartilage wear-and-tear or difficulty walking and climbing stairs.',
     noteBn: 'হাঁটুতে প্রদাহ, ইউরিক এসিডের আধিক্য, অস্টিওআর্থ্রাইটিস বা সিঁড়ি ওঠানামায় তীব্র যন্ত্রণা।',
-    image: '/symptoms/knee-pain.jpg',
+    image: '/symptoms/knee-pain.png',
     icon: Zap,
   },
   {
@@ -91,7 +92,7 @@ export const symptomsList: SymptomItem[] = [
     organBn: 'মেটাবলিজম ও শক্তি',
     noteEn: 'Unexplained chronic exhaustion, uncontrolled diabetes, severe anemia, or thyroid hormone deficiency.',
     noteBn: 'অস্বাভাবিক দুর্বলতা, অনিয়ন্ত্রিত ব্লাড সুগার, রক্তস্বল্পতা বা থাইরয়েড হরমোনের ভারসাম্যহীনতা।',
-    image: '/symptoms/fatigue.jpg',
+    image: '/symptoms/fatigue.png',
     icon: Sparkles,
   },
   {
@@ -105,7 +106,7 @@ export const symptomsList: SymptomItem[] = [
     organBn: 'মস্তিষ্ক ও রক্তনালী',
     noteEn: 'Tension headaches, uncontrolled high blood pressure spikes, migraine or sinusitis complications.',
     noteBn: 'মাইগ্রেন, হঠাৎ উচ্চ রক্তচাপ বৃদ্ধি, দুশ্চিন্তাজনিত মাথাব্যথা বা সাইনাসের প্রদাহ।',
-    image: '/symptoms/headache.jpg',
+    image: '/symptoms/headache.png',
     icon: Brain,
   },
   {
@@ -119,7 +120,7 @@ export const symptomsList: SymptomItem[] = [
     organBn: 'স্নায়ুতন্ত্র ও থাইরয়েড',
     noteEn: 'Hyperthyroidism, electrolyte imbalance, sleep disruption or systemic metabolic agitation.',
     noteBn: 'হাইপারথাইরয়েডিজম (থাইরয়েডের আধিক্য), শরীরে লবণের ভারসাম্যহীনতা বা ঘুমের জটিলতা।',
-    image: '/symptoms/restlessness.jpg',
+    image: '/symptoms/restlessness.png',
     icon: Activity,
   },
   {
@@ -133,7 +134,7 @@ export const symptomsList: SymptomItem[] = [
     organBn: 'হৃদস্পন্দন ও হৃদযন্ত্র',
     noteEn: 'Rapid heart rate, arrhythmia, acute anxiety, hyperthyroid surges or severe hemoglobin deficiency.',
     noteBn: 'হঠাৎ বুক ধড়ফড় করা, দ্রুত হৃদস্পন্দন, রক্তশূন্যতা কিংবা থাইরয়েড হরমোনের তীব্র পরিবর্তন।',
-    image: '/symptoms/palpitation.jpg',
+    image: '/symptoms/palpitation.png',
     icon: HeartPulse,
   },
   {
@@ -147,7 +148,7 @@ export const symptomsList: SymptomItem[] = [
     organBn: 'স্নায়ু ও মানসিক স্বাস্থ্য',
     noteEn: 'Chronic stress, panic episodes, generalized anxiety linked to chronic somatic physical ailments.',
     noteBn: 'অপ্রয়োজনীয় আতঙ্ক, ভয়-ভয় ভাব, বুক জ্বালাপোড়া ও শারীরিক ব্যাধির সাথে সম্পর্কিত মানসিক চাপ।',
-    image: '/symptoms/anxiety.jpg',
+    image: '/symptoms/anxiety.png',
     icon: ShieldAlert,
   },
   {
@@ -161,7 +162,7 @@ export const symptomsList: SymptomItem[] = [
     organBn: 'পাকস্থলী ও পিত্তথলি',
     noteEn: 'Indigestion, dyspepsia, gallstones, fatty liver irritation or bloated fullness after meals.',
     noteBn: 'খাওয়ার পর পেট ভারী লাগা, বদহজম, ফ্যাটি লিভার বা পিত্তথলির সমস্যার প্রাথমিক লক্ষণ।',
-    image: '/symptoms/upper-abdominal-discomfort.jpg',
+    image: '/symptoms/upper-abdominal-discomfort.png',
     icon: AlertCircle,
   },
   {
@@ -175,7 +176,7 @@ export const symptomsList: SymptomItem[] = [
     organBn: 'পাকস্থলীর প্রাচীর ও খাদ্যনালী',
     noteEn: 'Peptic ulcer disease, GERD, severe acidity burn, or acute gastritis requiring rational medical therapy.',
     noteBn: 'তীব্র গ্যাস্ট্রিক আলসার, বুক-পেট জ্বালাপোড়া এবং অ্যান্টাসিড প্রতিরোধী পেটের ব্যথা।',
-    image: '/symptoms/epigastric-pain.jpg',
+    image: '/symptoms/epigastric-pain.png',
     icon: Flame,
   },
   {
@@ -189,7 +190,7 @@ export const symptomsList: SymptomItem[] = [
     organBn: 'ফুসফুস ও শ্বাসনালী',
     noteEn: 'Persistent dry or productive cough, bronchitis, post-viral airway sensitivity or asthma flares.',
     noteBn: 'দীর্ঘস্থায়ী শুকনো কাশি, কফ, সিওপিডি (COPD), অ্যাজমা বা শ্বাসনালীর তীব্র সংবেদনশীলতা।',
-    image: '/symptoms/cough.jpg',
+    image: '/symptoms/cough.png',
     icon: Wind,
   },
   {
@@ -203,7 +204,7 @@ export const symptomsList: SymptomItem[] = [
     organBn: 'হৃদযন্ত্র ও ফুসফুসের ক্ষমতা',
     noteEn: 'Shortness of breath upon mild exertion, early warning of cardiac strain, anemia or lung airway obstruction.',
     noteBn: 'হালকা পরিশ্রমে বা সিঁড়িতে উঠলেই হাঁপিয়ে ওঠা; যা হৃদরোগ, অ্যানিমিয়া বা ফুসফুসের দুর্বলতার ইঙ্গিত দেয়।',
-    image: '/symptoms/exertional-breathlessness.jpg',
+    image: '/symptoms/exertional-breathlessness.png',
     icon: Wind,
   },
   {
@@ -217,7 +218,7 @@ export const symptomsList: SymptomItem[] = [
     organBn: 'হৃদপিণ্ড ও বুকের পেশী',
     noteEn: 'Chest heaviness, angina risk, muscular wall strain, or acid reflux simulating cardiac discomfort.',
     noteBn: 'বুকে চাপ ধরা অনুভূতি, এনজাইনা/হার্ট অ্যাটাকের ঝুঁকি কিংবা তীব্র এসিডিটিজনিত বুকের অস্বস্তি।',
-    image: '/symptoms/chest-pain.jpg',
+    image: '/symptoms/chest-pain.png',
     icon: HeartPulse,
   },
   {
@@ -231,7 +232,7 @@ export const symptomsList: SymptomItem[] = [
     organBn: 'মূত্রনালী ও কিডনি',
     noteEn: 'Urinary tract infection (UTI), kidney gravel/stones, concentrated urine or bladder inflammation.',
     noteBn: 'ইউটিআই (UTI), প্রস্রাবে ইনফেকশন, কিডনিতে পাথর বা তীব্র জ্বালাপোড়া ও ব্যথাজনিত সমস্যা।',
-    image: '/symptoms/dysuria.jpg',
+    image: '/symptoms/dysuria.png',
     icon: Zap,
   },
 ];
@@ -397,13 +398,24 @@ export const SymptomCheckerSection: React.FC = () => {
                   {language === 'bn' ? activeSymptom.noteBn : activeSymptom.noteEn}
                 </p>
 
-                <div className="flex items-center gap-2 text-[11px] text-emerald-300 font-semibold mt-0.5 drop-shadow-sm">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>
-                    {language === 'bn'
-                      ? `আক্রান্ত অঙ্গ / সিস্টেম: ${activeSymptom.organBn}`
-                      : `Affected System: ${activeSymptom.organEn}`}
-                  </span>
+                <div className="flex items-center justify-between gap-3 border-t border-white/20 pt-3 flex-wrap mt-0.5">
+                  <div className="flex items-center gap-2 text-[11px] text-emerald-300 font-semibold drop-shadow-sm">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>
+                      {language === 'bn'
+                        ? `আক্রান্ত অঙ্গ: ${activeSymptom.organBn}`
+                        : `Affected System: ${activeSymptom.organEn}`}
+                    </span>
+                  </div>
+
+                  {/* Learn More Button */}
+                  <Link
+                    href={`/symptoms#${activeSymptom.slug}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/85 hover:bg-emerald-500 text-white font-semibold text-xs shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95 border border-emerald-400/40 backdrop-blur-sm cursor-pointer ml-auto"
+                  >
+                    <span>{language === 'bn' ? 'বিস্তারিত জানুন' : 'Learn More'}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
                 </div>
               </div>
             </div>

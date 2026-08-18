@@ -7,7 +7,7 @@ interface GlassPanelProps extends React.HTMLAttributes<HTMLDivElement> {
 export const GlassPanel: React.FC<GlassPanelProps> = ({ children, className = '', ...props }) => {
   return (
     <div
-      className={`glass-panel p-6 md:p-10 rounded-2xl shadow-[0_30px_70px_rgba(18,36,31,0.12)] transition-all duration-300 ${className}`}
+      className={`glass-panel p-4 sm:p-6 md:p-10 rounded-2xl sm:rounded-3xl shadow-[0_30px_70px_rgba(18,36,31,0.12)] transition-all duration-300 ${className}`}
       {...props}
     >
       {children}
