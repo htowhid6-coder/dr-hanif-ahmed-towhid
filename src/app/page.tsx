@@ -32,8 +32,8 @@ const defaultReviews: Review[] = [
     reviewer_name_bn: 'আবুল হাসান',
     reviewer_title_en: 'Sylhet Sadar',
     reviewer_title_bn: 'সিলেট সদর',
-    review_text_en: 'I struggled with unmanaged blood sugar for years. Dr. Hanif\'s continuous tracking and lifestyle modifications did wonders. Highly recommended.',
-    review_text_bn: 'দীর্ঘ ৩ বছর ধরে অনিয়ন্ত্রিত ডায়াবেটিসে ভুগছিলাম। পপুলার চেম্বারে ডা. হানিফ স্যারের সুনির্দিষ্ট পরামর্শ ও জীবনযাত্রায় পরিবর্তন আনার পর এখন আমার ব্লাড সুগার সম্পূর্ণ নিয়ন্ত্রণে। স্যার অত্যন্ত ধৈর্য ধরে শোনেন এবং বুঝিয়ে বলেন.',
+    review_text_en: "I struggled with unmanaged blood sugar for years. Dr. Hanif's continuous tracking and lifestyle modifications did wonders. Highly recommended.",
+    review_text_bn: 'দীর্ঘ ৩ বছর ধরে অনিয়ন্ত্রিত ডায়াবেটিসে ভুগছিলাম। পপুলার চেম্বারে ডা. হানিফ স্যারের সুনির্দিষ্ট পরামর্শ ও জীবনযাত্রায় পরিবর্তন আনার পর এখন আমার ব্লাড সুগার সম্পূর্ণ নিয়ন্ত্রণে। স্যার অত্যন্ত ধৈর্য ধরে শোনেন এবং বুঝিয়ে বলেন।',
     initials: 'AH'
   },
   {
@@ -41,9 +41,36 @@ const defaultReviews: Review[] = [
     reviewer_name_bn: 'সুলতানা বেগম',
     reviewer_title_en: 'Shahjalal Uposhohor',
     reviewer_title_bn: 'শাহজালাল উপশহর',
-    review_text_en: 'I suffered from recurring fevers and typhoid for a long time. Following Dr. Hanif\'s correct diagnosis and treatment, I am now fully recovered. A very caring and reliable doctor.',
-    review_text_bn: 'দীর্ঘদিন ধরে ঘন ঘন তীব্র জ্বর ও টাইফয়েডে ভুগছিলাম। স্যারের সঠিক রোগ নির্ণয় ও অ্যান্টিবায়োটিকের সঠিক ব্যবহারে আমি এখন সম্পূর্ণ সুস্থ। অত্যন্ত আন্তরিক ও ভরসা পাওয়ার মতো একজন চিকিৎসক.',
+    review_text_en: "I suffered from recurring fevers and typhoid for a long time. Following Dr. Hanif's correct diagnosis and treatment, I am now fully recovered. A very caring and reliable doctor.",
+    review_text_bn: 'দীর্ঘদিন ধরে ঘন ঘন তীব্র জ্বর ও টাইফয়েডে ভুগছিলাম। স্যারের সঠিক রোগ নির্ণয় ও অ্যান্টিবায়োটিকের সঠিক ব্যবহারে আমি এখন সম্পূর্ণ সুস্থ। অত্যন্ত আন্তরিক ও ভরসা পাওয়ার মতো একজন চিকিৎসক।',
     initials: 'SB'
+  },
+  {
+    reviewer_name_en: 'Md. Kamrul Islam',
+    reviewer_name_bn: 'মো. কামরুল ইসলাম',
+    reviewer_title_en: 'Zindabazar, Sylhet',
+    reviewer_title_bn: 'জিন্দাবাজার, সিলেট',
+    review_text_en: "I was suffering from severe hypertension and frequent dizziness. Dr. Hanif's careful examination and accurate medication plan normalized my blood pressure within weeks. Truly a compassionate physician.",
+    review_text_bn: 'আমার দীর্ঘদিনের উচ্চ রক্তচাপ ও প্রায়ই মাথা ঘোরার সমস্যা ছিল। ডা. হানিফ স্যারের সঠিক প্রেসক্রিপশন ও নিয়মিত ফলোআপের মাধ্যমে অল্প সময়েই আমার প্রেশার নিয়ন্ত্রণে এসেছে। অত্যন্ত যত্নশীল ও অভিজ্ঞ ডাক্তার।',
+    initials: 'KI'
+  },
+  {
+    reviewer_name_en: 'Farhana Chowdhury',
+    reviewer_name_bn: 'ফারহানা চৌধুরী',
+    reviewer_title_en: 'Amberkhana, Sylhet',
+    reviewer_title_bn: 'আম্বরখানা, সিলেট',
+    review_text_en: "Had chronic thyroid and severe fatigue issues for months. Dr. Hanif explained the condition clearly and adjusted the dosage perfectly. I feel much more energetic now. Very grateful for his guidance.",
+    review_text_bn: 'দীর্ঘদিন ধরে থাইরয়েড ও অতিরিক্ত ক্লান্তির সমস্যায় ভুগছিলাম। ডা. হানিফ স্যার অত্যন্ত শান্তভাবে রোগটি বুঝিয়ে বলেন এবং সঠিক ওষুধ দেন। এখন আমি অনেক সুস্থ ও কর্মক্ষম অনুভব করছি। স্যারের প্রতি আন্তরিক কৃতজ্ঞতা।',
+    initials: 'FC'
+  },
+  {
+    reviewer_name_en: 'Abdul Malik',
+    reviewer_name_bn: 'আব্দুল মালিক',
+    reviewer_title_en: 'Beanibazar, Sylhet',
+    reviewer_title_bn: 'বিয়ানীবাজার, সিলেট',
+    review_text_en: "Came with severe gastrointestinal complications and persistent chest burning. Sir's diagnosis was prompt and the prescribed lifestyle changes relieved my symptoms completely. One of the best medicine specialists in Sylhet.",
+    review_text_bn: 'তীব্র পেটের সমস্যা ও গ্যাস্ট্রিকের কারণে বুকে ব্যথায় খুব কষ্ট পাচ্ছিলাম। স্যারের সঠিক রোগ নির্ণয়, খাদ্যাভ্যাস পরিবর্তন ও সময়োপযোগী চিকিৎসায় এখন সম্পূর্ণ সুস্থ। সিলেটের সেরা মেডিসিন বিশেষজ্ঞ ডাক্তার।',
+    initials: 'AM'
   }
 ];
 
@@ -82,10 +109,30 @@ export default function Home() {
         
         if (error) throw error;
         if (data && data.length > 0) {
-          setReviews(data);
+          const uniqueDbReviews: Review[] = [];
+          const seen = new Set<string>();
+          for (const item of data) {
+            const key = item.reviewer_name_en?.trim().toLowerCase();
+            if (key && !seen.has(key)) {
+              seen.add(key);
+              uniqueDbReviews.push(item);
+            }
+          }
+          const merged = [...uniqueDbReviews];
+          for (const def of defaultReviews) {
+            const key = def.reviewer_name_en?.trim().toLowerCase();
+            if (key && !seen.has(key)) {
+              seen.add(key);
+              merged.push(def);
+            }
+          }
+          setReviews(merged);
+        } else {
+          setReviews(defaultReviews);
         }
       } catch (err) {
         console.error("Error loading reviews from Supabase:", err);
+        setReviews(defaultReviews);
       }
     }
     loadReviews();

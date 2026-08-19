@@ -6,6 +6,31 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { GlassPanel } from '@/components/GlassPanel';
 import { blogData, BlogPost } from '@/locales/blogData';
+import { detailedSymptomsList, SymptomDetail } from '@/data/symptomsData';
+import {
+  Activity,
+  Stethoscope,
+  Search,
+  Edit,
+  Eye,
+  Sparkles,
+  CheckCircle2,
+  AlertTriangle,
+  FileText,
+  ChevronRight,
+  X,
+  ArrowUpRight,
+  Copy,
+  RefreshCw,
+  Layers,
+  HeartPulse,
+  ListPlus,
+  ShieldAlert,
+  TestTubes,
+  ExternalLink,
+  HelpCircle,
+  Thermometer
+} from 'lucide-react';
 import supabase from '@/lib/supabase';
 import RichTextEditor from '@/components/RichTextEditor';
 import { Save, Trash2, Download, Plus, LogOut, User, Building2, BookOpen, MessageSquare } from 'lucide-react';
@@ -18,7 +43,7 @@ export default function AdminDashboard() {
   const [loginError, setLoginError] = useState('');
 
   // Tab State
-  const [activeTab, setActiveTab] = useState<'profile' | 'chamber' | 'blog' | 'messages' | 'reviews'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'chamber' | 'symptoms' | 'blog' | 'reviews' | 'messages'>('profile');
   const [messages, setMessages] = useState<any[]>([]);
 
   // Profile Form States
@@ -71,6 +96,60 @@ export default function AdminDashboard() {
     initials: '',
   });
 
+  // Symptoms states
+  const [adminSymptoms, setAdminSymptoms] = useState<SymptomDetail[]>(detailedSymptomsList);
+  const [selectedSymptom, setSelectedSymptom] = useState<SymptomDetail | null>(null);
+  const [isSymptomModalOpen, setIsSymptomModalOpen] = useState(false);
+  const [symptomSearch, setSymptomSearch] = useState('');
+  const [symptomCategoryFilter, setSymptomCategoryFilter] = useState('all');
+  const [symptomModalTab, setSymptomModalTab] = useState<'basic' | 'overview' | 'causes' | 'redFlags' | 'investigations' | 'management' | 'preview'>('basic');
+  const [isSavingSymptom, setIsSavingSymptom] = useState(false);
+  const [isSeedingSymptoms, setIsSeedingSymptoms] = useState(false);
+
+  const initialSymptomForm: SymptomDetail = {
+    id: 0,
+    slug: '',
+    titleEn: '',
+    titleBn: '',
+    categoryEn: 'Infectious & Viral Diseases',
+    categoryBn: 'সংক্রামক ও ভাইরাসজনিত রোগ',
+    organEn: 'General Systemic',
+    organBn: 'সার্বিক স্বাস্থ্য',
+    image: '/symptoms/fever.png',
+    shortDescEn: '',
+    shortDescBn: '',
+    overviewEn: '',
+    overviewBn: '',
+    causesEn: [{ title: '', desc: '' }],
+    causesBn: [{ title: '', desc: '' }],
+    redFlagsEn: [''],
+    redFlagsBn: [''],
+    investigationsEn: [''],
+    investigationsBn: [''],
+    managementEn: '',
+    managementBn: ''
+  };
+
+  const [symptomForm, setSymptomForm] = useState<SymptomDetail>(initialSymptomForm);
+
+  const symptomImagePresets = [
+    { label: 'Fever & Chills', path: '/symptoms/fever.png' },
+    { label: 'Low Back Pain', path: '/symptoms/low-back-pain.png' },
+    { label: 'Knee & Joint', path: '/symptoms/knee-pain.png' },
+    { label: 'Fatigue & Exhaustion', path: '/symptoms/fatigue.png' },
+    { label: 'Headache & Migraine', path: '/symptoms/Headache.png' },
+    { label: 'Restlessness', path: '/symptoms/Restlessness.png' },
+    { label: 'Palpitation', path: '/symptoms/palpitation.png' },
+    { label: 'Anxiety & Panic', path: '/symptoms/anxiety.png' },
+    { label: 'Abdominal Fullness', path: '/symptoms/upper-abdominal-discomfort.png' },
+    { label: 'Epigastric / Acidity', path: '/symptoms/epigastric-pain.png' },
+    { label: 'Cough & Bronchitis', path: '/symptoms/Cough.png' },
+    { label: 'Breathlessness', path: '/symptoms/exertional-breathlessness.png' },
+    { label: 'Chest Pain / Angina', path: '/symptoms/chest-pain.png' },
+    { label: 'Dysuria / Burning', path: '/symptoms/Dysuria.png' },
+    { label: 'Joint Pain (General)', path: '/symptoms/joint-pain.png' },
+  ];
+
   // Fetch Supabase data on login
   useEffect(() => {
     if (isLoggedIn) {
@@ -78,9 +157,9 @@ export default function AdminDashboard() {
       fetchSupabaseBlogs();
       fetchMessages();
       fetchReviews();
+      fetchSymptoms();
     }
   }, [isLoggedIn]);
-
 
   const fetchMessages = async () => {
     try {
@@ -95,6 +174,207 @@ export default function AdminDashboard() {
       }
     } catch (err) {
       console.error("Error loading messages:", err);
+    }
+  };
+
+  const fetchSymptoms = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('symptoms')
+        .select('*')
+        .order('order_index', { ascending: true });
+
+      if (error) throw error;
+      if (data && data.length > 0) {
+        const mapped: SymptomDetail[] = data.map((d: any, index: number) => ({
+          id: d.id || index + 1,
+          slug: d.slug,
+          titleEn: d.title_en,
+          titleBn: d.title_bn,
+          categoryEn: d.category_en,
+          categoryBn: d.category_bn,
+          organEn: d.organ_en,
+          organBn: d.organ_bn,
+          image: d.image || '/symptoms/fever.png',
+          shortDescEn: d.short_desc_en,
+          shortDescBn: d.short_desc_bn,
+          overviewEn: d.overview_en,
+          overviewBn: d.overview_bn,
+          causesEn: Array.isArray(d.causes_en) ? d.causes_en : [],
+          causesBn: Array.isArray(d.causes_bn) ? d.causes_bn : [],
+          redFlagsEn: Array.isArray(d.red_flags_en) ? d.red_flags_en : [],
+          redFlagsBn: Array.isArray(d.red_flags_bn) ? d.red_flags_bn : [],
+          investigationsEn: Array.isArray(d.investigations_en) ? d.investigations_en : [],
+          investigationsBn: Array.isArray(d.investigations_bn) ? d.investigations_bn : [],
+          managementEn: d.management_en,
+          managementBn: d.management_bn,
+        }));
+        setAdminSymptoms(mapped);
+      } else {
+        setAdminSymptoms(detailedSymptomsList);
+      }
+    } catch (err) {
+      console.error("Error loading symptoms:", err);
+      setAdminSymptoms(detailedSymptomsList);
+    }
+  };
+
+  const handleOpenNewSymptom = () => {
+    setSelectedSymptom(null);
+    setSymptomForm({
+      ...initialSymptomForm,
+      id: Date.now()
+    });
+    setSymptomModalTab('basic');
+    setIsSymptomModalOpen(true);
+  };
+
+  const handleEditSymptom = (symptom: SymptomDetail) => {
+    setSelectedSymptom(symptom);
+    setSymptomForm({
+      ...symptom,
+      causesEn: symptom.causesEn && symptom.causesEn.length > 0 ? symptom.causesEn : [{ title: '', desc: '' }],
+      causesBn: symptom.causesBn && symptom.causesBn.length > 0 ? symptom.causesBn : [{ title: '', desc: '' }],
+      redFlagsEn: symptom.redFlagsEn && symptom.redFlagsEn.length > 0 ? symptom.redFlagsEn : [''],
+      redFlagsBn: symptom.redFlagsBn && symptom.redFlagsBn.length > 0 ? symptom.redFlagsBn : [''],
+      investigationsEn: symptom.investigationsEn && symptom.investigationsEn.length > 0 ? symptom.investigationsEn : [''],
+      investigationsBn: symptom.investigationsBn && symptom.investigationsBn.length > 0 ? symptom.investigationsBn : ['']
+    });
+    setSymptomModalTab('basic');
+    setIsSymptomModalOpen(true);
+  };
+
+  const handleSaveSymptom = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingSymptom(true);
+
+    try {
+      let slug = symptomForm.slug.trim().toLowerCase();
+      if (!slug) {
+        slug = symptomForm.titleEn
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)+/g, '');
+      }
+
+      const cleanCausesEn = (symptomForm.causesEn || []).filter(c => c.title.trim() || c.desc.trim());
+      const cleanCausesBn = (symptomForm.causesBn || []).filter(c => c.title.trim() || c.desc.trim());
+      const cleanRedFlagsEn = (symptomForm.redFlagsEn || []).filter(r => r.trim());
+      const cleanRedFlagsBn = (symptomForm.redFlagsBn || []).filter(r => r.trim());
+      const cleanInvestigationsEn = (symptomForm.investigationsEn || []).filter(i => i.trim());
+      const cleanInvestigationsBn = (symptomForm.investigationsBn || []).filter(i => i.trim());
+
+      const payload = {
+        slug,
+        title_en: symptomForm.titleEn.trim(),
+        title_bn: symptomForm.titleBn.trim(),
+        category_en: symptomForm.categoryEn.trim(),
+        category_bn: symptomForm.categoryBn.trim(),
+        organ_en: symptomForm.organEn.trim(),
+        organ_bn: symptomForm.organBn.trim(),
+        image: symptomForm.image.trim() || '/symptoms/fever.png',
+        short_desc_en: symptomForm.shortDescEn.trim(),
+        short_desc_bn: symptomForm.shortDescBn.trim(),
+        overview_en: symptomForm.overviewEn.trim(),
+        overview_bn: symptomForm.overviewBn.trim(),
+        causes_en: cleanCausesEn,
+        causes_bn: cleanCausesBn,
+        red_flags_en: cleanRedFlagsEn,
+        red_flags_bn: cleanRedFlagsBn,
+        investigations_en: cleanInvestigationsEn,
+        investigations_bn: cleanInvestigationsBn,
+        management_en: symptomForm.managementEn.trim(),
+        management_bn: symptomForm.managementBn.trim(),
+        is_active: true
+      };
+
+      const { error } = await supabase
+        .from('symptoms')
+        .upsert(payload, { onConflict: 'slug' });
+
+      if (error) throw error;
+
+      alert(language === 'bn' ? 'রোগের লক্ষণ সফলভাবে ডাটাবেজে সংরক্ষিত হয়েছে!' : 'Symptom saved to database successfully!');
+      setIsSymptomModalOpen(false);
+      fetchSymptoms();
+    } catch (err: any) {
+      console.error(err);
+      alert(language === 'bn' ? `সংরক্ষণ করতে সমস্যা হয়েছে: ${err.message || 'ত্রুটি'}` : `Failed to save symptom: ${err.message || 'Error'}`);
+    } finally {
+      setIsSavingSymptom(false);
+    }
+  };
+
+  const handleDeleteSymptom = async (symptom: SymptomDetail) => {
+    if (!confirm(language === 'bn' ? `আপনি কি নিশ্চিতভাবে "${symptom.titleBn}" লক্ষণটি ডিলিট করতে চান?` : `Are you sure you want to delete "${symptom.titleEn}"?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('symptoms')
+        .delete()
+        .eq('slug', symptom.slug);
+
+      if (error) throw error;
+
+      alert(language === 'bn' ? 'লক্ষণ সফলভাবে ডিলিট করা হয়েছে!' : 'Symptom deleted successfully!');
+      if (selectedSymptom?.slug === symptom.slug) {
+        setIsSymptomModalOpen(false);
+        setSelectedSymptom(null);
+      }
+      fetchSymptoms();
+    } catch (err: any) {
+      console.error(err);
+      alert(language === 'bn' ? `ডিলিট করতে ব্যর্থ হয়েছে: ${err.message || 'ত্রুটি'}` : `Failed to delete symptom: ${err.message || 'Error'}`);
+    }
+  };
+
+  const handleSeedAllSymptoms = async () => {
+    if (!confirm(language === 'bn' ? 'আপনি কি ১৪টি ডিফল্ট লক্ষণ ডাটাবেজে সিড করতে চান?' : 'Seed all 14 default symptoms into Supabase?')) {
+      return;
+    }
+    setIsSeedingSymptoms(true);
+
+    try {
+      const payloads = detailedSymptomsList.map((s, idx) => ({
+        slug: s.slug,
+        title_en: s.titleEn,
+        title_bn: s.titleBn,
+        category_en: s.categoryEn,
+        category_bn: s.categoryBn,
+        organ_en: s.organEn,
+        organ_bn: s.organBn,
+        image: s.image,
+        short_desc_en: s.shortDescEn,
+        short_desc_bn: s.shortDescBn,
+        overview_en: s.overviewEn,
+        overview_bn: s.overviewBn,
+        causes_en: s.causesEn,
+        causes_bn: s.causesBn,
+        red_flags_en: s.redFlagsEn,
+        red_flags_bn: s.redFlagsBn,
+        investigations_en: s.investigationsEn,
+        investigations_bn: s.investigationsBn,
+        management_en: s.managementEn,
+        management_bn: s.managementBn,
+        order_index: idx + 1,
+        is_active: true
+      }));
+
+      const { error } = await supabase
+        .from('symptoms')
+        .upsert(payloads, { onConflict: 'slug' });
+
+      if (error) throw error;
+
+      alert(language === 'bn' ? 'সকল ১৪টি রোগের লক্ষণ ডাটাবেজে সফলভাবে যুক্ত হয়েছে!' : 'All 14 clinical symptoms seeded to Supabase successfully!');
+      fetchSymptoms();
+    } catch (err: any) {
+      console.error(err);
+      alert(language === 'bn' ? `সিড করতে সমস্যা হয়েছে: ${err.message || 'ত্রুটি'}` : `Failed to seed symptoms: ${err.message || 'Error'}`);
+    } finally {
+      setIsSeedingSymptoms(false);
     }
   };
 
@@ -229,8 +509,8 @@ export default function AdminDashboard() {
           reviewer_name_bn: 'আবুল হাসান',
           reviewer_title_en: 'Sylhet Sadar',
           reviewer_title_bn: 'সিলেট সদর',
-          review_text_en: 'I struggled with unmanaged blood sugar for years. Dr. Hanif\'s continuous tracking and lifestyle modifications did wonders. Highly recommended.',
-          review_text_bn: 'দীর্ঘ ৩ বছর ধরে অনিয়ন্ত্রিত ডায়াবেটিসে ভুগছিলাম। পপুলার চেম্বারে ডা. হানিফ স্যারের সুনির্দিষ্ট পরামর্শ ও জীবনযাত্রায় পরিবর্তন আনার পর এখন আমার ব্লাড সুগার সম্পূর্ণ নিয়ন্ত্রণে। স্যার অত্যন্ত ধৈর্য ধরে শোনেন এবং বুঝিয়ে বলেন.',
+          review_text_en: "I struggled with unmanaged blood sugar for years. Dr. Hanif's continuous tracking and lifestyle modifications did wonders. Highly recommended.",
+          review_text_bn: 'দীর্ঘ ৩ বছর ধরে অনিয়ন্ত্রিত ডায়াবেটিসে ভুগছিলাম। পপুলার চেম্বারে ডা. হানিফ স্যারের সুনির্দিষ্ট পরামর্শ ও জীবনযাত্রায় পরিবর্তন আনার পর এখন আমার ব্লাড সুগার সম্পূর্ণ নিয়ন্ত্রণে। স্যার অত্যন্ত ধৈর্য ধরে শোনেন এবং বুঝিয়ে বলেন।',
           initials: 'AH'
         },
         {
@@ -238,9 +518,36 @@ export default function AdminDashboard() {
           reviewer_name_bn: 'সুলতানা বেগম',
           reviewer_title_en: 'Shahjalal Uposhohor',
           reviewer_title_bn: 'শাহজালাল উপশহর',
-          review_text_en: 'I suffered from recurring fevers and typhoid for a long time. Following Dr. Hanif\'s correct diagnosis and treatment, I am now fully recovered. A very caring and reliable doctor.',
-          review_text_bn: 'দীর্ঘদিন ধরে ঘন ঘন তীব্র জ্বর ও টাইফয়েডে ভুগছিলাম। স্যারের সঠিক রোগ নির্ণয় ও অ্যান্টিবায়োটিকের সঠিক ব্যবহারে আমি এখন সম্পূর্ণ সুস্থ। অত্যন্ত আন্তরিক ও ভরসা পাওয়ার মতো একজন চিকিৎসক.',
+          review_text_en: "I suffered from recurring fevers and typhoid for a long time. Following Dr. Hanif's correct diagnosis and treatment, I am now fully recovered. A very caring and reliable doctor.",
+          review_text_bn: 'দীর্ঘদিন ধরে ঘন ঘন তীব্র জ্বর ও টাইফয়েডে ভুগছিলাম। স্যারের সঠিক রোগ নির্ণয় ও অ্যান্টিবায়োটিকের সঠিক ব্যবহারে আমি এখন সম্পূর্ণ সুস্থ। অত্যন্ত আন্তরিক ও ভরসা পাওয়ার মতো একজন চিকিৎসক।',
           initials: 'SB'
+        },
+        {
+          reviewer_name_en: 'Md. Kamrul Islam',
+          reviewer_name_bn: 'মো. কামরুল ইসলাম',
+          reviewer_title_en: 'Zindabazar, Sylhet',
+          reviewer_title_bn: 'জিন্দাবাজার, সিলেট',
+          review_text_en: "I was suffering from severe hypertension and frequent dizziness. Dr. Hanif's careful examination and accurate medication plan normalized my blood pressure within weeks. Truly a compassionate physician.",
+          review_text_bn: 'আমার দীর্ঘদিনের উচ্চ রক্তচাপ ও প্রায়ই মাথা ঘোরার সমস্যা ছিল। ডা. হানিফ স্যারের সঠিক প্রেসক্রিপশন ও নিয়মিত ফলোআপের মাধ্যমে অল্প সময়েই আমার প্রেশার নিয়ন্ত্রণে এসেছে। অত্যন্ত যত্নশীল ও অভিজ্ঞ ডাক্তার।',
+          initials: 'KI'
+        },
+        {
+          reviewer_name_en: 'Farhana Chowdhury',
+          reviewer_name_bn: 'ফারহানা চৌধুরী',
+          reviewer_title_en: 'Amberkhana, Sylhet',
+          reviewer_title_bn: 'আম্বরখানা, সিলেট',
+          review_text_en: "Had chronic thyroid and severe fatigue issues for months. Dr. Hanif explained the condition clearly and adjusted the dosage perfectly. I feel much more energetic now. Very grateful for his guidance.",
+          review_text_bn: 'দীর্ঘদিন ধরে থাইরয়েড ও অতিরিক্ত ক্লান্তির সমস্যায় ভুগছিলাম। ডা. হানিফ স্যার অত্যন্ত শান্তভাবে রোগটি বুঝিয়ে বলেন এবং সঠিক ওষুধ দেন। এখন আমি অনেক সুস্থ ও কর্মক্ষম অনুভব করছি। স্যারের প্রতি আন্তরিক কৃতজ্ঞতা।',
+          initials: 'FC'
+        },
+        {
+          reviewer_name_en: 'Abdul Malik',
+          reviewer_name_bn: 'আব্দুল মালিক',
+          reviewer_title_en: 'Beanibazar, Sylhet',
+          reviewer_title_bn: 'বিয়ানীবাজার, সিলেট',
+          review_text_en: "Came with severe gastrointestinal complications and persistent chest burning. Sir's diagnosis was prompt and the prescribed lifestyle changes relieved my symptoms completely. One of the best medicine specialists in Sylhet.",
+          review_text_bn: 'তীব্র পেটের সমস্যা ও গ্যাস্ট্রিকের কারণে বুকে ব্যথায় খুব কষ্ট পাচ্ছিলাম। স্যারের সঠিক রোগ নির্ণয়, খাদ্যাভ্যাস পরিবর্তন ও সময়োপযোগী চিকিৎসায় এখন সম্পূর্ণ সুস্থ। সিলেটের সেরা মেডিসিন বিশেষজ্ঞ ডাক্তার।',
+          initials: 'AM'
         }
       ];
 
@@ -675,7 +982,7 @@ export default function AdminDashboard() {
 
         {/* Navigation Tabs */}
         <div className="flex border-b border-line gap-2 flex-wrap">
-          {(['profile', 'chamber', 'blog', 'reviews', 'messages'] as const).map((tab) => (
+          {(['profile', 'chamber', 'symptoms', 'blog', 'reviews', 'messages'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -687,6 +994,8 @@ export default function AdminDashboard() {
                 ? language === 'bn' ? 'প্রোফাইল সম্পাদন' : 'Edit Profile'
                 : tab === 'chamber'
                 ? language === 'bn' ? 'চেম্বার তথ্য' : 'Chamber Info'
+                : tab === 'symptoms'
+                ? language === 'bn' ? 'লক্ষণ ও রোগ (Symptoms)' : 'Symptoms Manager'
                 : tab === 'blog'
                 ? language === 'bn' ? 'ব্লগ ম্যানেজার' : 'Blog Manager'
                 : tab === 'reviews'
@@ -975,6 +1284,871 @@ export default function AdminDashboard() {
               </div>
             </form>
           </GlassPanel>
+        )}
+
+        
+        {/* TAB: SYMPTOMS & CLINICAL CONDITIONS MANAGER */}
+        {activeTab === 'symptoms' && (
+          <div className="flex flex-col gap-6 animate-in fade-in duration-300">
+            {/* Header & Stats Banner */}
+            <GlassPanel className="p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-gradient-to-r from-teal-500/10 via-emerald-500/5 to-cyan-500/10 border-teal-500/20">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-teal-600 text-white flex items-center justify-center shadow-lg shadow-teal-600/20 shrink-0">
+                  <Activity className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="font-serif text-xl font-bold text-ink flex items-center gap-2">
+                    {language === 'bn' ? 'লক্ষণ ও রোগ ব্যবস্থাপনা' : 'Symptoms & Conditions Manager'}
+                    <span className="text-xs font-sans px-2.5 py-0.5 rounded-full bg-teal-600/10 text-teal-700 font-bold border border-teal-600/20">
+                      {adminSymptoms.length} {language === 'bn' ? 'টি লক্ষণ' : 'Symptoms'}
+                    </span>
+                  </h2>
+                  <p className="text-xs text-muted mt-1 max-w-xl">
+                    {language === 'bn'
+                      ? 'ওয়েবসাইটের সকল রোগের লক্ষণসমূহ সরাসরি ডাটাবেজ থেকে যুক্ত, সম্পাদনা ও নিয়ন্ত্রণ করুন।'
+                      : 'Create, update, and manage all clinical symptom cards and emergency red flags live on the website.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 flex-wrap w-full md:w-auto">
+                <button
+                  type="button"
+                  onClick={handleSeedAllSymptoms}
+                  disabled={isSeedingSymptoms}
+                  className="px-3.5 py-2 rounded-xl bg-amber-500/10 text-amber-700 border border-amber-500/30 hover:bg-amber-500/20 text-xs font-bold transition-all cursor-pointer flex items-center gap-2"
+                  title={language === 'bn' ? '১৪টি ডিফল্ট লক্ষণ ডাটাবেজে আপলোড করুন' : 'Seed 14 Default Symptoms to Supabase'}
+                >
+                  <Sparkles className="w-4 h-4 text-amber-600" />
+                  <span>{isSeedingSymptoms ? (language === 'bn' ? 'সিড হচ্ছে...' : 'Seeding...') : (language === 'bn' ? '১৪টি লক্ষণ সিড করুন' : 'Seed 14 Defaults')}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleOpenNewSymptom}
+                  className="px-4 py-2 rounded-xl bg-accent text-white hover:bg-ink text-xs font-bold shadow-md shadow-accent/20 transition-all cursor-pointer flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>{language === 'bn' ? '+ নতুন লক্ষণ যুক্ত করুন' : '+ Add New Symptom'}</span>
+                </button>
+              </div>
+            </GlassPanel>
+
+            {/* Filter & Search Controls */}
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3 bg-white/40 p-4 rounded-2xl border border-panel-border">
+              <div className="relative w-full sm:w-80">
+                <Search className="w-4 h-4 text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={symptomSearch}
+                  onChange={(e) => setSymptomSearch(e.target.value)}
+                  placeholder={language === 'bn' ? 'লক্ষণ বা রোগ খুঁজুন...' : 'Search symptoms by title or slug...'}
+                  className="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all"
+                />
+                {symptomSearch && (
+                  <button
+                    onClick={() => setSymptomSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-ink text-xs"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+                <select
+                  value={symptomCategoryFilter}
+                  onChange={(e) => setSymptomCategoryFilter(e.target.value)}
+                  className="p-2 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:outline-none"
+                >
+                  <option value="all">{language === 'bn' ? 'সকল ক্যাটাগরি (All)' : 'All Categories'}</option>
+                  {Array.from(new Set(adminSymptoms.map(s => language === 'bn' ? s.categoryBn : s.categoryEn))).map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+
+                <button
+                  type="button"
+                  onClick={fetchSymptoms}
+                  className="p-2 text-xs rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-muted hover:text-ink"
+                  title="Refresh from Supabase"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Symptoms Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {adminSymptoms
+                .filter(s => {
+                  const cat = language === 'bn' ? s.categoryBn : s.categoryEn;
+                  const matchesCat = symptomCategoryFilter === 'all' || cat === symptomCategoryFilter;
+                  if (!matchesCat) return false;
+                  if (!symptomSearch.trim()) return true;
+                  const q = symptomSearch.toLowerCase();
+                  return (
+                    s.titleEn.toLowerCase().includes(q) ||
+                    s.titleBn.toLowerCase().includes(q) ||
+                    s.slug.toLowerCase().includes(q) ||
+                    s.organEn.toLowerCase().includes(q) ||
+                    s.organBn.toLowerCase().includes(q)
+                  );
+                })
+                .map((symptom) => (
+                  <GlassPanel
+                    key={symptom.slug}
+                    className="p-5 rounded-2xl flex flex-col justify-between gap-4 border border-panel-border hover:shadow-lg hover:border-teal-500/30 transition-all group bg-white/80"
+                  >
+                    <div className="flex flex-col gap-3">
+                      {/* Card Header: Image & Badges */}
+                      <div className="flex items-start gap-3">
+                        <div className="w-14 h-14 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center p-1.5 overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
+                          <img
+                            src={symptom.image || '/symptoms/fever.png'}
+                            alt={symptom.titleEn}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/symptoms/fever.png';
+                            }}
+                          />
+                        </div>
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-teal-500/10 text-teal-800 border border-teal-500/20">
+                              {language === 'bn' ? symptom.categoryBn : symptom.categoryEn}
+                            </span>
+                          </div>
+                          <h4 className="font-serif font-bold text-sm text-ink mt-1 truncate">
+                            {language === 'bn' ? symptom.titleBn : symptom.titleEn}
+                          </h4>
+                          <span className="text-[11px] text-muted truncate">
+                            {language === 'bn' ? symptom.titleEn : symptom.titleBn}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Organ & Short Desc */}
+                      <div className="flex items-center gap-1.5 text-[11px] text-teal-700 bg-teal-50/60 px-2.5 py-1 rounded-lg border border-teal-100 font-medium">
+                        <HeartPulse className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                        <span className="truncate">{language === 'bn' ? symptom.organBn : symptom.organEn}</span>
+                      </div>
+
+                      <p className="text-xs text-ink/80 line-clamp-2 leading-relaxed">
+                        {language === 'bn' ? symptom.shortDescBn : symptom.shortDescEn}
+                      </p>
+
+                      {/* Counts / Metrics */}
+                      <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-100 text-[10px] text-muted text-center font-mono">
+                        <div className="bg-slate-50 p-1 rounded">
+                          <span className="font-bold text-ink">{symptom.causesEn?.length || 0}</span> {language === 'bn' ? 'কারণ' : 'Causes'}
+                        </div>
+                        <div className="bg-red-50 text-red-700 p-1 rounded">
+                          <span className="font-bold">{symptom.redFlagsEn?.length || 0}</span> {language === 'bn' ? 'রেড ফ্ল্যাগ' : 'Red Flags'}
+                        </div>
+                        <div className="bg-blue-50 text-blue-700 p-1 rounded">
+                          <span className="font-bold">{symptom.investigationsEn?.length || 0}</span> {language === 'bn' ? 'টেস্ট' : 'Tests'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions Bar */}
+                    <div className="flex items-center justify-between pt-3 border-t border-line/60 mt-1 gap-2">
+                      <a
+                        href={`/symptoms#${symptom.slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[11px] text-muted hover:text-accent font-medium flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        <span>{language === 'bn' ? 'ভিউ' : 'View'}</span>
+                      </a>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleEditSymptom(symptom)}
+                          className="px-3 py-1.5 rounded-lg bg-teal-50 border border-teal-200 text-teal-700 hover:bg-teal-100 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                          <span>{language === 'bn' ? 'এডিট' : 'Edit'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSymptom(symptom)}
+                          className="p-1.5 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 text-xs transition-colors cursor-pointer"
+                          title={language === 'bn' ? 'ডিলিট করুন' : 'Delete'}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </GlassPanel>
+                ))}
+            </div>
+
+            {/* SYMPTOM EDIT / ADD MODAL */}
+            {isSymptomModalOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200">
+                <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-slate-200 max-h-[92vh] flex flex-col overflow-hidden my-6">
+                  {/* Modal Header */}
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/80">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center shadow-md">
+                        <Activity className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-serif font-bold text-base text-ink">
+                          {selectedSymptom
+                            ? (language === 'bn' ? 'রোগের লক্ষণ সম্পাদনা করুন' : 'Edit Symptom & Clinical Details')
+                            : (language === 'bn' ? 'নতুন লক্ষণ যুক্ত করুন' : 'Add New Clinical Symptom')}
+                        </h3>
+                        <span className="text-[11px] text-muted">
+                          {symptomForm.slug ? `Slug: ${symptomForm.slug}` : (language === 'bn' ? 'সঠিক তথ্য দিয়ে পূরণ করুন' : 'Fill all bilingual details accurately')}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsSymptomModalOpen(false)}
+                      className="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 text-ink flex items-center justify-center transition-colors cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Modal Tabs Navigation */}
+                  <div className="flex border-b border-slate-200 px-6 bg-slate-50/40 overflow-x-auto gap-1">
+                    {[
+                      { id: 'basic', labelEn: '1. Basic Info', labelBn: '১. সাধারণ তথ্য' },
+                      { id: 'overview', labelEn: '2. Overview', labelBn: '২. ওভারভিউ' },
+                      { id: 'causes', labelEn: '3. Causes', labelBn: '৩. কারণসমূহ' },
+                      { id: 'redFlags', labelEn: '4. Red Flags', labelBn: '৪. রেড ফ্ল্যাগ' },
+                      { id: 'investigations', labelEn: '5. Tests', labelBn: '৫. পরীক্ষা' },
+                      { id: 'management', labelEn: '6. Advice', labelBn: '৬. পরামর্শ' },
+                      { id: 'preview', labelEn: '👁️ Live Preview', labelBn: '👁️ লাইভ প্রিভিউ' },
+                    ].map(t => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setSymptomModalTab(t.id as any)}
+                        className={`px-3.5 py-2.5 text-xs font-bold whitespace-nowrap border-b-2 transition-all cursor-pointer ${
+                          symptomModalTab === t.id
+                            ? 'border-teal-600 text-teal-700 bg-white'
+                            : 'border-transparent text-muted hover:text-ink'
+                        }`}
+                      >
+                        {language === 'bn' ? t.labelBn : t.labelEn}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Modal Body / Form */}
+                  <form onSubmit={handleSaveSymptom} className="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
+                    {/* TAB 1: BASIC INFO */}
+                    {symptomModalTab === 'basic' && (
+                      <div className="flex flex-col gap-4 animate-in fade-in">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-bold text-ink">Title (English) *</label>
+                            <input
+                              type="text"
+                              required
+                              value={symptomForm.titleEn}
+                              onChange={(e) => {
+                                const title = e.target.value;
+                                setSymptomForm(prev => ({
+                                  ...prev,
+                                  titleEn: title,
+                                  slug: prev.slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')
+                                }));
+                              }}
+                              placeholder="e.g. Fever & Recurring Chills"
+                              className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-teal-600 focus:outline-none"
+                            />
+                          </div>
+
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-bold text-ink">নাম (বাংলা) *</label>
+                            <input
+                              type="text"
+                              required
+                              value={symptomForm.titleBn}
+                              onChange={(e) => setSymptomForm({ ...symptomForm, titleBn: e.target.value })}
+                              placeholder="যেমন: জ্বর, কাঁপুনি ও সংক্রামক ব্যাধি"
+                              className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-teal-600 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-bold text-ink">URL Slug (Unique identifier) *</label>
+                            <input
+                              type="text"
+                              required
+                              value={symptomForm.slug}
+                              onChange={(e) => setSymptomForm({ ...symptomForm, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
+                              placeholder="e.g. fever"
+                              className="p-2.5 text-xs font-mono rounded-xl border border-slate-300 bg-white focus:border-teal-600 focus:outline-none"
+                            />
+                          </div>
+
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-bold text-ink">Category (English)</label>
+                            <input
+                              type="text"
+                              value={symptomForm.categoryEn}
+                              onChange={(e) => setSymptomForm({ ...symptomForm, categoryEn: e.target.value })}
+                              placeholder="e.g. Infectious & Viral Diseases"
+                              className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-teal-600 focus:outline-none"
+                            />
+                          </div>
+
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-bold text-ink">ক্যাটাগরি (বাংলা)</label>
+                            <input
+                              type="text"
+                              value={symptomForm.categoryBn}
+                              onChange={(e) => setSymptomForm({ ...symptomForm, categoryBn: e.target.value })}
+                              placeholder="যেমন: সংক্রামক ও ভাইরাসজনিত রোগ"
+                              className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-teal-600 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-bold text-ink">Target Organ / System (English)</label>
+                            <input
+                              type="text"
+                              value={symptomForm.organEn}
+                              onChange={(e) => setSymptomForm({ ...symptomForm, organEn: e.target.value })}
+                              placeholder="e.g. Immune System & Thermoregulation"
+                              className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-teal-600 focus:outline-none"
+                            />
+                          </div>
+
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-bold text-ink">শারীরিক অঙ্গ / সিস্টেম (বাংলা)</label>
+                            <input
+                              type="text"
+                              value={symptomForm.organBn}
+                              onChange={(e) => setSymptomForm({ ...symptomForm, organBn: e.target.value })}
+                              placeholder="যেমন: রোগ প্রতিরোধ ব্যবস্থা ও তাপমাত্রা নিয়ন্ত্রণ"
+                              className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-teal-600 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Image selector */}
+                        <div className="flex flex-col gap-2 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                          <label className="text-xs font-bold text-ink">Symptom Image Path or URL</label>
+                          <input
+                            type="text"
+                            value={symptomForm.image}
+                            onChange={(e) => setSymptomForm({ ...symptomForm, image: e.target.value })}
+                            placeholder="/symptoms/fever.png"
+                            className="p-2.5 text-xs font-mono rounded-xl border border-slate-300 bg-white focus:border-teal-600 focus:outline-none"
+                          />
+
+                          <span className="text-[11px] text-muted font-bold mt-1">Quick Select Image Presets:</span>
+                          <div className="flex flex-wrap gap-2">
+                            {symptomImagePresets.map(preset => (
+                              <button
+                                key={preset.path}
+                                type="button"
+                                onClick={() => setSymptomForm({ ...symptomForm, image: preset.path })}
+                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                                  symptomForm.image === preset.path
+                                    ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
+                                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                                }`}
+                              >
+                                <img src={preset.path} alt="" className="w-3.5 h-3.5 object-contain" />
+                                <span>{preset.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* TAB 2: OVERVIEW */}
+                    {symptomModalTab === 'overview' && (
+                      <div className="flex flex-col gap-4 animate-in fade-in">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-bold text-ink">Short Summary (English) *</label>
+                            <textarea
+                              rows={3}
+                              required
+                              value={symptomForm.shortDescEn}
+                              onChange={(e) => setSymptomForm({ ...symptomForm, shortDescEn: e.target.value })}
+                              placeholder="Brief 1-2 sentence preview of the symptom..."
+                              className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-teal-600 focus:outline-none"
+                            />
+                          </div>
+
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-bold text-ink">সংক্ষিপ্ত বিবরণ (বাংলা) *</label>
+                            <textarea
+                              rows={3}
+                              required
+                              value={symptomForm.shortDescBn}
+                              onChange={(e) => setSymptomForm({ ...symptomForm, shortDescBn: e.target.value })}
+                              placeholder="কার্ডের প্রিভিউতে ১-২ লাইনের সারসংক্ষেপ লিখুন..."
+                              className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-teal-600 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-bold text-ink">Comprehensive Medical Overview (English)</label>
+                            <textarea
+                              rows={8}
+                              value={symptomForm.overviewEn}
+                              onChange={(e) => setSymptomForm({ ...symptomForm, overviewEn: e.target.value })}
+                              placeholder="Detailed medical pathophysiological explanation..."
+                              className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-teal-600 focus:outline-none font-sans leading-relaxed"
+                            />
+                          </div>
+
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-bold text-ink">বিস্তারিত ক্লিনিক্যাল ওভারভিউ (বাংলা)</label>
+                            <textarea
+                              rows={8}
+                              value={symptomForm.overviewBn}
+                              onChange={(e) => setSymptomForm({ ...symptomForm, overviewBn: e.target.value })}
+                              placeholder="লক্ষণ ও রোগের কারণ, ঝুঁকি ও চিকিৎসকের দৃষ্টিভঙ্গি বাংলায় বিস্তারিত লিখুন..."
+                              className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-teal-600 focus:outline-none font-sans leading-relaxed"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* TAB 3: CAUSES */}
+                    {symptomModalTab === 'causes' && (
+                      <div className="flex flex-col gap-4 animate-in fade-in">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <h4 className="text-xs font-bold text-ink">সম্ভাব্য কারণ ও সাব-টাইপসমূহ (Etiology & Sub-types)</h4>
+                            <p className="text-[11px] text-muted">রোগের বিভিন্ন কারণ ও বিবরণ বাংলায় এবং ইংরেজিতে যুক্ত করুন।</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSymptomForm(prev => ({
+                                ...prev,
+                                causesEn: [...(prev.causesEn || []), { title: '', desc: '' }],
+                                causesBn: [...(prev.causesBn || []), { title: '', desc: '' }],
+                              }));
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-teal-600 text-white text-xs font-bold cursor-pointer hover:bg-teal-700 flex items-center gap-1 shadow-sm"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>{language === 'bn' ? '+ কারণ যোগ করুন' : '+ Add Cause'}</span>
+                          </button>
+                        </div>
+
+                        {(symptomForm.causesEn || []).map((cause, index) => (
+                          <div key={index} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col gap-3 relative">
+                            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                              <span className="text-xs font-bold text-teal-700 font-mono">Cause #{index + 1}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSymptomForm(prev => ({
+                                    ...prev,
+                                    causesEn: prev.causesEn?.filter((_, i) => i !== index),
+                                    causesBn: prev.causesBn?.filter((_, i) => i !== index),
+                                  }));
+                                }}
+                                className="text-red-500 hover:text-red-700 text-xs font-bold flex items-center gap-1"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Remove</span>
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-bold text-ink">Title (English)</label>
+                                <input
+                                  type="text"
+                                  value={cause.title}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setSymptomForm(prev => {
+                                      const updated = [...(prev.causesEn || [])];
+                                      updated[index] = { ...updated[index], title: val };
+                                      return { ...prev, causesEn: updated };
+                                    });
+                                  }}
+                                  placeholder="e.g. Viral Arboviral Infections"
+                                  className="p-2 text-xs rounded-lg border border-slate-300 bg-white"
+                                />
+                              </div>
+
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-bold text-ink">শিরোনাম (বাংলা)</label>
+                                <input
+                                  type="text"
+                                  value={symptomForm.causesBn?.[index]?.title || ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setSymptomForm(prev => {
+                                      const updated = [...(prev.causesBn || [])];
+                                      updated[index] = { ...updated[index], title: val };
+                                      return { ...prev, causesBn: updated };
+                                    });
+                                  }}
+                                  placeholder="যেমন: ভাইরাল ও ডেঙ্গু সংক্রমণ"
+                                  className="p-2 text-xs rounded-lg border border-slate-300 bg-white"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-bold text-ink">Description (English)</label>
+                                <textarea
+                                  rows={2}
+                                  value={cause.desc}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setSymptomForm(prev => {
+                                      const updated = [...(prev.causesEn || [])];
+                                      updated[index] = { ...updated[index], desc: val };
+                                      return { ...prev, causesEn: updated };
+                                    });
+                                  }}
+                                  placeholder="Details in English..."
+                                  className="p-2 text-xs rounded-lg border border-slate-300 bg-white"
+                                />
+                              </div>
+
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-bold text-ink">বিবরণ (বাংলা)</label>
+                                <textarea
+                                  rows={2}
+                                  value={symptomForm.causesBn?.[index]?.desc || ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setSymptomForm(prev => {
+                                      const updated = [...(prev.causesBn || [])];
+                                      updated[index] = { ...updated[index], desc: val };
+                                      return { ...prev, causesBn: updated };
+                                    });
+                                  }}
+                                  placeholder="বাংলা বিবরণ..."
+                                  className="p-2 text-xs rounded-lg border border-slate-300 bg-white"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* TAB 4: RED FLAGS */}
+                    {symptomModalTab === 'redFlags' && (
+                      <div className="flex flex-col gap-4 animate-in fade-in">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <h4 className="text-xs font-bold text-red-600 flex items-center gap-1.5">
+                              <AlertTriangle className="w-4 h-4" />
+                              <span>জরুরি রেড ফ্ল্যাগ সতর্কবার্তা (Emergency Red Flags)</span>
+                            </h4>
+                            <p className="text-[11px] text-muted">রোগীর জরুরি লক্ষণসমূহ যা দেখলে অবিলম্বে ডাক্তারের কাছে যেতে হবে।</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSymptomForm(prev => ({
+                                ...prev,
+                                redFlagsEn: [...(prev.redFlagsEn || []), ''],
+                                redFlagsBn: [...(prev.redFlagsBn || []), ''],
+                              }));
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold cursor-pointer hover:bg-red-700 flex items-center gap-1 shadow-sm"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>{language === 'bn' ? '+ রেড ফ্ল্যাগ যোগ করুন' : '+ Add Red Flag'}</span>
+                          </button>
+                        </div>
+
+                        {(symptomForm.redFlagsEn || []).map((flag, index) => (
+                          <div key={index} className="p-3.5 rounded-xl bg-red-50/50 border border-red-200 flex flex-col md:flex-row gap-3 items-center">
+                            <span className="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                              !
+                            </span>
+                            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+                              <input
+                                type="text"
+                                value={flag}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setSymptomForm(prev => {
+                                    const updated = [...(prev.redFlagsEn || [])];
+                                    updated[index] = val;
+                                    return { ...prev, redFlagsEn: updated };
+                                  });
+                                }}
+                                placeholder="Red flag warning in English..."
+                                className="p-2 text-xs rounded-lg border border-red-200 bg-white"
+                              />
+                              <input
+                                type="text"
+                                value={symptomForm.redFlagsBn?.[index] || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setSymptomForm(prev => {
+                                    const updated = [...(prev.redFlagsBn || [])];
+                                    updated[index] = val;
+                                    return { ...prev, redFlagsBn: updated };
+                                  });
+                                }}
+                                placeholder="রেড ফ্ল্যাগ সতর্কতা বাংলায়..."
+                                className="p-2 text-xs rounded-lg border border-red-200 bg-white"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSymptomForm(prev => ({
+                                  ...prev,
+                                  redFlagsEn: prev.redFlagsEn?.filter((_, i) => i !== index),
+                                  redFlagsBn: prev.redFlagsBn?.filter((_, i) => i !== index),
+                                }));
+                              }}
+                              className="text-red-500 hover:text-red-700 p-1"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* TAB 5: INVESTIGATIONS */}
+                    {symptomModalTab === 'investigations' && (
+                      <div className="flex flex-col gap-4 animate-in fade-in">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <h4 className="text-xs font-bold text-blue-700 flex items-center gap-1.5">
+                              <TestTubes className="w-4 h-4" />
+                              <span>প্রয়োজনীয় পরীক্ষা-নিরীক্ষা (Diagnostic Investigations)</span>
+                            </h4>
+                            <p className="text-[11px] text-muted">রোগ নির্ণয়ে প্রয়োজনীয় ল্যাবরেটরি ও ইমেজিং টেস্টের তালিকা।</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSymptomForm(prev => ({
+                                ...prev,
+                                investigationsEn: [...(prev.investigationsEn || []), ''],
+                                investigationsBn: [...(prev.investigationsBn || []), ''],
+                              }));
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold cursor-pointer hover:bg-blue-700 flex items-center gap-1 shadow-sm"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>{language === 'bn' ? '+ টেস্ট যোগ করুন' : '+ Add Test'}</span>
+                          </button>
+                        </div>
+
+                        {(symptomForm.investigationsEn || []).map((inv, index) => (
+                          <div key={index} className="p-3.5 rounded-xl bg-blue-50/50 border border-blue-200 flex flex-col md:flex-row gap-3 items-center">
+                            <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                              {index + 1}
+                            </span>
+                            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+                              <input
+                                type="text"
+                                value={inv}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setSymptomForm(prev => {
+                                    const updated = [...(prev.investigationsEn || [])];
+                                    updated[index] = val;
+                                    return { ...prev, investigationsEn: updated };
+                                  });
+                                }}
+                                placeholder="Investigation in English (e.g. CBC with Platelet)..."
+                                className="p-2 text-xs rounded-lg border border-blue-200 bg-white"
+                              />
+                              <input
+                                type="text"
+                                value={symptomForm.investigationsBn?.[index] || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setSymptomForm(prev => {
+                                    const updated = [...(prev.investigationsBn || [])];
+                                    updated[index] = val;
+                                    return { ...prev, investigationsBn: updated };
+                                  });
+                                }}
+                                placeholder="পরীক্ষার নাম বাংলায়..."
+                                className="p-2 text-xs rounded-lg border border-blue-200 bg-white"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSymptomForm(prev => ({
+                                  ...prev,
+                                  investigationsEn: prev.investigationsEn?.filter((_, i) => i !== index),
+                                  investigationsBn: prev.investigationsBn?.filter((_, i) => i !== index),
+                                }));
+                              }}
+                              className="text-red-500 hover:text-red-700 p-1"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* TAB 6: MANAGEMENT */}
+                    {symptomModalTab === 'management' && (
+                      <div className="flex flex-col gap-4 animate-in fade-in">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-bold text-ink">Clinical Management & Advice (English)</label>
+                            <textarea
+                              rows={7}
+                              value={symptomForm.managementEn}
+                              onChange={(e) => setSymptomForm({ ...symptomForm, managementEn: e.target.value })}
+                              placeholder="Doctor's clinical management approach, rationale against self-medication, and follow-up guidance in English..."
+                              className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-teal-600 focus:outline-none font-sans leading-relaxed"
+                            />
+                          </div>
+
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-bold text-ink">চিকিৎসা পরামর্শ ও ডাক্তারের মতামত (বাংলা)</label>
+                            <textarea
+                              rows={7}
+                              value={symptomForm.managementBn}
+                              onChange={(e) => setSymptomForm({ ...symptomForm, managementBn: e.target.value })}
+                              placeholder="ডা. হানিফ তৌহিদের চিকিৎসাপদ্ধতি, ওষুধ সেবনের সতর্কতা ও দিকনির্দেশনা বাংলায় লিখুন..."
+                              className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-teal-600 focus:outline-none font-sans leading-relaxed"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* TAB 7: LIVE PREVIEW */}
+                    {symptomModalTab === 'preview' && (
+                      <div className="flex flex-col gap-4 p-4 rounded-2xl bg-slate-100 border border-slate-200 animate-in fade-in">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-muted">Patient Portal Public Preview:</span>
+                          <span className="text-[10px] bg-teal-600 text-white px-2 py-0.5 rounded-full font-bold">Live Replica</span>
+                        </div>
+
+                        <div className="p-6 rounded-3xl bg-white/90 border border-teal-500/20 shadow-xl flex flex-col gap-4">
+                          <div className="flex items-start gap-4">
+                            <img
+                              src={symptomForm.image || '/symptoms/fever.png'}
+                              alt=""
+                              className="w-16 h-16 object-contain rounded-2xl p-2 bg-teal-50 border border-teal-100 shadow-sm"
+                            />
+                            <div>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-teal-500/10 text-teal-800 border border-teal-500/20">
+                                {language === 'bn' ? symptomForm.categoryBn : symptomForm.categoryEn}
+                              </span>
+                              <h3 className="font-serif font-bold text-lg text-ink mt-1">
+                                {language === 'bn' ? (symptomForm.titleBn || 'শিরোনাম') : (symptomForm.titleEn || 'Title')}
+                              </h3>
+                              <p className="text-xs text-muted">
+                                {language === 'bn' ? symptomForm.organBn : symptomForm.organEn}
+                              </p>
+                            </div>
+                          </div>
+
+                          <p className="text-xs text-ink/80 leading-relaxed font-serif italic border-l-2 border-teal-500 pl-3">
+                            "{language === 'bn' ? (symptomForm.shortDescBn || 'সংক্ষিপ্ত বিবরণ...') : (symptomForm.shortDescEn || 'Short description...')}"
+                          </p>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                            <div className="p-3 rounded-xl bg-red-50/70 border border-red-200">
+                              <h5 className="text-[11px] font-bold text-red-700 mb-1 flex items-center gap-1">
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                                {language === 'bn' ? 'জরুরি রেড ফ্ল্যাগ' : 'Emergency Red Flags'}
+                              </h5>
+                              <ul className="text-[10px] text-ink/80 space-y-1 list-disc list-inside">
+                                {(language === 'bn' ? symptomForm.redFlagsBn : symptomForm.redFlagsEn)?.filter(Boolean).map((rf, idx) => (
+                                  <li key={idx}>{rf}</li>
+                                ))}
+                              </ul>
+                            </div>
+
+                            <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200">
+                              <h5 className="text-[11px] font-bold text-blue-700 mb-1 flex items-center gap-1">
+                                <TestTubes className="w-3.5 h-3.5" />
+                                {language === 'bn' ? 'প্রয়োজনীয় টেস্টসমূহ' : 'Key Investigations'}
+                              </h5>
+                              <ul className="text-[10px] text-ink/80 space-y-1 list-disc list-inside">
+                                {(language === 'bn' ? symptomForm.investigationsBn : symptomForm.investigationsEn)?.filter(Boolean).map((inv, idx) => (
+                                  <li key={idx}>{inv}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Form Action Footer */}
+                    <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-2 gap-3 flex-wrap bg-white">
+                      <div className="flex items-center gap-2">
+                        {selectedSymptom && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSymptom(selectedSymptom)}
+                            className="px-4 py-2.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            <span>{language === 'bn' ? 'লক্ষণটি মুছুন' : 'Delete Symptom'}</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => setIsSymptomModalOpen(false)}
+                          className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                        >
+                          {language === 'bn' ? 'বাতিল' : 'Cancel'}
+                        </button>
+
+                        <button
+                          type="submit"
+                          disabled={isSavingSymptom}
+                          className="px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-ink text-white text-xs font-bold shadow-md shadow-teal-600/20 transition-all cursor-pointer flex items-center gap-2"
+                        >
+                          <Save className="w-4 h-4" />
+                          <span>
+                            {isSavingSymptom
+                              ? (language === 'bn' ? 'সংরক্ষণ হচ্ছে...' : 'Saving...')
+                              : selectedSymptom
+                              ? (language === 'bn' ? 'আপডেট সংরক্ষণ করুন' : 'Save Changes')
+                              : (language === 'bn' ? 'লক্ষণ প্রকাশ করুন' : 'Publish Symptom')}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {/* TAB 3: BLOG MANAGER */}

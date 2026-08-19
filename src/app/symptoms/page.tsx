@@ -6,6 +6,7 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { GlassPanel } from '@/components/GlassPanel';
 import { detailedSymptomsList, SymptomDetail } from '@/data/symptomsData';
+import supabase from '@/lib/supabase';
 import Link from 'next/link';
 import {
   Search,
@@ -78,21 +79,82 @@ function ZoomInScrollCard({
 
 export default function SymptomsPage() {
   const { language } = useLanguage();
+  const [symptoms, setSymptoms] = useState<SymptomDetail[]>(detailedSymptomsList);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [loading, setLoading] = useState(true);
+
+  // Fetch live symptoms from Supabase
+  useEffect(() => {
+    async function loadSymptoms() {
+      try {
+        const { data, error } = await supabase
+          .from('symptoms')
+          .select('*')
+          .eq('is_active', true)
+          .order('order_index', { ascending: true });
+
+        if (error) throw error;
+        if (data && data.length > 0) {
+          const mapped: SymptomDetail[] = data.map((d: any, index: number) => ({
+            id: d.id || index + 1,
+            slug: d.slug,
+            titleEn: d.title_en,
+            titleBn: d.title_bn,
+            categoryEn: d.category_en,
+            categoryBn: d.category_bn,
+            organEn: d.organ_en,
+            organBn: d.organ_bn,
+            image: d.image || '/symptoms/fever.png',
+            shortDescEn: d.short_desc_en,
+            shortDescBn: d.short_desc_bn,
+            overviewEn: d.overview_en,
+            overviewBn: d.overview_bn,
+            causesEn: Array.isArray(d.causes_en) ? d.causes_en : [],
+            causesBn: Array.isArray(d.causes_bn) ? d.causes_bn : [],
+            redFlagsEn: Array.isArray(d.red_flags_en) ? d.red_flags_en : [],
+            redFlagsBn: Array.isArray(d.red_flags_bn) ? d.red_flags_bn : [],
+            investigationsEn: Array.isArray(d.investigations_en) ? d.investigations_en : [],
+            investigationsBn: Array.isArray(d.investigations_bn) ? d.investigations_bn : [],
+            managementEn: d.management_en,
+            managementBn: d.management_bn,
+          }));
+
+          // Merge Supabase data with any local defaults not yet in DB
+          const seenSlugs = new Set(mapped.map(m => m.slug));
+          const merged = [...mapped];
+          for (const fallback of detailedSymptomsList) {
+            if (!seenSlugs.has(fallback.slug)) {
+              merged.push(fallback);
+              seenSlugs.add(fallback.slug);
+            }
+          }
+          setSymptoms(merged);
+        } else {
+          setSymptoms(detailedSymptomsList);
+        }
+      } catch (err) {
+        console.error("Error fetching symptoms from Supabase:", err);
+        setSymptoms(detailedSymptomsList);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadSymptoms();
+  }, []);
 
   // Dynamic list of unique categories
   const categories = useMemo(() => {
     const set = new Set<string>();
-    detailedSymptomsList.forEach((s: SymptomDetail) => {
+    symptoms.forEach((s: SymptomDetail) => {
       set.add(language === 'bn' ? s.categoryBn : s.categoryEn);
     });
     return Array.from(set);
-  }, [language]);
+  }, [language, symptoms]);
 
   // Filter symptoms based on search and category
   const filteredSymptoms = useMemo(() => {
-    return detailedSymptomsList.filter((s: SymptomDetail) => {
+    return symptoms.filter((s: SymptomDetail) => {
       const cat = language === 'bn' ? s.categoryBn : s.categoryEn;
       const matchesCategory = selectedCategory === 'all' || cat === selectedCategory;
 
@@ -117,7 +179,7 @@ export default function SymptomsPage() {
         organBn.includes(query)
       );
     });
-  }, [searchQuery, selectedCategory, language]);
+  }, [searchQuery, selectedCategory, language, symptoms]);
 
   return (
     <div className="relative min-h-screen flex flex-col antialiased bg-slate-50/60">

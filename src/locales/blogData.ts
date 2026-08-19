@@ -105,6 +105,28 @@ export const blogData: BlogPost[] = [
       <p>Only take antibiotics when explicitly prescribed by a registered physician. Always complete the entire prescribed course, even if you feel better mid-cycle, to ensure all bacteria are eliminated and prevent resistant strains from surviving.</p>
     `
   },
+  {
+    slug: 'migraine-symptoms-treatments-guide',
+    lang: 'en',
+    title: "Migraine Symptoms and Treatments: When to See a Neurologist",
+    date: "2026-08-09",
+    readTime: "6 min read",
+    category: "Neurology & Headache",
+    categoryBn: "নিউরোলজি ও মাথাব্যথা",
+    image: "/blogs/diabetes_care_guide.jpg",
+    featured: false,
+    excerpt: "Differentiating between regular tension headaches and debilitating migraines, identifying triggers, and exploring preventive medical therapies.",
+    content: `
+      <h2>Tension Headaches vs. Migraines</h2>
+      <p>Migraine is a complex neurological disorder characterized by recurrent attacks of moderate to severe pulsating unilateral head pain, frequently accompanied by nausea, vomiting, and heightened sensitivity to light (photophobia) and sound (phonophobia).</p>
+      
+      <h2>Recognizing Common Triggers</h2>
+      <p>Irregular sleep cycles, skipping meals, chronic psychological stress, bright sunlight, and dehydration are common triggers. Keeping a headache diary helps pinpoint personal triggers to prevent severe attacks.</p>
+      
+      <h2>Targeted Neurological Therapy</h2>
+      <p>Effective management includes acute abortive medications taken at the earliest onset of pain and prophylactic daily medications to reduce attack frequency. Overusing over-the-counter painkillers can cause medication-overuse headaches and kidney strain.</p>
+    `
+  },
 
   // --- BANGLA ARTICLES ---
   {
@@ -194,8 +216,31 @@ export const blogData: BlogPost[] = [
       <h2>সঠিক নিয়মাবলী ও জনসচেতনতা</h2>
       <p>১. রেজিস্টার্ড চিকিৎসকের সুনির্দিষ্ট পরামর্শ ছাড়া কখনো অ্যান্টিবায়োটিক সেবন করবেন না।<br />২. চিকিৎসকের নির্দেশিত অ্যান্টিবায়োটিকের পূর্ণ কোর্স (যেমন ৫ বা ৭ দিন) অবশ্যই শেষ করুন। ২-১ দিন পর সুস্থ বোধ করলেও কোর্স অসম্পূর্ণ রেখে ওষুধ বন্ধ করবেন না।</p>
     `
+  },
+  {
+    slug: 'migraine-neurology-bengali',
+    lang: 'bn',
+    title: "মাইগ্রেন ও তীব্র মাথাব্যথা: কখন একজন নিউরোলজি বিশেষজ্ঞ দেখাবেন",
+    date: "2026-08-09",
+    readTime: "৬ মিনিট পাঠ",
+    category: "Neurology & Headache",
+    categoryBn: "নিউরোলজি ও মাথাব্যথা",
+    image: "/blogs/diabetes_care_guide.jpg",
+    featured: false,
+    excerpt: "সাধারণ মাথাব্যথা এবং মাইগ্রেনের মধ্যকার পার্থক্য সনাক্ত করুন এবং মাইগ্রেন প্রতিরোধের আধুনিক চিকিৎসা সম্পর্কে জানুন।",
+    content: `
+      <h2>সাধারণ মাথাব্যথা বনাম মাইগ্রেন</h2>
+      <p>মাইগ্রেন একটি স্নায়বিক রোগ। এটি সাধারণ মাথাব্যথার চেয়ে আলাদা; সাধারণত মাথার একপাশে তীব্র দপদপ করা ব্যথা হয় এবং এর সাথে বমি বমি ভাব, আলো ও শব্দে অস্বস্তি দেখা দেয়।</p>
+      
+      <h2>মাথাব্যথার সাধারণ ট্রিগারসমূহ</h2>
+      <p>অপর্যাপ্ত ঘুম, খালি পেটে থাকা, অতিরিক্ত মানসিক চাপ, রোদ এবং তীব্র আওয়াজ মাইগ্রেনের ব্যথা বাড়িয়ে দেয়। আপনার মাথাব্যথার ট্রিগারগুলি চিহ্নিত করা চিকিৎসার ক্ষেত্রে গুরুত্বপূর্ণ ভূমিকা পালন করে।</p>
+      
+      <h2>নিউরোলজিক্যাল চিকিৎসা</h2>
+      <p>মাইগ্রেনের তীব্রতা ও ফ্রিকোয়েন্সি কমাতে প্রিভেন্টিভ বা প্রোফাইল্যাকটিক থেরাপির প্রয়োজন হয়। চিকিৎসকের পরামর্শ ছাড়া ঘন ঘন ব্যথানাশক ওষুধ খাওয়া কিডনি ও লিভারের জন্য ক্ষতিকর হতে পারে।</p>
+    `
   }
 ];
 
 export const faqsData = [];
 export const chamberData = [];
+
