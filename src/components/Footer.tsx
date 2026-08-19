@@ -21,8 +21,16 @@ export const Footer: React.FC = () => {
 
         <div className="text-center text-xs text-gray-300 max-w-md">
           <p>{t('footer.copyright')}</p>
-          <p className="mt-1 text-[10px] opacity-60 leading-relaxed">
-            {t('footer.disclaimer')}
+          <p className="mt-2 text-[11px] text-gray-300 font-medium">
+            Developed by{' '}
+            <a
+              href="https://benzadidintelligence.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-300 hover:text-white font-semibold underline underline-offset-2 transition-colors inline-block"
+            >
+              Benzadid Intelligence
+            </a>
           </p>
         </div>
 

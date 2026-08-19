@@ -20,7 +20,8 @@ import {
   ArrowRight,
   UserCheck,
   Heart,
-  Calendar
+  Calendar,
+  Activity
 } from 'lucide-react';
 
 interface AnimatedCardProps {
@@ -42,13 +43,12 @@ function AnimatedScrollItem({
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
+        // Continuous bi-directional scroll animation: true on enter, false on leave
+        setIsVisible(entry.isIntersecting);
       },
       {
         threshold: 0.12,
-        rootMargin: '0px 0px -50px 0px',
+        rootMargin: '-20px 0px -20px 0px',
       }
     );
 
@@ -64,32 +64,157 @@ function AnimatedScrollItem({
     switch (direction) {
       case 'left':
         return isVisible 
-          ? 'opacity-100 translate-x-0' 
-          : 'opacity-0 -translate-x-12';
+          ? 'opacity-100 translate-x-0 blur-0 scale-100' 
+          : 'opacity-0 -translate-x-12 blur-[1px] scale-[0.98]';
       case 'right':
         return isVisible 
-          ? 'opacity-100 translate-x-0' 
-          : 'opacity-0 translate-x-12';
+          ? 'opacity-100 translate-x-0 blur-0 scale-100' 
+          : 'opacity-0 translate-x-12 blur-[1px] scale-[0.98]';
       case 'scale':
         return isVisible 
-          ? 'opacity-100 scale-100' 
-          : 'opacity-0 scale-95';
+          ? 'opacity-100 scale-100 blur-0 translate-y-0' 
+          : 'opacity-0 scale-90 blur-[2px] translate-y-8';
       case 'up':
       default:
         return isVisible 
-          ? 'opacity-100 translate-y-0' 
-          : 'opacity-0 translate-y-12';
+          ? 'opacity-100 translate-y-0 blur-0 scale-100' 
+          : 'opacity-0 translate-y-12 blur-[1px] scale-[0.98]';
     }
   };
 
   return (
     <div
       ref={elementRef}
-      style={{ transitionDelay: `${delay}ms` }}
-      className={`transition-all duration-700 ease-out transform ${getTransformClasses()} ${className}`}
+      style={{ 
+        transitionDelay: isVisible ? `${delay}ms` : '0ms',
+        transitionDuration: '650ms'
+      }}
+      className={`transition-all ease-[cubic-bezier(0.16,1,0.3,1)] transform ${getTransformClasses()} ${className}`}
     >
       {children}
     </div>
+  );
+}
+
+// Full-Width Aesthetic Section Breaking Banner with Bi-directional Smooth Scroll Parallax & Ultra-Transparent Watercolor Card
+function ScrollAestheticBanner({
+  src,
+  alt,
+  badgeText,
+  headingText,
+  subText,
+}: {
+  src: string;
+  alt: string;
+  badgeText?: string;
+  headingText?: string;
+  subText?: string;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isInView, setIsInView] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0.5);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Continuous bi-directional trigger on scroll up & down
+        setIsInView(entry.isIntersecting);
+      },
+      { 
+        threshold: 0.15,
+        rootMargin: '-30px 0px -30px 0px' 
+      }
+    );
+
+    const el = containerRef.current;
+    if (el) observer.observe(el);
+
+    const handleScroll = () => {
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      if (rect.top < windowHeight && rect.bottom > 0) {
+        const progress = (windowHeight - rect.top) / (windowHeight + rect.height);
+        setScrollProgress(Math.min(Math.max(progress, 0), 1));
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => {
+      if (el) observer.unobserve(el);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  const parallaxOffset = (scrollProgress - 0.5) * 50;
+
+  return (
+    <section
+      ref={containerRef}
+      className="relative z-10 w-full overflow-hidden my-8 sm:my-12 md:my-16 border-y border-line/40 shadow-xl"
+    >
+      <div className="relative w-full min-h-[320px] sm:min-h-[400px] md:min-h-[480px] lg:min-h-[540px] overflow-hidden flex items-center justify-center p-4 sm:p-6 md:p-10">
+        {/* 100% Original Image with smooth parallax */}
+        <img
+          src={src}
+          alt={alt}
+          style={{
+            transform: `translate3d(0, ${parallaxOffset}px, 0) scale(${isInView ? 1.02 : 1.08})`,
+            transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+          className="w-full h-[125%] -top-[12.5%] absolute inset-0 object-cover object-center pointer-events-none"
+        />
+
+        {/* Floating Ultra-Transparent Watercolor Glass Card with Staggered Scroll Animation */}
+        {(badgeText || headingText || subText) && (
+          <div className="relative z-10 w-full max-w-3xl mx-auto">
+            <div
+              className={`p-6 sm:p-8 md:p-11 rounded-3xl bg-white/20 hover:bg-white/25 backdrop-blur-[14px] border border-white/50 shadow-[0_10px_35px_rgba(0,0,0,0.15)] flex flex-col items-center gap-3.5 text-center transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] transform ${
+                isInView 
+                  ? 'opacity-100 translate-y-0 scale-100 blur-0' 
+                  : 'opacity-0 translate-y-12 scale-[0.92] blur-[2px]'
+              }`}
+            >
+              {badgeText && (
+                <div 
+                  style={{ transitionDelay: isInView ? '120ms' : '0ms' }}
+                  className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-950/75 hover:bg-slate-950/85 border border-white/40 backdrop-blur-md text-white text-[11px] font-bold uppercase tracking-wider shadow-lg transition-all duration-700 transform ${
+                    isInView ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-4 scale-90'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                  <span>{badgeText}</span>
+                </div>
+              )}
+
+              {headingText && (
+                <h3 
+                  style={{ transitionDelay: isInView ? '220ms' : '0ms' }}
+                  className={`font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-slate-950 leading-tight drop-shadow-[0_1px_3px_rgba(255,255,255,0.9)] max-w-2xl transition-all duration-700 transform ${
+                    isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+                  }`}
+                >
+                  {headingText}
+                </h3>
+              )}
+
+              {subText && (
+                <p 
+                  style={{ transitionDelay: isInView ? '320ms' : '0ms' }}
+                  className={`text-xs sm:text-sm md:text-base text-slate-900/90 font-semibold leading-relaxed drop-shadow-[0_1px_2px_rgba(255,255,255,0.85)] max-w-xl transition-all duration-700 transform ${
+                    isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+                  }`}
+                >
+                  {subText}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -270,8 +395,8 @@ export default function About() {
         </div>
       </section>
 
-      {/* 3. MAIN CONTENT CONTAINER WITH SCROLL-TRIGGERED ANIMATIONS */}
-      <main className="relative z-10 py-12 md:py-16 px-4 sm:px-6 md:px-12 max-w-5xl mx-auto flex flex-col gap-12 w-full">
+      {/* 3. MAIN CONTENT CONTAINER (PART 1: JOURNEY SECTION) */}
+      <main className="relative z-10 pt-12 md:pt-16 px-4 sm:px-6 md:px-12 max-w-5xl mx-auto flex flex-col gap-12 w-full">
         
         {/* 1. Intro / Journey Section with Scroll Animation */}
         <AnimatedScrollItem direction="up" delay={50}>
@@ -304,7 +429,20 @@ export default function About() {
             </GlassPanel>
           </section>
         </AnimatedScrollItem>
+      </main>
 
+      {/* 4. SECTION BREAKING AESTHETIC IMAGE 2 (FULL SCREEN WIDTH) */}
+      <ScrollAestheticBanner
+        src="/Section Breaking Aesthetic Image_2.png"
+        alt={language === 'bn' ? 'চিকিৎসা উৎকর্ষ ও ক্লিনিক্যাল সেবা' : 'Clinical Excellence & Medical Diagnostics'}
+        badgeText={language === 'bn' ? 'ক্লিনিক্যাল উৎকর্ষ ও নির্ভুল রোগ নির্ণয়' : 'Clinical Excellence & Diagnostics'}
+        headingText={language === 'bn' ? 'রোগের মূল কারণ অনুসন্ধান ও বৈজ্ঞানিক চিকিৎসা' : 'Root-Cause Clinical Diagnosis & Compassionate Care'}
+        subText={language === 'bn' ? 'সিলেট এম.এ.জি. ওসমানী মেডিকেল কলেজ ও হাসপাতালের চিকিৎসা অভিজ্ঞতায় সমৃদ্ধ।' : 'Decades of specialized hospital care and advanced internal medicine practice in Sylhet.'}
+      />
+
+      {/* 5. MAIN CONTENT CONTAINER (PART 2: TIMELINE, EXPERTISE, PHILOSOPHY) */}
+      <main className="relative z-10 pb-12 md:pb-16 px-4 sm:px-6 md:px-12 max-w-5xl mx-auto flex flex-col gap-12 w-full">
+        
         {/* 2. QUALIFICATIONS TIMELINE (Scroll-Triggered Staggered Animations) */}
         <section className="w-full">
           <GlassPanel className="flex flex-col gap-8 p-6 sm:p-8 md:p-10 border border-panel-border bg-white/70 shadow-lg">
@@ -340,7 +478,7 @@ export default function About() {
                   <AnimatedScrollItem
                     key={item.id}
                     direction="left"
-                    delay={idx * 120}
+                    delay={idx * 100}
                   >
                     <div
                       onClick={() => setActiveMilestone(item.id)}
@@ -447,6 +585,20 @@ export default function About() {
           </AnimatedScrollItem>
         </div>
 
+      </main>
+
+      {/* 6. SECTION BREAKING AESTHETIC IMAGE 3 (FULL SCREEN WIDTH) */}
+      <ScrollAestheticBanner
+        src="/Section Breaking Aesthetic Image_3.png"
+        alt={language === 'bn' ? 'রোগীসেবা ও চেম্বার পরামর্শ' : 'Compassionate Patient Care & Chamber Consultation'}
+        badgeText={language === 'bn' ? 'রোগীর প্রতি অকৃত্রিম যত্ন ও আস্থা' : 'Dedicated to Patient Care & Trust'}
+        headingText={language === 'bn' ? 'সুস্থ জীবনের পথে আপনার পাশে' : 'Guiding Your Journey to Better Health'}
+        subText={language === 'bn' ? 'পপুলার মেডিকেল সেন্টার, সিলেট — আধুনিক পরিবেশে নিয়মিত চেম্বার সেবা।' : 'Popular Medical Center Ltd., Sylhet — Professional consultation and caring environment.'}
+      />
+
+      {/* 7. MAIN CONTENT CONTAINER (PART 3: CHAMBER CONSULTATION CTA) */}
+      <main className="relative z-10 pb-16 px-4 sm:px-6 md:px-12 max-w-5xl mx-auto flex flex-col gap-12 w-full">
+        
         {/* 4. CALL TO ACTION & CHAMBER APPOINTMENT CARD (Scroll Scale Up) */}
         <AnimatedScrollItem direction="scale" delay={100}>
           <section className="glass-panel p-6 sm:p-8 md:p-10 rounded-3xl flex flex-col md:flex-row justify-between items-center gap-6 shadow-xl border border-panel-border bg-gradient-to-r from-accent/15 via-accent/5 to-white/70">

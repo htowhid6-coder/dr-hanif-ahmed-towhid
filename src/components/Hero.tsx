@@ -312,16 +312,13 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
     <div className="relative w-full">
       {/* Sticky Viewport Background Container */}
       <div className="sticky top-0 z-0 w-full h-screen overflow-hidden">
-        <picture>
-          <source media="(max-width: 760px)" srcSet="/hero-mobile.jpeg" />
-          <img
-            src="/hero-desktop.png"
-            className="w-full h-full object-cover object-center md:object-[78%_58%] animate-floating"
-            alt="Medical equipment, blood pressure cuff and diagnostic tools"
-          />
-        </picture>
-        {/* Subtle overlay to enhance contrast */}
-        <div className="absolute inset-0 bg-white/10 backdrop-blur-[0.5px]"></div>
+        <img
+          src="/hero-desktop.png"
+          className="w-full h-full object-cover object-[75%_38%] sm:object-[76%_45%] md:object-[78%_55%] animate-floating pointer-events-none"
+          alt={language === 'bn' ? 'ডা. হানিফ আহমেদ তৌহিদ - মেডিসিন বিশেষজ্ঞ' : 'Dr. Hanif Ahmed Towhid - Medicine Specialist'}
+        />
+        {/* Subtle backdrop overlay to enhance readability on mobile and desktop */}
+        <div className="absolute inset-0 bg-gradient-to-r from-white/80 via-white/45 to-white/10 sm:from-white/55 sm:via-white/20 sm:to-transparent pointer-events-none backdrop-blur-[0.5px]"></div>
 
         {/* Navigation Dot Rail */}
         <nav

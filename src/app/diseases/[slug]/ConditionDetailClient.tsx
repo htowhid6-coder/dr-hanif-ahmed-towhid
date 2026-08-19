@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 
 /**
- * Reusable scroll-reveal component with smooth Zoom-in / Scale-in animation
+ * Reusable scroll-reveal component with smooth bi-directional Zoom-in / Scale-in animation
  */
 function AnimatedPointCard({
   children,
@@ -47,34 +47,35 @@ function AnimatedPointCard({
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          observer.disconnect();
-        }
+        setIsVisible(entry.isIntersecting);
       },
       {
-        threshold: 0.08,
-        rootMargin: '0px 0px -20px 0px',
+        threshold: 0.1,
+        rootMargin: '-20px 0px -20px 0px',
       }
     );
 
-    if (ref.current) {
-      observer.observe(ref.current);
+    const current = ref.current;
+    if (current) {
+      observer.observe(current);
     }
 
-    return () => observer.disconnect();
+    return () => {
+      if (current) observer.unobserve(current);
+    };
   }, []);
 
   return (
     <div
       ref={ref}
       style={{
-        transitionDelay: `${delay}ms`,
+        transitionDelay: isVisible ? `${delay}ms` : '0ms',
+        transitionDuration: '600ms',
       }}
-      className={`transform transition-all duration-700 ease-out will-change-transform ${
+      className={`transform transition-all ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${
         isVisible
           ? 'opacity-100 scale-100 translate-y-0'
-          : 'opacity-0 scale-[0.88] translate-y-6'
+          : 'opacity-0 scale-[0.96] translate-y-6'
       } ${className}`}
     >
       {children}
@@ -200,61 +201,75 @@ export default function ConditionDetailClient() {
                   {disease.title[language]}
                 </h1>
 
-                {/* Short Description */}
+                {/* Lead Summary */}
                 <p className="text-xs sm:text-sm md:text-base text-muted leading-relaxed">
                   {disease.shortDesc[language]}
                 </p>
 
-                {/* Key Clinical Badges */}
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 border border-slate-200/80 text-[11px] font-semibold text-slate-700">
-                    <ShieldCheck className="w-3.5 h-3.5 text-accent" />
-                    <span>{language === 'bn' ? 'যৌক্তিক প্রেসক্রিপশন' : 'Evidence-Based Care'}</span>
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50 border border-emerald-200/80 text-[11px] font-semibold text-emerald-800">
-                    <HeartHandshake className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>{language === 'bn' ? 'ব্যক্তিগত পর্যবেক্ষণ' : 'Personalized Follow-up'}</span>
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-teal-50 border border-teal-200/80 text-[11px] font-semibold text-teal-800">
-                    <Activity className="w-3.5 h-3.5 text-teal-600" />
-                    <span>{language === 'bn' ? 'পপুলার মেডিকেল সেন্টার' : 'Popular Medical Center'}</span>
-                  </span>
+                {/* Highlight Stats Pill Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
+                  <div className="p-3 rounded-2xl bg-white/80 border border-panel-border flex flex-col gap-0.5">
+                    <span className="text-[10px] font-semibold text-muted uppercase tracking-wider">
+                      {language === 'bn' ? 'ক্লিনিকাল বিভাগ' : 'Department'}
+                    </span>
+                    <span className="text-xs font-bold text-ink truncate">
+                      {language === 'bn' ? 'ইন্টারনাল মেডিসিন' : 'Internal Medicine'}
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-white/80 border border-panel-border flex flex-col gap-0.5">
+                    <span className="text-[10px] font-semibold text-muted uppercase tracking-wider">
+                      {language === 'bn' ? 'প্রধান লক্ষণসমূহ' : 'Key Symptoms'}
+                    </span>
+                    <span className="text-xs font-bold text-accent">
+                      {disease.symptoms[language].length} {language === 'bn' ? 'টি লক্ষণ' : 'Indicators'}
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-white/80 border border-panel-border col-span-2 sm:col-span-1 flex flex-col gap-0.5">
+                    <span className="text-[10px] font-semibold text-muted uppercase tracking-wider">
+                      {language === 'bn' ? 'চিকিৎসা পদ্ধতি' : 'Protocols'}
+                    </span>
+                    <span className="text-xs font-bold text-emerald-700">
+                      {disease.treatments[language].length} {language === 'bn' ? 'ধাপের চিকিৎসা' : 'Steps'}
+                    </span>
+                  </div>
                 </div>
 
-                {/* Action CTA Buttons */}
-                <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-line">
+                {/* Fast Action Buttons */}
+                <div className="flex flex-wrap items-center gap-3 pt-2">
                   <a
                     href="https://wa.me/8801346132486"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-ink text-white font-semibold text-xs transition-all shadow-md hover:-translate-y-0.5 cursor-pointer"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-ink text-white font-semibold text-xs md:text-sm shadow-md hover:shadow-lg transition-all cursor-pointer"
                   >
-                    <Calendar className="w-4 h-4" />
-                    <span>{language === 'bn' ? 'সিরিয়াল বুক করুন' : 'Book Appointment'}</span>
+                    <MessageCircle className="w-4 h-4" />
+                    <span>{language === 'bn' ? 'হোয়াটসঅ্যাপে সিরিয়াল বুকিং' : 'Book Serial via WhatsApp'}</span>
                   </a>
+
                   <a
                     href="tel:01346132486"
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-ink border border-slate-200/90 font-semibold text-xs transition-all shadow-2xs cursor-pointer"
+                    className="inline-flex items-center gap-2 px-4.5 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-ink font-semibold text-xs md:text-sm border border-line shadow-xs transition-all cursor-pointer"
                   >
-                    <Phone className="w-4 h-4 text-accent" />
-                    <span>{language === 'bn' ? 'হটলাইনে কল করুন' : '01346-132486'}</span>
+                    <Phone className="w-3.5 h-3.5 text-accent" />
+                    <span>01346-132486</span>
                   </a>
                 </div>
 
               </div>
 
             </div>
-
           </div>
         </section>
 
-        {/* Main Content Layout Grid (8 Cols Content + 4 Cols Sidebar) */}
+        {/* Main Content Layout Grid (8 Cols Left Content + 4 Cols Right Sidebar) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* Main Content Area (8 Cols) */}
+          {/* Left Column: Comprehensive Medical Sections (8 Cols) */}
           <div className="lg:col-span-8 flex flex-col gap-8">
             
-            {/* 1. Deep Pathophysiology & In-depth Clinical Overview */}
+            {/* 1. In-Depth Overview & Pathophysiology */}
             <section className="rounded-3xl border border-white/80 bg-white/80 backdrop-blur-xl shadow-md p-6 sm:p-8 flex flex-col gap-5">
               <div className="flex items-center gap-2.5 text-ink border-b border-line pb-4">
                 <div className="w-9 h-9 rounded-xl bg-accent/10 flex items-center justify-center text-accent">
@@ -262,10 +277,10 @@ export default function ConditionDetailClient() {
                 </div>
                 <div>
                   <h2 className="font-serif text-lg sm:text-xl font-bold text-ink">
-                    {language === 'bn' ? 'রোগের গভীর শারীরবৃত্তীয় বিশ্লেষণ ও বিবরণ' : 'Detailed Pathophysiology & Clinical Guide'}
+                    {language === 'bn' ? 'রোগের বিস্তারিত বিবরণ ও কারণ (Overview & Pathophysiology)' : 'Overview & Clinical Assessment'}
                   </h2>
                   <span className="text-[11px] text-muted">
-                    {language === 'bn' ? 'রোগের কারণ, ঝুঁকি ও শারীরিক প্রক্রিয়া' : 'Underlying triggers, mechanism of illness, and systemic impact'}
+                    {language === 'bn' ? 'রোগের উৎস, ঝুঁকি ও জটিলতার ক্লিনিকাল পর্যালোচনা' : 'Pathophysiology, risk factors and systemic health impact'}
                   </span>
                 </div>
               </div>
@@ -299,7 +314,7 @@ export default function ConditionDetailClient() {
                 {disease.symptoms[language].map((sym, sIdx) => (
                   <AnimatedPointCard
                     key={sIdx}
-                    delay={sIdx * 80}
+                    delay={sIdx * 60}
                     className="h-full"
                   >
                     <div className="p-4 rounded-2xl bg-white hover:bg-amber-50/30 border border-slate-200/80 hover:border-amber-400/70 shadow-2xs hover:shadow-md hover:scale-[1.02] transition-all duration-300 flex items-start gap-3 group h-full cursor-default">
@@ -336,7 +351,7 @@ export default function ConditionDetailClient() {
                 {disease.treatments[language].map((treat, tIdx) => (
                   <AnimatedPointCard
                     key={tIdx}
-                    delay={tIdx * 80}
+                    delay={tIdx * 60}
                     className="h-full"
                   >
                     <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50/40 via-white to-teal-50/20 hover:from-emerald-50 hover:to-white border border-emerald-200/80 hover:border-emerald-400 shadow-2xs hover:shadow-md hover:scale-[1.02] transition-all duration-300 flex items-start gap-3 group h-full cursor-default">
@@ -352,27 +367,10 @@ export default function ConditionDetailClient() {
               </div>
             </section>
 
-            {/* 4. Important Medical Advisory Box (with Smooth Zoom-In) */}
-            <AnimatedPointCard delay={120} className="w-full">
-              <section className="rounded-3xl bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/30 hover:border-amber-500/50 p-6 sm:p-7 flex flex-col gap-3 shadow-sm hover:shadow-md transition-all duration-300">
-                <div className="flex items-center gap-2 text-amber-900 font-bold text-xs sm:text-sm">
-                  <ShieldCheck className="w-5 h-5 text-amber-600 shrink-0 animate-pulse" />
-                  <span>
-                    {language === 'bn' ? 'জরুরি চিকিৎসাগত সতর্কতা (Important Medical Advisory)' : 'Essential Clinical Safety Advisory'}
-                  </span>
-                </div>
-                <p className="text-xs sm:text-[13px] text-amber-950/90 leading-relaxed pl-1 font-medium">
-                  {language === 'bn'
-                    ? 'ডায়াবেটিস, প্রেশার বা থাইরয়েডের মতো হরমোন ও মেটাবলিক রোগ নিয়ন্ত্রণে চিকিৎসকের পরামর্শ ছাড়া হঠাৎ ওষুধ বন্ধ করা বা ডোজ পরিবর্তন করা অত্যন্ত ঝুঁকিপূর্ণ। কোনো উপসর্গ দীর্ঘস্থায়ী হলে অবিলম্বে পরীক্ষা করিয়ে পরামর্শ গ্রহণ করুন।'
-                    : 'Adjusting or abruptly stopping chronic medications for conditions like diabetes, hypertension, or thyroid dysfunction without physician supervision is hazardous. If symptoms persist or worsen, seek diagnostics and specialized review immediately.'}
-                </p>
-              </section>
-            </AnimatedPointCard>
-
           </div>
 
-          {/* Right Sidebar (4 Cols - Sticky) */}
-          <aside className="lg:col-span-4 flex flex-col gap-6 lg:sticky lg:top-24">
+          {/* Right Sidebar (4 Cols) */}
+          <aside className="lg:col-span-4 flex flex-col gap-6">
             
             {/* Chamber Location & Serial Widget */}
             <AnimatedPointCard delay={100}>
@@ -435,7 +433,7 @@ export default function ConditionDetailClient() {
             </AnimatedPointCard>
 
             {/* Doctor Profile Brief */}
-            <AnimatedPointCard delay={150}>
+            <AnimatedPointCard delay={140}>
               <div className="p-5 rounded-3xl border border-slate-200/80 bg-gradient-to-br from-emerald-50/70 via-white to-teal-50/60 backdrop-blur-md shadow-sm hover:shadow-md transition-all flex flex-col gap-3">
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 rounded-2xl bg-accent text-white flex items-center justify-center font-serif font-bold text-base shadow-sm">
@@ -459,7 +457,7 @@ export default function ConditionDetailClient() {
             </AnimatedPointCard>
 
             {/* Other Diseases Quick Jump Navigator */}
-            <AnimatedPointCard delay={200}>
+            <AnimatedPointCard delay={180}>
               <div className="p-5 rounded-3xl border border-white/80 bg-white/80 backdrop-blur-xl shadow-md hover:shadow-lg transition-all flex flex-col gap-3">
                 <div className="flex items-center gap-2 text-xs font-bold text-ink uppercase tracking-wider border-b border-line pb-2.5">
                   <Compass className="w-4 h-4 text-accent" />
@@ -496,6 +494,23 @@ export default function ConditionDetailClient() {
                 >
                   <span>{language === 'bn' ? `সবগুলো রোগ দেখুন (${diseaseData.length}টি) →` : `View All ${diseaseData.length} Diseases →`}</span>
                 </Link>
+              </div>
+            </AnimatedPointCard>
+
+            {/* Essential Clinical Safety Advisory (Placed below 'Other Diseases We Treat' card) */}
+            <AnimatedPointCard delay={220} className="w-full">
+              <div className="rounded-3xl bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/30 hover:border-amber-500/50 p-5 sm:p-6 flex flex-col gap-2.5 shadow-sm hover:shadow-md transition-all duration-300">
+                <div className="flex items-center gap-2 text-amber-900 font-bold text-xs sm:text-sm">
+                  <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0 animate-pulse" />
+                  <span>
+                    {language === 'bn' ? 'জরুরি চিকিৎসাগত সতর্কতা' : 'Essential Clinical Safety Advisory'}
+                  </span>
+                </div>
+                <p className="text-[11px] sm:text-xs text-amber-950/90 leading-relaxed font-medium">
+                  {language === 'bn'
+                    ? 'ডায়াবেটিস, প্রেশার বা থাইরয়েডের মতো হরমোন ও মেটাবলিক রোগ নিয়ন্ত্রণে চিকিৎসকের পরামর্শ ছাড়া হঠাৎ ওষুধ বন্ধ করা বা ডোজ পরিবর্তন করা অত্যন্ত ঝুঁকিপূর্ণ। কোনো উপসর্গ দীর্ঘস্থায়ী হলে অবিলম্বে পরীক্ষা করিয়ে পরামর্শ গ্রহণ করুন।'
+                    : 'Adjusting or abruptly stopping chronic medications for conditions like diabetes, hypertension, or thyroid dysfunction without physician supervision is hazardous. If symptoms persist or worsen, seek diagnostics and specialized review immediately.'}
+                </p>
               </div>
             </AnimatedPointCard>
 
