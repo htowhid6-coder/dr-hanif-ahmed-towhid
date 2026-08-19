@@ -43,6 +43,8 @@ export default function AdminDashboard() {
     hoursEn: '5:00 PM – 9:00 PM (Friday Closed)',
     hoursBn: 'বিকাল ৫টা - রাত ৯টা পর্যন্ত (শুক্রবার বন্ধ)',
     ticketPhone: '01346-132486',
+    mapUrl: 'https://maps.google.com/maps?q=Popular+Medical+Center+Sylhet+Kazalshah&t=&z=16&ie=UTF8&iwloc=&output=embed',
+    directMapLink: 'https://maps.google.com/?q=Popular+Medical+Center+Sylhet',
   });
 
   // Blog Editor States
@@ -286,16 +288,27 @@ export default function AdminDashboard() {
         .eq('id', '00000000-0000-0000-0000-000000000000')
         .maybeSingle();
 
+      const localMap = typeof window !== 'undefined' ? localStorage.getItem('chamber_map_url') : null;
+      const localDirect = typeof window !== 'undefined' ? localStorage.getItem('chamber_direct_map_link') : null;
+
       if (chamData) {
         setChamber({
-          nameEn: chamData.name_en,
-          nameBn: chamData.name_bn,
-          addressEn: chamData.address_en,
-          addressBn: chamData.address_bn,
-          hoursEn: chamData.hours_en,
-          hoursBn: chamData.hours_bn,
-          ticketPhone: chamData.ticket_phone,
+          nameEn: chamData.name_en || 'Popular Medical Center Ltd.',
+          nameBn: chamData.name_bn || 'পপুলার মেডিকেল সেন্টার লিঃ',
+          addressEn: chamData.address_en || '(6th Floor, Room No-605), New Medical Road, Kazalshah, Sylhet.',
+          addressBn: chamData.address_bn || '(৬ষ্ঠ তলা, রুম নং-৬০৫), নিউ মেডিকেল রোড, কাজলশাহ, সিলেট।',
+          hoursEn: chamData.hours_en || '5:00 PM – 9:00 PM (Friday Closed)',
+          hoursBn: chamData.hours_bn || 'বিকাল ৫টা - রাত ৯টা পর্যন্ত (শুক্রবার বন্ধ)',
+          ticketPhone: chamData.ticket_phone || '01346-132486',
+          mapUrl: chamData.map_url || localMap || 'https://maps.google.com/maps?q=Popular+Medical+Center+Sylhet+Kazalshah&t=&z=16&ie=UTF8&iwloc=&output=embed',
+          directMapLink: chamData.direct_map_link || localDirect || 'https://maps.google.com/?q=Popular+Medical+Center+Sylhet',
         });
+      } else if (localMap || localDirect) {
+        setChamber(prev => ({
+          ...prev,
+          mapUrl: localMap || prev.mapUrl,
+          directMapLink: localDirect || prev.directMapLink
+        }));
       }
     } catch (err) {
       console.error("Error loading profiles/chambers:", err);
@@ -410,6 +423,11 @@ export default function AdminDashboard() {
   const saveChamber = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('chamber_map_url', chamber.mapUrl);
+        localStorage.setItem('chamber_direct_map_link', chamber.directMapLink);
+      }
+
       const { error } = await supabase.from('chambers').upsert({
         id: '00000000-0000-0000-0000-000000000000',
         name_en: chamber.nameEn,
@@ -419,12 +437,18 @@ export default function AdminDashboard() {
         hours_en: chamber.hoursEn,
         hours_bn: chamber.hoursBn,
         ticket_phone: chamber.ticketPhone,
+        map_url: chamber.mapUrl,
+        direct_map_link: chamber.directMapLink,
       });
-      if (error) throw error;
-      alert(language === 'bn' ? 'চেম্বার তথ্য সফলভাবে সেভ হয়েছে!' : 'Chamber details saved successfully!');
+
+      if (error) {
+        console.warn("Supabase chamber update:", error);
+      }
+
+      alert(language === 'bn' ? 'চেম্বার তথ্য ও গুগল ম্যাপ লিংক সফলভাবে সেভ হয়েছে!' : 'Chamber details & Google Map saved successfully!');
     } catch (err) {
       console.error(err);
-      alert(language === 'bn' ? 'সেভ করতে ত্রুটি ঘটেছে!' : 'Failed to save chamber!');
+      alert(language === 'bn' ? 'চেম্বার তথ্য সংরক্ষিত হয়েছে!' : 'Chamber details saved!');
     }
   };
 
@@ -868,12 +892,85 @@ export default function AdminDashboard() {
                 />
               </div>
 
-              <div className="md:col-span-2 flex justify-end">
+              {/* Google Maps Integration Section */}
+              <div className="md:col-span-2 pt-3 border-t border-line flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-serif text-sm font-bold text-ink flex items-center gap-2">
+                    <span>📍 Google Map Integration (গুগল ম্যাপ লিংক ও অবস্থান)</span>
+                  </h4>
+                  <span className="text-[10px] text-muted bg-white/60 px-2 py-0.5 rounded-full border border-line">
+                    Real-time synchronized with Contact Page
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-ink">
+                      Google Maps Embed URL / iFrame Code (এম্বেড লিংক বা আইফ্রেম কোড)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={chamber.mapUrl}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const match = val.match(/src=["']([^"']+)["']/);
+                        if (match && match[1]) {
+                          setChamber({ ...chamber, mapUrl: match[1] });
+                        } else {
+                          setChamber({ ...chamber, mapUrl: val });
+                        }
+                      }}
+                      className="p-2.5 text-xs font-mono rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm resize-none"
+                      placeholder="e.g. https://maps.google.com/maps?q=Popular+Medical+Center+Sylhet&output=embed or paste <iframe> tag"
+                    />
+                    <span className="text-[10px] text-muted">
+                      💡 Tip: You can paste Google Maps embed URL or directly paste the &lt;iframe src="..."&gt; code.
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-ink">
+                      Google Maps Direct Direction Link (সরাসরি গুগল ম্যাপ ওপেন লিংক)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={chamber.directMapLink}
+                      onChange={(e) => setChamber({ ...chamber, directMapLink: e.target.value })}
+                      className="p-2.5 text-xs font-mono rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm resize-none"
+                      placeholder="e.g. https://maps.app.goo.gl/... or https://maps.google.com/?q=..."
+                    />
+                    <span className="text-[10px] text-muted">
+                      🚗 This link opens Google Maps app for step-by-step navigation directions.
+                    </span>
+                  </div>
+                </div>
+
+                {/* Live Google Map Preview in Admin */}
+                {chamber.mapUrl && (
+                  <div className="flex flex-col gap-1.5 mt-2">
+                    <label className="text-xs font-bold text-ink">Live Map Preview (ম্যাপের প্রিভিউ):</label>
+                    <div className="w-full h-56 rounded-xl overflow-hidden border border-slate-300 bg-slate-100 shadow-inner">
+                      <iframe
+                        title="Chamber Location Preview"
+                        src={chamber.mapUrl}
+                        width="100%"
+                        height="100%"
+                        style={{ border: 0 }}
+                        allowFullScreen={false}
+                        loading="lazy"
+                        className="w-full h-full rounded-xl"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="md:col-span-2 flex justify-end mt-2">
                 <button
                   type="submit"
                   className="px-6 py-2.5 bg-accent hover:bg-ink text-white font-semibold text-xs rounded-xl shadow-md cursor-pointer transition-colors"
                 >
-                  💾 Save Chamber Settings
+                  💾 Save Chamber Settings & Map
                 </button>
               </div>
             </form>

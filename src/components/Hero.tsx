@@ -351,11 +351,11 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
             ref={(el) => {
               sectionRefs.current[idx] = el;
             }}
-            className="min-h-screen w-full flex items-center justify-center sm:justify-start px-2 sm:px-6 md:px-[6vw] relative py-16 sm:py-20"
+            className="min-h-screen w-full flex items-center justify-center sm:justify-start px-3 sm:px-6 md:px-[6vw] relative py-12 sm:py-20"
           >
             {/* Scroll Reveal Animation Styles */}
-            <div className={`w-[70vw] sm:w-full ${sec.id === 'doctor-intro' || sec.id === 'chamber' ? 'max-w-[70vw] sm:max-w-[720px] md:max-w-[740px]' : 'max-w-[70vw] sm:max-w-[640px]'} mx-auto sm:mx-0 sm:mr-auto opacity-0 translate-y-10 transition-all duration-[1000ms] cubic-bezier(0.22, 0.9, 0.3, 1) [.in-view_&]:opacity-100 [.in-view_&]:translate-y-0`}>
-              <GlassPanel className="flex flex-col gap-4 sm:gap-6">
+            <div className={`w-full ${sec.id === 'doctor-intro' || sec.id === 'chamber' ? 'max-w-[95vw] sm:max-w-[720px] md:max-w-[740px]' : 'max-w-[95vw] sm:max-w-[640px]'} mx-auto sm:mx-0 sm:mr-auto opacity-0 translate-y-10 transition-all duration-[1000ms] cubic-bezier(0.22, 0.9, 0.3, 1) [.in-view_&]:opacity-100 [.in-view_&]:translate-y-0`}>
+              <GlassPanel className="flex flex-col gap-4 sm:gap-6 p-5 sm:p-7 md:p-8">
                 <div>
                   {sec.eyebrow && (
                     <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-accent mb-2">

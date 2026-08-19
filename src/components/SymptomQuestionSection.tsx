@@ -29,7 +29,7 @@ export const SymptomQuestionSection: React.FC = () => {
   return (
     <section
       ref={sectionRef}
-      className="relative w-full overflow-hidden bg-gradient-to-b from-background via-[#edfdf6] to-[#4e5a69] py-24 sm:py-32 md:py-40 px-6 flex flex-col items-center justify-center text-center border-t border-line scroll-mt-16"
+      className="relative w-full overflow-hidden bg-gradient-to-b from-background via-[#e4f6ef] to-[#D0E8E0] py-20 sm:py-28 md:py-32 px-6 flex flex-col items-center justify-center text-center border-t border-line scroll-mt-16"
     >
       {/* Soft Glow Radial Lights */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-accent/15 blur-[120px] rounded-full pointer-events-none"></div>

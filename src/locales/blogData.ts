@@ -6,6 +6,10 @@ export interface BlogPost {
   readTime: string;
   excerpt: string;
   content: string;
+  image?: string;
+  category?: string;
+  categoryBn?: string;
+  featured?: boolean;
 }
 
 export const blogData: BlogPost[] = [
@@ -16,6 +20,10 @@ export const blogData: BlogPost[] = [
     title: "Managing Type-2 Diabetes: Essential Steps for Patients in Sylhet",
     date: "2026-08-01",
     readTime: "6 min read",
+    category: "Metabolism & Diabetes",
+    categoryBn: "ডায়াবেটিস ও মেটাবলিজম",
+    image: "/blogs/diabetes_care_guide.jpg",
+    featured: true,
     excerpt: "Learn how to control blood sugar levels effectively using diet plans, regular screening, and rational medication adjustments under medical care.",
     content: `
       <h2>The Diabetes Challenge in Sylhet</h2>
@@ -37,6 +45,10 @@ export const blogData: BlogPost[] = [
     title: "Understanding Hypertension: How to Control High Blood Pressure Safely",
     date: "2026-08-03",
     readTime: "5 min read",
+    category: "Cardiovascular Care",
+    categoryBn: "উচ্চ রক্তচাপ ও হৃদরোগ",
+    image: "/blogs/hypertension_care_guide.jpg",
+    featured: true,
     excerpt: "Unpack why high blood pressure is called a silent killer and how to optimize your treatment and sodium intake for cardiac safety.",
     content: `
       <h2>The Silent Threat</h2>
@@ -55,6 +67,10 @@ export const blogData: BlogPost[] = [
     title: "Thyroid Disorder Symptoms: A Guide to Hypothyroidism & Hyperthyroidism",
     date: "2026-08-07",
     readTime: "6 min read",
+    category: "Endocrinology & Thyroid",
+    categoryBn: "থাইরয়েড ও হরমোন",
+    image: "/blogs/thyroid_health_guide.jpg",
+    featured: false,
     excerpt: "How thyroid hormones regulate metabolism, energy, and weight, and how to balance them under medical guidance.",
     content: `
       <h2>The Thyroid Gland and Metabolism</h2>
@@ -73,6 +89,10 @@ export const blogData: BlogPost[] = [
     title: "Rational Antibiotic Use: Why Misuse is Dangerous for Your Health",
     date: "2026-08-09",
     readTime: "4 min read",
+    category: "Rational Medicine",
+    categoryBn: "সঠিক ওষুধ ও সচেতনতা",
+    image: "/blogs/antibiotic_safety_guide.jpg",
+    featured: false,
     excerpt: "Unpacking the growing threat of antimicrobial resistance in Bangladesh and the critical importance of rational prescriptions.",
     content: `
       <h2>The Threat of Antibiotic Resistance</h2>
@@ -93,6 +113,10 @@ export const blogData: BlogPost[] = [
     title: "সিলেটে ডায়াবেটিস নিয়ন্ত্রণ: লাইফস্টাইল, সুষম খাদ্যাভ্যাস ও ইনসুলিনের সঠিক প্রয়োগ",
     date: "2026-08-02",
     readTime: "৭ মিনিট পাঠ",
+    category: "Metabolism & Diabetes",
+    categoryBn: "ডায়াবেটিস ও মেটাবলিজম",
+    image: "/blogs/diabetes_care_guide.jpg",
+    featured: true,
     excerpt: "সিলেট অঞ্চলের খাদ্যাভ্যাস ও জীবনযাত্রার সাথে সামঞ্জস্য রেখে কীভাবে রক্তে শর্করার মাত্রা নিয়ন্ত্রণে রাখবেন এবং সুস্থ থাকবেন—তার বিশেষ পরামর্শ।",
     content: `
       <h2>সিলেটে ডায়াবেটিস বৃদ্ধির প্রেক্ষাপট</h2>
@@ -111,6 +135,10 @@ export const blogData: BlogPost[] = [
     title: "উচ্চ রক্তচাপ বা হাইপারটেনশন: কেন এটি নীরব ঘাতক ও কীভাবে হৃদরোগ প্রতিরোধ করবেন",
     date: "2026-08-04",
     readTime: "৫ মিনিট পাঠ",
+    category: "Cardiovascular Care",
+    categoryBn: "উচ্চ রক্তচাপ ও হৃদরোগ",
+    image: "/blogs/hypertension_care_guide.jpg",
+    featured: true,
     excerpt: "উচ্চ রক্তচাপের লক্ষণ, লবণ নিয়ন্ত্রণ এবং নিয়মিত পর্যবেক্ষণের মাধ্যমে কীভাবে স্ট্রোক ও কিডনি বিকল হওয়ার ঝুঁকি এড়ানো যায়।",
     content: `
       <h2>কেন উচ্চ রক্তচাপকে 'নীরব ঘাতক' বলা হয়?</h2>
@@ -129,6 +157,10 @@ export const blogData: BlogPost[] = [
     title: "থাইরয়েড হরমোনের তারতম্য: হাইপোথাইরয়েডিজম ও লক্ষণসমূহের নির্ভরযোগ্য প্রতিকার",
     date: "2026-08-08",
     readTime: "৫ মিনিট পাঠ",
+    category: "Endocrinology & Thyroid",
+    categoryBn: "থাইরয়েড ও হরমোন",
+    image: "/blogs/thyroid_health_guide.jpg",
+    featured: false,
     excerpt: "থাইরয়েড গ্রন্থির হরমোন জনিত সমস্যা, অতিরিক্ত ক্লান্তি ও ওজনের তারতম্যের চিকিৎসায় বিশেষজ্ঞ পরামর্শ।",
     content: `
       <h2>থাইরয়েড গ্রন্থির ভূমিকা ও মেটাবলিজম</h2>
@@ -147,6 +179,10 @@ export const blogData: BlogPost[] = [
     title: "অ্যান্টিবায়োটিকের অপব্যবহার ও রেজিস্ট্যান্স: অযথা ওষুধ সেবনের মারাত্মক স্বাস্থ্য ঝুঁকি",
     date: "2026-08-10",
     readTime: "৫ মিনিট পাঠ",
+    category: "Rational Medicine",
+    categoryBn: "সঠিক ওষুধ ও সচেতনতা",
+    image: "/blogs/antibiotic_safety_guide.jpg",
+    featured: false,
     excerpt: "চিকিৎসকের পরামর্শ ছাড়া অ্যান্টিবায়োটিক সেবনের ভয়াবহ পরিণতি এবং সঠিক নিয়মে ওষুধ ব্যবহারের সচেতনতামূলক তথ্য।",
     content: `
       <h2>অ্যান্টিবায়োটিক রেজিস্ট্যান্সের ভয়াবহতা</h2>
@@ -160,6 +196,6 @@ export const blogData: BlogPost[] = [
     `
   }
 ];
+
 export const faqsData = [];
 export const chamberData = [];
-

@@ -309,11 +309,11 @@ export const SymptomCheckerSection: React.FC = () => {
     <section
       id="symptoms-section"
       ref={sectionRef}
-      className="relative w-full overflow-hidden bg-gradient-to-b from-[#4e5a69] via-[#444F5C] to-[#343d47] text-white py-14 md:py-24 px-4 sm:px-6 md:px-12 border-t border-white/10 scroll-mt-16"
+      className="relative w-full overflow-hidden bg-[#D0E8E0] text-ink py-14 md:py-24 px-4 sm:px-6 md:px-12 border-t border-line/40 scroll-mt-16"
     >
       {/* Background Decorative Tech Grid & Subtle Radial Glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.1)_1px,transparent_1px)] [background-size:24px_24px] opacity-40 pointer-events-none"></div>
-      <div className="absolute top-1/3 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-white/5 blur-[100px] rounded-full pointer-events-none"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(rgba(47,111,95,0.12)_1px,transparent_1px)] [background-size:24px_24px] opacity-60 pointer-events-none"></div>
+      <div className="absolute top-1/3 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-accent/10 blur-[120px] rounded-full pointer-events-none"></div>
 
       {/* Main Container */}
       <div className="relative z-10 w-full max-w-[1440px] mx-auto flex flex-col gap-6">
@@ -325,7 +325,7 @@ export const SymptomCheckerSection: React.FC = () => {
           <div
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
-            className={`lg:col-span-8 xl:col-span-9 flex flex-col justify-between relative rounded-3xl overflow-hidden border border-white/20 shadow-2xl bg-[#363f4b]/60 backdrop-blur-xl min-h-[580px] md:min-h-[640px] select-none transition-all duration-1000 ease-out transform ${
+            className={`lg:col-span-8 xl:col-span-9 flex flex-col justify-between relative rounded-3xl overflow-hidden border border-white/80 shadow-2xl bg-white/50 backdrop-blur-xl min-h-[500px] sm:min-h-[560px] md:min-h-[640px] select-none transition-all duration-1000 ease-out transform ${
               inView ? 'translate-x-0 opacity-100' : '-translate-x-20 opacity-0'
             }`}
           >
@@ -336,72 +336,71 @@ export const SymptomCheckerSection: React.FC = () => {
                 src={imgSrc}
                 alt={activeSymptom.en}
                 onError={() => setImgSrc('/symptom-anatomy.jpg')}
-                className="w-full h-full object-cover object-center scale-100 transition-all duration-700 brightness-90 contrast-110 animate-in fade-in zoom-in-95 duration-500"
+                className="w-full h-full object-cover object-center scale-100 transition-all duration-700 brightness-95 contrast-105 animate-in fade-in zoom-in-95 duration-500"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
-              <div className="absolute inset-0 bg-gradient-to-r from-slate-950/70 via-transparent to-slate-950/40"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
             </div>
 
             {/* Mobile / Desktop Swipe / Arrow Nav Controls */}
-            <div className="absolute inset-y-0 left-2 md:left-4 z-20 flex items-center pointer-events-auto">
+            <div className="absolute inset-y-0 left-1 sm:left-2 md:left-4 z-20 flex items-center pointer-events-auto">
               <button
                 onClick={prevSymptom}
                 aria-label="Previous symptom"
-                className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-slate-950/50 hover:bg-slate-950/80 border border-white/25 backdrop-blur-md flex items-center justify-center text-white/90 hover:text-white shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full bg-white/85 hover:bg-white border border-white/90 backdrop-blur-md flex items-center justify-center text-ink hover:text-accent shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer"
               >
                 <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
               </button>
             </div>
 
-            <div className="absolute inset-y-0 right-2 md:right-4 z-20 flex items-center pointer-events-auto">
+            <div className="absolute inset-y-0 right-1 sm:right-2 md:right-4 z-20 flex items-center pointer-events-auto">
               <button
                 onClick={nextSymptom}
                 aria-label="Next symptom"
-                className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-slate-950/50 hover:bg-slate-950/80 border border-white/25 backdrop-blur-md flex items-center justify-center text-white/90 hover:text-white shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full bg-white/85 hover:bg-white border border-white/90 backdrop-blur-md flex items-center justify-center text-ink hover:text-accent shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer"
               >
                 <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
               </button>
             </div>
 
             {/* Top Bar: Symptom Detail Hologram Card + Mobile Swipe Indicator */}
-            <div className="relative z-10 p-4 sm:p-6 md:p-8 flex flex-col gap-3">
+            <div className="relative z-10 p-3 sm:p-6 md:p-8 flex flex-col gap-2.5 sm:gap-3">
               {/* Mobile Swipe Hint Badge */}
-              <div className="lg:hidden flex items-center justify-between gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md w-fit self-end text-[11px] text-emerald-300 font-semibold shadow-sm">
-                <MoveHorizontal className="w-3.5 h-3.5 animate-pulse" />
+              <div className="lg:hidden flex items-center justify-between gap-2 px-3 py-1 rounded-full bg-white/85 border border-white backdrop-blur-md w-fit self-end text-[10px] sm:text-[11px] text-accent font-semibold shadow-sm">
+                <MoveHorizontal className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-pulse" />
                 <span>
                   {language === 'bn' ? 'সোয়াইপ করে দেখুন' : 'Swipe left/right'} ({activeIndex + 1}/{symptomsList.length})
                 </span>
               </div>
 
               {/* Hologram Card */}
-              <div className="w-full max-w-xl bg-white/15 hover:bg-white/20 backdrop-blur-md border border-white/25 p-5 md:p-6 rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] flex flex-col gap-3 transition-all duration-300 animate-in fade-in duration-500">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-white/15 border border-white/30 flex items-center justify-center text-emerald-300 shadow-sm backdrop-blur-sm">
-                      <IconComponent className="w-5 h-5 animate-pulse" />
+              <div className="w-full max-w-xl bg-white/85 hover:bg-white/95 backdrop-blur-md border border-white/80 p-4 sm:p-5 md:p-6 rounded-2xl shadow-xl flex flex-col gap-2.5 sm:gap-3 transition-all duration-300 animate-in fade-in duration-500">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 sm:gap-3">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-accent/15 border border-accent/20 flex items-center justify-center text-accent shadow-sm backdrop-blur-sm shrink-0">
+                      <IconComponent className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
                     </div>
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 block drop-shadow-sm">
+                      <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-accent block">
                         {language === 'bn' ? activeSymptom.categoryBn : activeSymptom.categoryEn}
                       </span>
-                      <h3 className="font-serif text-lg md:text-xl font-bold text-white leading-tight drop-shadow-md">
+                      <h3 className="font-serif text-base sm:text-lg md:text-xl font-bold text-ink leading-tight">
                         {language === 'bn' ? activeSymptom.bn : activeSymptom.en}
                       </h3>
                     </div>
                   </div>
-                  <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-white/10 text-emerald-300 border border-white/20 backdrop-blur-sm shadow-sm">
+                  <span className="text-[11px] sm:text-xs font-mono font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-accent/10 text-accent border border-accent/20 backdrop-blur-sm shadow-sm shrink-0">
                     #{activeSymptom.id}
                   </span>
                 </div>
 
-                <p className="text-xs sm:text-sm text-white/90 leading-relaxed border-t border-white/20 pt-2.5 drop-shadow-sm font-normal">
+                <p className="text-xs sm:text-sm text-muted leading-relaxed border-t border-line/40 pt-2 font-normal">
                   {language === 'bn' ? activeSymptom.noteBn : activeSymptom.noteEn}
                 </p>
 
-                <div className="flex items-center justify-between gap-3 border-t border-white/20 pt-3 flex-wrap mt-0.5">
-                  <div className="flex items-center gap-2 text-[11px] text-emerald-300 font-semibold drop-shadow-sm">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>
+                <div className="flex items-center justify-between gap-2 border-t border-line/40 pt-2.5 flex-wrap mt-0.5">
+                  <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-accent font-semibold">
+                    <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-accent shrink-0" />
+                    <span className="truncate max-w-[200px] sm:max-w-none">
                       {language === 'bn'
                         ? `আক্রান্ত অঙ্গ: ${activeSymptom.organBn}`
                         : `Affected System: ${activeSymptom.organEn}`}
@@ -411,7 +410,7 @@ export const SymptomCheckerSection: React.FC = () => {
                   {/* Learn More Button */}
                   <Link
                     href={`/symptoms#${activeSymptom.slug}`}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/85 hover:bg-emerald-500 text-white font-semibold text-xs shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95 border border-emerald-400/40 backdrop-blur-sm cursor-pointer ml-auto"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl bg-accent hover:bg-ink text-white font-semibold text-xs shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95 border border-accent/30 backdrop-blur-sm cursor-pointer ml-auto"
                   >
                     <span>{language === 'bn' ? 'বিস্তারিত জানুন' : 'Learn More'}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -420,17 +419,17 @@ export const SymptomCheckerSection: React.FC = () => {
               </div>
             </div>
 
-            {/* Bottom Floating Doctor Appointment CTA Banner - Watercolor Transparent Style */}
-            <div className="relative z-10 p-4 sm:p-6 md:p-8 mt-auto">
-              <div className="w-full bg-white/15 hover:bg-white/20 backdrop-blur-md border border-white/25 p-5 md:p-6 rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all duration-300">
+            {/* Bottom Floating Doctor Appointment CTA Banner */}
+            <div className="relative z-10 p-3 sm:p-6 md:p-8 mt-auto">
+              <div className="w-full bg-white/85 hover:bg-white/95 backdrop-blur-md border border-white/80 p-4 sm:p-5 md:p-6 rounded-2xl shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4 transition-all duration-300">
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-                    <h4 className="font-serif text-base md:text-lg font-bold text-white drop-shadow-sm">
+                    <span className="w-2.5 h-2.5 rounded-full bg-accent animate-ping"></span>
+                    <h4 className="font-serif text-base md:text-lg font-bold text-ink">
                       {language === 'bn' ? 'সরাসরি ডাক্তারের পরামর্শ ও সিরিয়াল' : 'Consult Specialist Dr. Hanif'}
                     </h4>
                   </div>
-                  <p className="text-xs text-white/85 drop-shadow-sm">
+                  <p className="text-xs text-muted">
                     {language === 'bn'
                       ? 'পপুলার মেডিকেল সেন্টার (রুম ৬০৫), কাজলশাহ, সিলেট।'
                       : 'Popular Medical Center (Room #605), Kazalshah, Sylhet.'}
@@ -440,16 +439,16 @@ export const SymptomCheckerSection: React.FC = () => {
                 <div className="flex flex-wrap sm:flex-nowrap gap-3 w-full md:w-auto">
                   <a
                     href="tel:+8801346132486"
-                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white/20 hover:bg-white/35 text-white font-semibold text-xs md:text-sm border border-white/35 backdrop-blur-md transition-all shadow-md hover:-translate-y-0.5 cursor-pointer"
+                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white hover:bg-white/90 text-ink font-semibold text-xs md:text-sm border border-line shadow-sm transition-all hover:-translate-y-0.5 cursor-pointer"
                   >
-                    <Phone className="w-4 h-4 text-emerald-300" />
+                    <Phone className="w-4 h-4 text-accent" />
                     <span>01346-132486</span>
                   </a>
                   <a
                     href="https://wa.me/8801346132486"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-accent hover:bg-ink text-white font-semibold text-xs md:text-sm transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 border border-white/20 cursor-pointer"
+                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-accent hover:bg-ink text-white font-semibold text-xs md:text-sm transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 cursor-pointer"
                   >
                     <MessageCircle className="w-4 h-4" />
                     <span>{language === 'bn' ? 'সিরিয়াল বুকিং' : 'Book Appointment'}</span>
@@ -465,12 +464,12 @@ export const SymptomCheckerSection: React.FC = () => {
               inView ? 'translate-x-0 opacity-100' : 'translate-x-20 opacity-0'
             }`}
           >
-            <div className="flex items-center justify-between px-2 pb-1 border-b border-white/10">
-              <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="flex items-center justify-between px-2 pb-1 border-b border-line/40">
+              <span className="text-xs font-bold text-ink uppercase tracking-wider flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-accent" />
                 <span>{language === 'bn' ? 'লক্ষণ তালিকা (১৪টি)' : 'Symptoms (14)'}</span>
               </span>
-              <span className="text-[10px] text-emerald-400 font-mono">
+              <span className="text-[10px] text-accent font-mono font-semibold">
                 {language === 'bn' ? 'ক্লিক বা সোয়াইপ করুন' : 'Click or swipe'}
               </span>
             </div>
@@ -485,10 +484,10 @@ export const SymptomCheckerSection: React.FC = () => {
                   <button
                     key={symptom.id}
                     onClick={() => setActiveIndex(idx)}
-                    className={`group w-full text-left p-3.5 rounded-xl border transition-all duration-200 cursor-pointer flex items-center justify-between gap-3 ${
+                    className={`group w-full text-left p-3.5 rounded-xl border transition-all duration-200 cursor-pointer flex items-center justify-between gap-3 shadow-sm ${
                       isSelected
-                        ? 'bg-accent text-white border-emerald-300 shadow-[0_0_15px_rgba(47,111,94,0.5)] scale-[1.02]'
-                        : 'bg-white/5 hover:bg-white/15 text-slate-200 border-white/10 hover:border-white/25'
+                        ? 'bg-accent text-white border-accent shadow-md shadow-accent/25 scale-[1.02]'
+                        : 'bg-white/60 hover:bg-white/95 text-ink border-white/80 hover:border-accent/40'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -496,7 +495,7 @@ export const SymptomCheckerSection: React.FC = () => {
                         className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-xs transition-colors ${
                           isSelected
                             ? 'bg-white text-accent font-bold'
-                            : 'bg-white/10 text-slate-300 group-hover:text-white'
+                            : 'bg-accent/10 text-accent group-hover:bg-accent/20'
                         }`}
                       >
                         <SymIcon className="w-3.5 h-3.5" />
@@ -504,14 +503,14 @@ export const SymptomCheckerSection: React.FC = () => {
                       <div className="flex flex-col min-w-0">
                         <span
                           className={`text-xs md:text-sm font-semibold truncate ${
-                            isSelected ? 'text-white' : 'text-slate-200 group-hover:text-white'
+                            isSelected ? 'text-white' : 'text-ink group-hover:text-accent'
                           }`}
                         >
                           {language === 'bn' ? symptom.bn : symptom.en}
                         </span>
                         <span
                           className={`text-[10px] truncate ${
-                            isSelected ? 'text-emerald-100' : 'text-slate-400'
+                            isSelected ? 'text-emerald-100' : 'text-muted'
                           }`}
                         >
                           {language === 'bn' ? symptom.categoryBn : symptom.categoryEn}
@@ -523,7 +522,7 @@ export const SymptomCheckerSection: React.FC = () => {
                       className={`w-4 h-4 shrink-0 transition-transform ${
                         isSelected
                           ? 'text-white translate-x-1'
-                          : 'text-slate-500 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5'
+                          : 'text-muted/60 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:text-accent'
                       }`}
                     />
                   </button>
