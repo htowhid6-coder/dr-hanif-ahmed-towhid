@@ -97,7 +97,7 @@ export default function SymptomsPage() {
         if (error) throw error;
         if (data && data.length > 0) {
           const mapped: SymptomDetail[] = data.map((d: any, index: number) => ({
-            id: d.id || index + 1,
+            id: index + 1,
             slug: d.slug,
             titleEn: d.title_en,
             titleBn: d.title_bn,
@@ -105,7 +105,7 @@ export default function SymptomsPage() {
             categoryBn: d.category_bn,
             organEn: d.organ_en,
             organBn: d.organ_bn,
-            image: d.image || '/symptoms/fever.png',
+            image: d.image ? d.image.toLowerCase() : '/symptoms/fever.png',
             shortDescEn: d.short_desc_en,
             shortDescBn: d.short_desc_bn,
             overviewEn: d.overview_en,
@@ -326,7 +326,7 @@ export default function SymptomsPage() {
               </p>
             </div>
           ) : (
-            filteredSymptoms.map((symptom: SymptomDetail) => (
+            filteredSymptoms.map((symptom: SymptomDetail, index: number) => (
               <article
                 key={symptom.slug}
                 id={symptom.slug}
@@ -355,7 +355,7 @@ export default function SymptomsPage() {
                     </div>
 
                     <span className="text-xs font-mono font-bold px-3 py-1 rounded-xl bg-slate-900 text-emerald-300 shadow-sm">
-                      Symptom #{symptom.id}
+                      Symptom #{String(index + 1).padStart(2, '0')}
                     </span>
                   </div>
 
