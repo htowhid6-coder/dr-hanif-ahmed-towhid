@@ -245,7 +245,7 @@ Dr. Hanif provides comprehensive medical management for patients with chronic st
   },
   {
     slug: 'asthma',
-    image: '/Diseases_Images/Asthma.png',
+    image: '/Diseases_Images/asthma.png',
     title: { en: 'Asthma', bn: 'অ্যাজমা বা হাঁপানি (Asthma)' },
     shortDesc: {
       en: 'Long-term airway control, inhaler technique optimization, and emergency acute wheezing management.',
