@@ -37,16 +37,46 @@ export default function BlogPostDetailClient() {
 
   useEffect(() => {
     async function fetchPost() {
+      if (!slug) return;
       try {
-        const { data, error } = await supabase
+        const decodedSlug = decodeURIComponent(slug).toLowerCase().trim();
+
+        // 1. Try exact slug match in Supabase
+        let { data } = await supabase
           .from('posts')
           .select('*')
-          .eq('slug', slug)
-          .single();
+          .eq('slug', decodedSlug)
+          .maybeSingle();
 
-        const local = blogData.find(p => p.slug === slug);
+        // 2. If not found, try single-hyphen normalized match
+        if (!data) {
+          const normalizedSlug = decodedSlug.replace(/-+/g, '-');
+          const res = await supabase
+            .from('posts')
+            .select('*')
+            .eq('slug', normalizedSlug)
+            .maybeSingle();
+          data = res.data;
+        }
 
-        if (error) throw error;
+        // 3. If still not found, fetch all posts and find matching post (handling extra hyphens or encoding variations)
+        if (!data) {
+          const { data: allPosts } = await supabase.from('posts').select('*');
+          if (allPosts && allPosts.length > 0) {
+            const targetNorm = decodedSlug.replace(/[^a-z0-9]/g, '');
+            data = allPosts.find((p: any) => {
+              const pNorm = (p.slug || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+              return pNorm === targetNorm || (pNorm.length > 10 && (pNorm.includes(targetNorm) || targetNorm.includes(pNorm)));
+            });
+          }
+        }
+
+        // Check local static fallback
+        const local = blogData.find(p => 
+          p.slug === decodedSlug || 
+          p.slug.toLowerCase().replace(/-+/g, '-') === decodedSlug.replace(/-+/g, '-')
+        );
+
         if (data) {
           setPost({
             slug: data.slug,
@@ -60,12 +90,15 @@ export default function BlogPostDetailClient() {
             category: data.category || local?.category || 'General Medicine',
             categoryBn: data.category_bn || local?.categoryBn || 'মেডিসিন পরামর্শ',
           });
+        } else if (local) {
+          setPost(local);
         } else {
-          setPost(local || null);
+          setPost(null);
         }
       } catch (err) {
         console.error("Error loading blog details:", err);
-        const local = blogData.find(p => p.slug === slug);
+        const decodedSlug = decodeURIComponent(slug).toLowerCase().trim();
+        const local = blogData.find(p => p.slug === decodedSlug);
         setPost(local || null);
       } finally {
         setLoading(false);

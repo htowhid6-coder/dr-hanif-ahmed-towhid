@@ -638,7 +638,10 @@ export default function AdminDashboard() {
           excerpt: d.excerpt,
           content: d.content,
           date: d.created_at ? d.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
-          readTime: d.read_time,
+          readTime: d.read_time || '5 min read',
+          image: d.image_url || '/blogs/diabetes_care_guide.jpg',
+          category: d.category || 'General Medicine',
+          categoryBn: d.category_bn || 'মেডিসিন পরামর্শ',
         }));
         setBlogs(mapped);
       }
@@ -656,6 +659,9 @@ export default function AdminDashboard() {
         excerpt: post.excerpt,
         content: post.content,
         read_time: post.readTime,
+        image_url: post.image,
+        category: post.category,
+        category_bn: post.categoryBn,
         is_published: true
       }));
 
@@ -766,7 +772,16 @@ export default function AdminDashboard() {
 
   const handleSaveBlog = async (e: React.FormEvent) => {
     e.preventDefault();
-    const postSlug = selectedPost ? selectedPost.slug : (blogForm.title || 'new-post').toLowerCase().replace(/ /g, '-').replace(/[^\w-]/g, '');
+    const generateSlug = (text: string) => {
+      return text
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/[\s_-]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    };
+
+    const postSlug = selectedPost ? selectedPost.slug : generateSlug(blogForm.title || 'new-post');
 
     const postPayload = {
       slug: postSlug,
@@ -775,6 +790,9 @@ export default function AdminDashboard() {
       excerpt: blogForm.excerpt || '',
       content: blogForm.content || '',
       read_time: blogForm.readTime || '5 min read',
+      image_url: blogForm.image || '/blogs/diabetes_care_guide.jpg',
+      category: blogForm.category || 'General Medicine',
+      category_bn: blogForm.categoryBn || 'মেডিসিন পরামর্শ',
       is_published: true,
     };
 
@@ -790,6 +808,9 @@ export default function AdminDashboard() {
         content: blogForm.content || '',
         date: new Date().toISOString().split('T')[0],
         readTime: blogForm.readTime || '5 min read',
+        image: blogForm.image || '/blogs/diabetes_care_guide.jpg',
+        category: blogForm.category || 'General Medicine',
+        categoryBn: blogForm.categoryBn || 'মেডিসিন পরামর্শ',
       };
 
       if (selectedPost) {
@@ -801,7 +822,7 @@ export default function AdminDashboard() {
       }
 
       setSelectedPost(null);
-      setBlogForm({ title: '', excerpt: '', content: '', lang: 'bn', readTime: '5 min read' });
+      setBlogForm({ title: '', excerpt: '', content: '', lang: 'bn', readTime: '5 min read', image: '/blogs/diabetes_care_guide.jpg', category: 'General Medicine', categoryBn: 'মেডিসিন পরামর্শ' });
     } catch (err) {
       console.error(err);
       alert(language === 'bn' ? 'আর্টিকেল সেভ করতে সমস্যা হয়েছে!' : 'Failed to save article!');
