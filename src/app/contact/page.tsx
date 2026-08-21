@@ -23,7 +23,13 @@ import {
 
 export default function Contact() {
   const { language } = useLanguage();
-  const [formData, setFormData] = useState({ name: '', phone: '', msg: '' });
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    age: '',
+    gender: '' as 'Male' | 'Female' | '',
+    msg: ''
+  });
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastWhatsappUrl, setLastWhatsappUrl] = useState('');
@@ -74,10 +80,18 @@ export default function Contact() {
 
     setIsSubmitting(true);
 
+    const genderDisplay = formData.gender
+      ? (language === 'bn'
+          ? (formData.gender === 'Male' ? 'পুরুষ (Male)' : 'মহিলা (Female)')
+          : formData.gender)
+      : '';
+
     // Format WhatsApp message text
     const messageBody =
       `*New Patient Inquiry - Dr. Hanif Ahmed Towhid*\n\n` +
       `👤 *Patient Name:* ${formData.name}\n` +
+      (formData.age ? `🎂 *Age:* ${formData.age} ${language === 'bn' ? 'বছর' : 'years'}\n` : '') +
+      (genderDisplay ? `⚧ *Sex / Gender:* ${genderDisplay}\n` : '') +
       `📞 *Mobile Number:* ${formData.phone}\n` +
       `📝 *Query / Message:*\n${formData.msg || (language === 'bn' ? 'চেম্বার সিরিয়াল ও চিকিৎসা পরামর্শ সংক্রান্ত বার্তা।' : 'Appointment Serial & Consultation Query.')}\n\n` +
       `🌐 _Sent via official chamber website: drhaniftowhid.com_`;
@@ -86,13 +100,18 @@ export default function Contact() {
     setLastWhatsappUrl(whatsappUrl);
 
     try {
+      const details = [
+        formData.age ? `Age: ${formData.age}` : null,
+        formData.gender ? `Sex: ${formData.gender}` : null,
+      ].filter(Boolean).join(' | ');
+
       // Save record to backend messages table for admin logs & CSV records
       await supabase.from('messages').insert({
         name: formData.name,
         email: '',
         phone: formData.phone,
-        subject: 'Contact Form WhatsApp Message',
-        message: formData.msg || 'Appointment Serial / Consultation Request'
+        subject: details ? `Contact Form (${details})` : 'Contact Form WhatsApp Message',
+        message: `${details ? `[${details}]\n` : ''}${formData.msg || 'Appointment Serial / Consultation Request'}`
       });
     } catch (err) {
       console.warn("Backend log notice:", err);
@@ -109,7 +128,7 @@ export default function Contact() {
 
   const handleResetForm = () => {
     setSubmitted(false);
-    setFormData({ name: '', phone: '', msg: '' });
+    setFormData({ name: '', phone: '', age: '', gender: '', msg: '' });
   };
 
   return (
@@ -332,6 +351,70 @@ export default function Contact() {
                       className="p-3 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
                       placeholder="e.g. 01712-XXXXXX"
                     />
+                  </div>
+
+                  {/* Age and Sex / Gender Row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    {/* Age Input */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-bold text-ink" htmlFor="age">
+                        {language === 'bn' ? 'রোগীর বয়স (Age):' : 'Patient Age:'}
+                      </label>
+                      <input
+                        type="number"
+                        id="age"
+                        min="1"
+                        max="120"
+                        value={formData.age}
+                        onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                        className="p-3 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                        placeholder={language === 'bn' ? 'যেমন: ৪৫' : 'e.g. 45'}
+                      />
+                    </div>
+
+                    {/* Sex / Gender Selection */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-bold text-ink">
+                        {language === 'bn' ? 'লিঙ্গ (Sex / Gender):' : 'Sex / Gender:'}
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFormData({
+                              ...formData,
+                              gender: formData.gender === 'Male' ? '' : 'Male'
+                            })
+                          }
+                          className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-semibold border transition-all cursor-pointer select-none ${
+                            formData.gender === 'Male'
+                              ? 'bg-accent text-white border-accent shadow-sm ring-2 ring-accent/20'
+                              : 'bg-white/95 text-ink/85 border-slate-300 hover:border-accent/60 hover:bg-slate-50'
+                          }`}
+                        >
+                          <span className="text-sm">👨</span>
+                          <span>{language === 'bn' ? 'পুরুষ (Male)' : 'Male'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFormData({
+                              ...formData,
+                              gender: formData.gender === 'Female' ? '' : 'Female'
+                            })
+                          }
+                          className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-semibold border transition-all cursor-pointer select-none ${
+                            formData.gender === 'Female'
+                              ? 'bg-accent text-white border-accent shadow-sm ring-2 ring-accent/20'
+                              : 'bg-white/95 text-ink/85 border-slate-300 hover:border-accent/60 hover:bg-slate-50'
+                          }`}
+                        >
+                          <span className="text-sm">👩</span>
+                          <span>{language === 'bn' ? 'মহিলা (Female)' : 'Female'}</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="flex flex-col gap-1.5">

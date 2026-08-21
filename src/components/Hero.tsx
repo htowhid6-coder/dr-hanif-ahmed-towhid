@@ -219,7 +219,7 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
             <div className="flex items-center gap-1.5">
               <Activity className="w-3.5 h-3.5 text-accent" />
               <span className="text-[10px] font-bold text-accent uppercase tracking-wider">
-                {language === 'bn' ? '১৫টি রোগ' : '15 Diseases'}
+                {language === 'bn' ? 'রোগসমূহ' : 'Diseases'}
               </span>
             </div>
             <span className="text-[10px] text-muted">•</span>
@@ -229,7 +229,7 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
           </div>
         </div>
       ),
-      secondaryCta: language === 'bn' ? 'সকল রোগ দেখুন (১৫টি) →' : 'View All 15 Diseases →',
+      secondaryCta: language === 'bn' ? 'আরও দেখুন' : 'View More',
       secondaryCtaHref: '/diseases',
     },
     {
