@@ -34,6 +34,7 @@ import {
 import supabase from '@/lib/supabase';
 import RichTextEditor from '@/components/RichTextEditor';
 import { Save, Trash2, Download, Plus, LogOut, User, Building2, BookOpen, MessageSquare } from 'lucide-react';
+import { HeroSlidesManager } from '@/components/admin/HeroSlidesManager';
 
 export default function AdminDashboard() {
   const { language } = useLanguage();
@@ -43,15 +44,15 @@ export default function AdminDashboard() {
   const [loginError, setLoginError] = useState('');
 
   // Tab State
-  const [activeTab, setActiveTab] = useState<'profile' | 'chamber' | 'symptoms' | 'blog' | 'reviews' | 'messages'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'chamber' | 'hero' | 'symptoms' | 'blog' | 'reviews' | 'messages'>('profile');
   const [messages, setMessages] = useState<any[]>([]);
 
   // Profile Form States
   const [profile, setProfile] = useState({
     nameEn: 'Dr. Hanif Ahmed Towhid',
     nameBn: 'ডা. হানিফ আহমেদ তৌহিদ',
-    designationEn: 'Registrar, Department of Medicine',
-    designationBn: 'রেজিস্ট্রার, মেডিসিন বিভাগ',
+    designationEn: 'Medicine Specialist, Department of Medicine',
+    designationBn: 'মেডিসিন বিশেষজ্ঞ, মেডিসিন বিভাগ',
     bmdc: 'A-76300',
     email: 'htowhid6@gmail.com',
     phone: '01721291297',
@@ -65,8 +66,8 @@ export default function AdminDashboard() {
     nameBn: 'পপুলার মেডিকেল সেন্টার লিঃ',
     addressEn: '(6th Floor, Room No-605), New Medical Road, Kazalshah, Sylhet.',
     addressBn: '(৬ষ্ঠ তলা, রুম নং-৬০৫), নিউ মেডিকেল রোড, কাজলশাহ, সিলেট।',
-    hoursEn: '5:00 PM – 9:00 PM (Friday Closed)',
-    hoursBn: 'বিকাল ৫টা - রাত ৯টা পর্যন্ত (শুক্রবার বন্ধ)',
+    hoursEn: '5:00 PM – 9:00 PM (Friday & Tuesday Closed)',
+    hoursBn: 'বিকাল ৫টা - রাত ৯টা পর্যন্ত (শুক্রবার ও মঙ্গলবার বন্ধ)',
     ticketPhone: '01346-132486',
     mapUrl: 'https://maps.google.com/maps?q=Popular+Medical+Center+Sylhet+Kazalshah&t=&z=16&ie=UTF8&iwloc=&output=embed',
     directMapLink: 'https://maps.google.com/?q=Popular+Medical+Center+Sylhet',
@@ -604,8 +605,8 @@ export default function AdminDashboard() {
           nameBn: chamData.name_bn || 'পপুলার মেডিকেল সেন্টার লিঃ',
           addressEn: chamData.address_en || '(6th Floor, Room No-605), New Medical Road, Kazalshah, Sylhet.',
           addressBn: chamData.address_bn || '(৬ষ্ঠ তলা, রুম নং-৬০৫), নিউ মেডিকেল রোড, কাজলশাহ, সিলেট।',
-          hoursEn: chamData.hours_en || '5:00 PM – 9:00 PM (Friday Closed)',
-          hoursBn: chamData.hours_bn || 'বিকাল ৫টা - রাত ৯টা পর্যন্ত (শুক্রবার বন্ধ)',
+          hoursEn: chamData.hours_en || '5:00 PM – 9:00 PM (Friday & Tuesday Closed)',
+          hoursBn: chamData.hours_bn || 'বিকাল ৫টা - রাত ৯টা পর্যন্ত (শুক্রবার ও মঙ্গলবার বন্ধ)',
           ticketPhone: chamData.ticket_phone || '01346-132486',
           mapUrl: chamData.map_url || localMap || 'https://maps.google.com/maps?q=Popular+Medical+Center+Sylhet+Kazalshah&t=&z=16&ie=UTF8&iwloc=&output=embed',
           directMapLink: chamData.direct_map_link || localDirect || 'https://maps.google.com/?q=Popular+Medical+Center+Sylhet',
@@ -1003,7 +1004,7 @@ export default function AdminDashboard() {
 
         {/* Navigation Tabs */}
         <div className="flex border-b border-line gap-2 flex-wrap">
-          {(['profile', 'chamber', 'symptoms', 'blog', 'reviews', 'messages'] as const).map((tab) => (
+          {(['profile', 'chamber', 'hero', 'symptoms', 'blog', 'reviews', 'messages'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -1015,6 +1016,8 @@ export default function AdminDashboard() {
                 ? language === 'bn' ? 'প্রোফাইল সম্পাদন' : 'Edit Profile'
                 : tab === 'chamber'
                 ? language === 'bn' ? 'চেম্বার তথ্য' : 'Chamber Info'
+                : tab === 'hero'
+                ? language === 'bn' ? 'হোম ও হিরো স্লাইড (Hero Slides)' : 'Hero & Home Slides'
                 : tab === 'symptoms'
                 ? language === 'bn' ? 'লক্ষণ ও রোগ (Symptoms)' : 'Symptoms Manager'
                 : tab === 'blog'
@@ -1059,7 +1062,7 @@ export default function AdminDashboard() {
                   value={profile.designationEn}
                   onChange={(e) => setProfile({ ...profile, designationEn: e.target.value })}
                   className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
-                  placeholder="e.g. Registrar, Department of Medicine"
+                  placeholder="e.g. Medicine Specialist, Department of Medicine"
                 />
               </div>
 
@@ -1070,7 +1073,7 @@ export default function AdminDashboard() {
                   value={profile.designationBn}
                   onChange={(e) => setProfile({ ...profile, designationBn: e.target.value })}
                   className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
-                  placeholder="যেমন: রেজিস্ট্রার, মেডিসিন বিভাগ"
+                  placeholder="যেমন: মেডিসিন বিশেষজ্ঞ, মেডিসিন বিভাগ"
                 />
               </div>
 
@@ -1196,7 +1199,7 @@ export default function AdminDashboard() {
                   value={chamber.hoursEn}
                   onChange={(e) => setChamber({ ...chamber, hoursEn: e.target.value })}
                   className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
-                  placeholder="e.g. 5:00 PM – 9:00 PM (Friday Closed)"
+                  placeholder="e.g. 5:00 PM – 9:00 PM (Friday & Tuesday Closed)"
                 />
               </div>
 
@@ -1207,7 +1210,7 @@ export default function AdminDashboard() {
                   value={chamber.hoursBn}
                   onChange={(e) => setChamber({ ...chamber, hoursBn: e.target.value })}
                   className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
-                  placeholder="যেমন: বিকাল ৫টা - রাত ৯টা পর্যন্ত (শুক্রবার বন্ধ)"
+                  placeholder="যেমন: বিকাল ৫টা - রাত ৯টা পর্যন্ত (শুক্রবার ও মঙ্গলবার বন্ধ)"
                 />
               </div>
 
@@ -1307,7 +1310,11 @@ export default function AdminDashboard() {
           </GlassPanel>
         )}
 
-        
+        {/* TAB 3: HERO & HOME SLIDES */}
+        {activeTab === 'hero' && (
+          <HeroSlidesManager />
+        )}
+
         {/* TAB: SYMPTOMS & CLINICAL CONDITIONS MANAGER */}
         {activeTab === 'symptoms' && (
           <div className="flex flex-col gap-6 animate-in fade-in duration-300">

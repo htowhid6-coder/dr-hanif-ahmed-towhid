@@ -154,5 +154,57 @@ body {
   animation-play-state: paused;
 }
 
+/* Symptom Visual & Overlay Cards Animations */
+@keyframes slideInLeftSmooth {
+  0% {
+    opacity: 0;
+    transform: translateX(-50px) scale(0.96);
+    filter: blur(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0px) scale(1);
+    filter: blur(0px);
+  }
+}
+
+@keyframes slideInBottomSmooth {
+  0% {
+    opacity: 0;
+    transform: translateY(35px) scale(0.97);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0px) scale(1);
+    filter: blur(0px);
+  }
+}
+
+@keyframes imageFadeZoom {
+  0% {
+    opacity: 0;
+    transform: scale(1.06);
+    filter: blur(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0px);
+  }
+}
+
+.animate-slide-left-smooth {
+  animation: slideInLeftSmooth 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-bottom-smooth {
+  animation: slideInBottomSmooth 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.12s forwards;
+}
+
+.animate-image-fade-zoom {
+  animation: imageFadeZoom 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 
 

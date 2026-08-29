@@ -204,7 +204,7 @@ export default function Contact() {
                       {language === 'bn' ? 'প্রতিদিন বিকাল ৫:০০টা – রাত ৯:০০টা' : '5:00 PM – 9:00 PM Daily'}
                     </p>
                     <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full inline-block mt-1">
-                      {language === 'bn' ? 'প্রতি শুক্রবার চেম্বার বন্ধ' : 'Friday Closed'}
+                      {language === 'bn' ? 'প্রতি শুক্রবার ও মঙ্গলবার চেম্বার বন্ধ' : 'Friday & Tuesday Closed'}
                     </span>
                   </div>
                 </div>

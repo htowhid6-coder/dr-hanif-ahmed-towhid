@@ -147,7 +147,7 @@ INSERT INTO public.posts (
 <p>Medicine Specialist</p>
 <p>Registrar (Department of Medicine), Sylhet MAG Osmani Medical College Hospital</p>
 <p><strong>Chamber:</strong> Popular Medical Center Ltd. (Room 605), New Medical Road, Kazalshah, Sylhet</p>
-<p><strong>Patient Viewing Hours:</strong> 5:00 PM – 9:00 PM (Friday Closed)</p>
+<p><strong>Patient Viewing Hours:</strong> 5:00 PM – 9:00 PM (Friday & Tuesday Closed)</p>
 <p>If you are experiencing symptoms of urinary tract infection or any other internal medicine concern, book an appointment with Dr. Hanif Ahmed Towhid at Popular Medical Center Ltd., Sylhet, for expert diagnosis and personalized treatment.</p>',
   '7 min read',
   '/blogs/blogimage/urinary-tract-infection.png',
@@ -302,7 +302,7 @@ INSERT INTO public.posts (
 <p>Medicine Specialist</p>
 <p>Registrar (Department of Medicine), Sylhet MAG Osmani Medical College Hospital</p>
 <p><strong>Chamber:</strong> Popular Medical Center Ltd. (Room 605), New Medical Road, Kazalshah, Sylhet</p>
-<p><strong>Patient Viewing Hours:</strong> 5:00 PM – 9:00 PM (Friday Closed)</p>
+<p><strong>Patient Viewing Hours:</strong> 5:00 PM – 9:00 PM (Friday & Tuesday Closed)</p>
 <p>For accurate diagnosis and expert treatment of typhoid fever or any other internal medicine condition, visit Dr. Hanif Ahmed Towhid at Popular Medical Center Ltd., Sylhet.</p>',
   '6 min read',
   '/blogs/blogimage/Typhoid.png',
@@ -469,7 +469,7 @@ INSERT INTO public.posts (
 <p>Medicine Specialist</p>
 <p>Registrar (Department of Medicine), Sylhet MAG Osmani Medical College Hospital</p>
 <p><strong>Chamber:</strong> Popular Medical Center Ltd. (Room 605), New Medical Road, Kazalshah, Sylhet</p>
-<p><strong>Patient Viewing Hours:</strong> 5:00 PM – 9:00 PM (Friday Closed)</p>
+<p><strong>Patient Viewing Hours:</strong> 5:00 PM – 9:00 PM (Friday & Tuesday Closed)</p>
 <p>For personalized cholesterol screening, heart health risk assessment, and expert management, book your appointment with Dr. Hanif Ahmed Towhid at Popular Medical Center Ltd., Sylhet.</p>',
   '7 min read',
   '/blogs/blogimage/high-cholesterol.png',
@@ -615,7 +615,7 @@ INSERT INTO public.posts (
 <p>Medicine Specialist</p>
 <p>Registrar (Department of Medicine), Sylhet MAG Osmani Medical College Hospital</p>
 <p><strong>Chamber:</strong> Popular Medical Center Ltd. (Room 605), New Medical Road, Kazalshah, Sylhet</p>
-<p><strong>Patient Viewing Hours:</strong> 5:00 PM – 9:00 PM (Friday Closed)</p>
+<p><strong>Patient Viewing Hours:</strong> 5:00 PM – 9:00 PM (Friday & Tuesday Closed)</p>
 <p>For evaluation of chest pain, heart disease risk assessment, or any internal medicine concern, consult Dr. Hanif Ahmed Towhid at Popular Medical Center Ltd., Sylhet. <strong>In case of a suspected heart attack, always go to the nearest emergency department immediately rather than waiting for a scheduled appointment.</strong></p>',
   '6 min read',
   '/blogs/blogimage/5-steps-severe-chest-pain.png',
@@ -762,7 +762,7 @@ INSERT INTO public.posts (
 <p>Medicine Specialist</p>
 <p>Registrar (Department of Medicine), Sylhet MAG Osmani Medical College Hospital</p>
 <p><strong>Chamber:</strong> Popular Medical Center Ltd. (Room 605), New Medical Road, Kazalshah, Sylhet</p>
-<p><strong>Patient Viewing Hours:</strong> 5:00 PM – 9:00 PM (Friday Closed)</p>
+<p><strong>Patient Viewing Hours:</strong> 5:00 PM – 9:00 PM (Friday & Tuesday Closed)</p>
 <p>For a comprehensive stroke risk assessment, blood pressure and cholesterol management, or any internal medicine concern, book a consultation with Dr. Hanif Ahmed Towhid at Popular Medical Center Ltd., Sylhet. <strong>If you suspect someone is having a stroke, go to the nearest emergency department immediately — do not wait for a scheduled appointment.</strong></p>',
   '7 min read',
   '/blogs/blogimage/stroke.png',

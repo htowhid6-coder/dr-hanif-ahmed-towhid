@@ -129,9 +129,9 @@ Severe chest pain should never be ignored or self-diagnosed. The five steps outl
 **Dr. Hanif Ahmed Towhid**
 MBBS, MCPS (Medicine), FCPS (Medicine)
 Medicine Specialist
-Registrar (Department of Medicine), Sylhet MAG Osmani Medical College Hospital
+Medicine Specialist (Department of Medicine), Sylhet MAG Osmani Medical College Hospital
 
 **Chamber:** Popular Medical Center Ltd. (Room 605), New Medical Road, Kazalshah, Sylhet
-**Patient Viewing Hours:** 5:00 PM – 9:00 PM (Friday Closed)
+**Patient Viewing Hours:** 5:00 PM – 9:00 PM (Friday & Tuesday Closed)
 
 For evaluation of chest pain, heart disease risk assessment, or any internal medicine concern, consult Dr. Hanif Ahmed Towhid at Popular Medical Center Ltd., Sylhet. **In case of a suspected heart attack, always go to the nearest emergency department immediately rather than waiting for a scheduled appointment.**

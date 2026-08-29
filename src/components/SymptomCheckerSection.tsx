@@ -243,6 +243,8 @@ export const SymptomCheckerSection: React.FC = () => {
   const [inView, setInView] = useState(false);
   const [imgSrc, setImgSrc] = useState(symptomsList[0].image);
   const sectionRef = useRef<HTMLElement | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   // Touch Swipe coordinates
   const touchStartX = useRef<number | null>(null);
@@ -272,12 +274,35 @@ export const SymptomCheckerSection: React.FC = () => {
     setImgSrc(activeSymptom.image);
   }, [activeSymptom]);
 
+  // Auto-scroll active card into view in the top horizontal bar
+  useEffect(() => {
+    if (cardRefs.current[activeIndex]) {
+      cardRefs.current[activeIndex]?.scrollIntoView({
+        behavior: 'smooth',
+        inline: 'center',
+        block: 'nearest',
+      });
+    }
+  }, [activeIndex]);
+
   const nextSymptom = () => {
     setActiveIndex((prev) => (prev + 1) % symptomsList.length);
   };
 
   const prevSymptom = () => {
     setActiveIndex((prev) => (prev - 1 + symptomsList.length) % symptomsList.length);
+  };
+
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: -280, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: 280, behavior: 'smooth' });
+    }
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -293,10 +318,8 @@ export const SymptomCheckerSection: React.FC = () => {
     // Only trigger swipe if horizontal movement is significant and greater than vertical scroll
     if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY)) {
       if (deltaX < 0) {
-        // Swiped Left -> Next
         nextSymptom();
       } else {
-        // Swiped Right -> Prev
         prevSymptom();
       }
     }
@@ -309,229 +332,268 @@ export const SymptomCheckerSection: React.FC = () => {
     <section
       id="symptoms-section"
       ref={sectionRef}
-      className="relative w-full overflow-hidden bg-[#D0E8E0] text-ink py-14 md:py-24 px-4 sm:px-6 md:px-12 border-t border-line/40 scroll-mt-16"
+      className="relative w-full overflow-hidden bg-[#D0E8E0] text-ink py-10 md:py-20 px-4 sm:px-6 md:px-12 border-t border-line/40 scroll-mt-16"
     >
       {/* Background Decorative Tech Grid & Subtle Radial Glow */}
       <div className="absolute inset-0 bg-[radial-gradient(rgba(47,111,95,0.12)_1px,transparent_1px)] [background-size:24px_24px] opacity-60 pointer-events-none"></div>
-      <div className="absolute top-1/3 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-accent/10 blur-[120px] rounded-full pointer-events-none"></div>
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-accent/10 blur-[130px] rounded-full pointer-events-none"></div>
 
       {/* Main Container */}
-      <div className="relative z-10 w-full max-w-[1440px] mx-auto flex flex-col gap-6">
+      <div className="relative z-10 w-full max-w-6xl mx-auto flex flex-col gap-6 sm:gap-8">
         
-        {/* Dynamic Split Layout: 3/4 Visual on Left & 1/4 Symptoms on Right */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-          
-          {/* LEFT SIDE: 3/4 of the width (approx. 9/12 cols on desktop) with TOUCH SWIPE */}
+        {/* TOP SECTION: Horizontal Scrollable Symptom Cards (১৪টি লক্ষণ) */}
+        <div
+          className={`flex flex-col gap-3 transition-all duration-1000 ease-out transform ${
+            inView ? 'translate-y-0 opacity-100' : '-translate-y-10 opacity-0'
+          }`}
+        >
+          {/* Header Bar with title, count & navigation arrows */}
+          <div className="flex items-center justify-between px-2">
+            <div className="flex items-center gap-2">
+              <span className="w-8 h-8 rounded-xl bg-accent/15 text-accent flex items-center justify-center shadow-xs">
+                <Sparkles className="w-4 h-4" />
+              </span>
+              <div>
+                <h3 className="font-serif text-sm sm:text-base md:text-lg font-bold text-ink flex items-center gap-2">
+                  <span>{language === 'bn' ? 'লক্ষণ তালিকা (১৪টি)' : 'Symptoms List (14)'}</span>
+                  <span className="text-[10px] sm:text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20">
+                    {activeIndex + 1} / {symptomsList.length}
+                  </span>
+                </h3>
+                <span className="text-[10px] sm:text-xs text-muted">
+                  {language === 'bn' ? 'ক্লিক করে যেকোনো লক্ষণ বিস্তারিত দেখুন বা ডানে-বামে স্ক্রল করুন' : 'Click to explore any symptom or scroll horizontally'}
+                </span>
+              </div>
+            </div>
+
+            {/* Scroll Navigation Arrows */}
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={scrollLeft}
+                aria-label="Scroll symptoms left"
+                className="w-8 h-8 rounded-full bg-white/80 hover:bg-white border border-white/90 shadow-xs flex items-center justify-center text-ink hover:text-accent transition-all cursor-pointer hover:scale-105 active:scale-95"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={scrollRight}
+                aria-label="Scroll symptoms right"
+                className="w-8 h-8 rounded-full bg-white/80 hover:bg-white border border-white/90 shadow-xs flex items-center justify-center text-ink hover:text-accent transition-all cursor-pointer hover:scale-105 active:scale-95"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Horizontal Scrollable Carousel Bar */}
           <div
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-            className={`lg:col-span-8 xl:col-span-9 flex flex-col justify-between relative rounded-3xl overflow-hidden border border-white/80 shadow-2xl bg-white/50 backdrop-blur-xl min-h-[500px] sm:min-h-[560px] md:min-h-[640px] select-none transition-all duration-1000 ease-out transform ${
-              inView ? 'translate-x-0 opacity-100' : '-translate-x-20 opacity-0'
-            }`}
+            ref={scrollContainerRef}
+            className="flex items-center gap-3 overflow-x-auto pb-2 pt-1 px-1 scroll-smooth no-scrollbar select-none"
+            style={{ scrollSnapType: 'x proximity' }}
           >
-            {/* Dynamic Symptom Visual with smooth fade & fallback */}
-            <div className="absolute inset-0 z-0 overflow-hidden group pointer-events-none">
-              <img
-                key={activeSymptom.slug}
-                src={imgSrc}
-                alt={activeSymptom.en}
-                onError={() => setImgSrc('/symptom-anatomy.jpg')}
-                className="w-full h-full object-cover object-center scale-100 transition-all duration-700 brightness-95 contrast-105 animate-in fade-in zoom-in-95 duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
+            {symptomsList.map((symptom, idx) => {
+              const isSelected = activeIndex === idx;
+              const SymIcon = symptom.icon;
+
+              return (
+                <button
+                  key={symptom.id}
+                  ref={(el) => {
+                    cardRefs.current[idx] = el;
+                  }}
+                  onClick={() => setActiveIndex(idx)}
+                  style={{ scrollSnapAlign: 'center' }}
+                  className={`group shrink-0 w-64 sm:w-72 md:w-80 text-left p-3.5 rounded-2xl border transition-all duration-300 cursor-pointer flex items-center justify-between gap-3 ${
+                    isSelected
+                      ? 'bg-accent text-white border-accent shadow-lg shadow-accent/25 scale-[1.03] ring-2 ring-accent/30'
+                      : 'bg-white/70 hover:bg-white text-ink border-white/80 hover:border-accent/40 shadow-xs hover:shadow-md'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <span
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-sm transition-colors ${
+                        isSelected
+                          ? 'bg-white text-accent font-bold shadow-xs'
+                          : 'bg-accent/10 text-accent group-hover:bg-accent group-hover:text-white'
+                      }`}
+                    >
+                      <SymIcon className="w-4 h-4" />
+                    </span>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span
+                        className={`text-xs sm:text-sm font-bold truncate leading-tight ${
+                          isSelected ? 'text-white' : 'text-ink group-hover:text-accent'
+                        }`}
+                      >
+                        {language === 'bn' ? symptom.bn : symptom.en}
+                      </span>
+                      <span
+                        className={`text-[10px] truncate mt-0.5 ${
+                          isSelected ? 'text-emerald-100' : 'text-muted'
+                        }`}
+                      >
+                        {language === 'bn' ? symptom.categoryBn : symptom.categoryEn}
+                      </span>
+                    </div>
+                  </div>
+
+                  <span
+                    className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md shrink-0 ${
+                      isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    #{symptom.id}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* BOTTOM SECTION: Full-Width Center-Aligned Visual Showcase Card with Image & Details */}
+        <div
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          className={`w-full mx-auto flex flex-col justify-between relative rounded-3xl overflow-hidden border border-white/80 shadow-2xl bg-white/50 backdrop-blur-xl min-h-[500px] sm:min-h-[560px] md:min-h-[620px] select-none transition-all duration-1000 ease-out transform ${
+            inView ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-16 opacity-0 scale-95'
+          }`}
+        >
+          {/* Dynamic Symptom Visual with smooth fade & fallback */}
+          <div className="absolute inset-0 z-0 overflow-hidden group pointer-events-none">
+            <img
+              key={`img-${activeSymptom.slug}`}
+              src={imgSrc}
+              alt={activeSymptom.en}
+              onError={() => setImgSrc('/symptom-anatomy.jpg')}
+              className="w-full h-full object-cover object-center scale-100 transition-all duration-700 brightness-95 contrast-105 animate-image-fade-zoom"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10"></div>
+          </div>
+
+          {/* Left Arrow Navigation Button */}
+          <div className="absolute inset-y-0 left-2 sm:left-4 md:left-6 z-20 flex items-center pointer-events-auto">
+            <button
+              onClick={prevSymptom}
+              aria-label="Previous symptom"
+              className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full bg-white/85 hover:bg-white border border-white/90 backdrop-blur-md flex items-center justify-center text-ink hover:text-accent shadow-xl hover:scale-110 active:scale-95 transition-all cursor-pointer"
+            >
+              <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
+            </button>
+          </div>
+
+          {/* Right Arrow Navigation Button */}
+          <div className="absolute inset-y-0 right-2 sm:right-4 md:right-6 z-20 flex items-center pointer-events-auto">
+            <button
+              onClick={nextSymptom}
+              aria-label="Next symptom"
+              className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full bg-white/85 hover:bg-white border border-white/90 backdrop-blur-md flex items-center justify-center text-ink hover:text-accent shadow-xl hover:scale-110 active:scale-95 transition-all cursor-pointer"
+            >
+              <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
+            </button>
+          </div>
+
+          {/* Top Floating Symptom Detail Hologram Card */}
+          <div className="relative z-10 p-4 sm:p-6 md:p-8 flex flex-col gap-2.5 sm:gap-3 max-w-2xl">
+            {/* Mobile Swipe Hint Badge */}
+            <div className="md:hidden flex items-center justify-between gap-2 px-3 py-1 rounded-full bg-white/85 border border-white backdrop-blur-md w-fit self-end text-[10px] sm:text-[11px] text-accent font-semibold shadow-sm mb-1">
+              <MoveHorizontal className="w-3.5 h-3.5 animate-pulse" />
+              <span>
+                {language === 'bn' ? 'সোয়াইপ করে পরিবর্তন করুন' : 'Swipe left/right to change'} ({activeIndex + 1}/{symptomsList.length})
+              </span>
             </div>
 
-            {/* Mobile / Desktop Swipe / Arrow Nav Controls */}
-            <div className="absolute inset-y-0 left-1 sm:left-2 md:left-4 z-20 flex items-center pointer-events-auto">
-              <button
-                onClick={prevSymptom}
-                aria-label="Previous symptom"
-                className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full bg-white/85 hover:bg-white border border-white/90 backdrop-blur-md flex items-center justify-center text-ink hover:text-accent shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer"
-              >
-                <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
-              </button>
-            </div>
-
-            <div className="absolute inset-y-0 right-1 sm:right-2 md:right-4 z-20 flex items-center pointer-events-auto">
-              <button
-                onClick={nextSymptom}
-                aria-label="Next symptom"
-                className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full bg-white/85 hover:bg-white border border-white/90 backdrop-blur-md flex items-center justify-center text-ink hover:text-accent shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer"
-              >
-                <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
-              </button>
-            </div>
-
-            {/* Top Bar: Symptom Detail Hologram Card + Mobile Swipe Indicator */}
-            <div className="relative z-10 p-3 sm:p-6 md:p-8 flex flex-col gap-2.5 sm:gap-3">
-              {/* Mobile Swipe Hint Badge */}
-              <div className="lg:hidden flex items-center justify-between gap-2 px-3 py-1 rounded-full bg-white/85 border border-white backdrop-blur-md w-fit self-end text-[10px] sm:text-[11px] text-accent font-semibold shadow-sm">
-                <MoveHorizontal className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-pulse" />
-                <span>
-                  {language === 'bn' ? 'সোয়াইপ করে দেখুন' : 'Swipe left/right'} ({activeIndex + 1}/{symptomsList.length})
+            {/* Hologram Card with Smooth Left Slide Animation */}
+            <div
+              key={`hologram-${activeSymptom.slug}`}
+              className="w-full bg-white/85 hover:bg-white/95 backdrop-blur-md border border-white/80 p-4 sm:p-5 md:p-6 rounded-2xl shadow-xl flex flex-col gap-2.5 sm:gap-3 transition-all duration-300 animate-slide-left-smooth"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-accent/15 border border-accent/20 flex items-center justify-center text-accent shadow-sm backdrop-blur-sm shrink-0">
+                    <IconComponent className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" />
+                  </div>
+                  <div>
+                    <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-accent block">
+                      {language === 'bn' ? activeSymptom.categoryBn : activeSymptom.categoryEn}
+                    </span>
+                    <h3 className="font-serif text-base sm:text-lg md:text-xl font-bold text-ink leading-tight">
+                      {language === 'bn' ? activeSymptom.bn : activeSymptom.en}
+                    </h3>
+                  </div>
+                </div>
+                <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-accent/10 text-accent border border-accent/20 backdrop-blur-sm shadow-sm shrink-0">
+                  #{activeSymptom.id}
                 </span>
               </div>
 
-              {/* Hologram Card */}
-              <div className="w-full max-w-xl bg-white/85 hover:bg-white/95 backdrop-blur-md border border-white/80 p-4 sm:p-5 md:p-6 rounded-2xl shadow-xl flex flex-col gap-2.5 sm:gap-3 transition-all duration-300 animate-in fade-in duration-500">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5 sm:gap-3">
-                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-accent/15 border border-accent/20 flex items-center justify-center text-accent shadow-sm backdrop-blur-sm shrink-0">
-                      <IconComponent className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
-                    </div>
-                    <div>
-                      <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-accent block">
-                        {language === 'bn' ? activeSymptom.categoryBn : activeSymptom.categoryEn}
-                      </span>
-                      <h3 className="font-serif text-base sm:text-lg md:text-xl font-bold text-ink leading-tight">
-                        {language === 'bn' ? activeSymptom.bn : activeSymptom.en}
-                      </h3>
-                    </div>
-                  </div>
-                  <span className="text-[11px] sm:text-xs font-mono font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-accent/10 text-accent border border-accent/20 backdrop-blur-sm shadow-sm shrink-0">
-                    #{activeSymptom.id}
+              <p className="text-xs sm:text-sm text-muted leading-relaxed border-t border-line/40 pt-2 font-normal">
+                {language === 'bn' ? activeSymptom.noteBn : activeSymptom.noteEn}
+              </p>
+
+              <div className="flex items-center justify-between gap-2 border-t border-line/40 pt-2.5 flex-wrap mt-0.5">
+                <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-accent font-semibold">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-accent shrink-0" />
+                  <span className="truncate max-w-[220px] sm:max-w-none">
+                    {language === 'bn'
+                      ? `আক্রান্ত অঙ্গ: ${activeSymptom.organBn}`
+                      : `Affected System: ${activeSymptom.organEn}`}
                   </span>
                 </div>
 
-                <p className="text-xs sm:text-sm text-muted leading-relaxed border-t border-line/40 pt-2 font-normal">
-                  {language === 'bn' ? activeSymptom.noteBn : activeSymptom.noteEn}
+                {/* Learn More Button */}
+                <Link
+                  href={`/symptoms#${activeSymptom.slug}`}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-accent hover:bg-ink text-white font-semibold text-xs shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95 border border-accent/30 backdrop-blur-sm cursor-pointer ml-auto"
+                >
+                  <span>{language === 'bn' ? 'বিস্তারিত জানুন' : 'Learn More'}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Floating Doctor Appointment CTA Banner with Smooth Slide Animation */}
+          <div className="relative z-10 p-4 sm:p-6 md:p-8 mt-auto">
+            <div
+              key={`cta-${activeSymptom.slug}`}
+              className="w-full bg-white/85 hover:bg-white/95 backdrop-blur-md border border-white/80 p-4 sm:p-5 md:p-6 rounded-2xl shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4 transition-all duration-300 animate-slide-bottom-smooth"
+            >
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-accent animate-ping"></span>
+                  <h4 className="font-serif text-base md:text-lg font-bold text-ink">
+                    {language === 'bn' ? 'সরাসরি ডাক্তারের পরামর্শ ও সিরিয়াল' : 'Consult Specialist Dr. Hanif'}
+                  </h4>
+                </div>
+                <p className="text-xs text-muted">
+                  {language === 'bn'
+                    ? 'পপুলার মেডিকেল সেন্টার (রুম ৬০৫), কাজলশাহ, সিলেট।'
+                    : 'Popular Medical Center (Room #605), Kazalshah, Sylhet.'}
                 </p>
-
-                <div className="flex items-center justify-between gap-2 border-t border-line/40 pt-2.5 flex-wrap mt-0.5">
-                  <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-accent font-semibold">
-                    <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-accent shrink-0" />
-                    <span className="truncate max-w-[200px] sm:max-w-none">
-                      {language === 'bn'
-                        ? `আক্রান্ত অঙ্গ: ${activeSymptom.organBn}`
-                        : `Affected System: ${activeSymptom.organEn}`}
-                    </span>
-                  </div>
-
-                  {/* Learn More Button */}
-                  <Link
-                    href={`/symptoms#${activeSymptom.slug}`}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl bg-accent hover:bg-ink text-white font-semibold text-xs shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95 border border-accent/30 backdrop-blur-sm cursor-pointer ml-auto"
-                  >
-                    <span>{language === 'bn' ? 'বিস্তারিত জানুন' : 'Learn More'}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
               </div>
-            </div>
 
-            {/* Bottom Floating Doctor Appointment CTA Banner */}
-            <div className="relative z-10 p-3 sm:p-6 md:p-8 mt-auto">
-              <div className="w-full bg-white/85 hover:bg-white/95 backdrop-blur-md border border-white/80 p-4 sm:p-5 md:p-6 rounded-2xl shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4 transition-all duration-300">
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-accent animate-ping"></span>
-                    <h4 className="font-serif text-base md:text-lg font-bold text-ink">
-                      {language === 'bn' ? 'সরাসরি ডাক্তারের পরামর্শ ও সিরিয়াল' : 'Consult Specialist Dr. Hanif'}
-                    </h4>
-                  </div>
-                  <p className="text-xs text-muted">
-                    {language === 'bn'
-                      ? 'পপুলার মেডিকেল সেন্টার (রুম ৬০৫), কাজলশাহ, সিলেট।'
-                      : 'Popular Medical Center (Room #605), Kazalshah, Sylhet.'}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap sm:flex-nowrap gap-3 w-full md:w-auto">
-                  <a
-                    href="tel:+8801346132486"
-                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white hover:bg-white/90 text-ink font-semibold text-xs md:text-sm border border-line shadow-sm transition-all hover:-translate-y-0.5 cursor-pointer"
-                  >
-                    <Phone className="w-4 h-4 text-accent" />
-                    <span>01346-132486</span>
-                  </a>
-                  <a
-                    href="https://wa.me/8801346132486"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-accent hover:bg-ink text-white font-semibold text-xs md:text-sm transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 cursor-pointer"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    <span>{language === 'bn' ? 'সিরিয়াল বুকিং' : 'Book Appointment'}</span>
-                  </a>
-                </div>
+              <div className="flex flex-wrap sm:flex-nowrap gap-3 w-full md:w-auto">
+                <a
+                  href="tel:+8801346132486"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white hover:bg-white/90 text-ink font-semibold text-xs md:text-sm border border-line shadow-sm transition-all hover:-translate-y-0.5 cursor-pointer"
+                >
+                  <Phone className="w-4 h-4 text-accent" />
+                  <span>01346-132486</span>
+                </a>
+                <a
+                  href="https://wa.me/8801346132486"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-accent hover:bg-ink text-white font-semibold text-xs md:text-sm transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 cursor-pointer"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>{language === 'bn' ? 'সিরিয়াল বুকিং' : 'Book Appointment'}</span>
+                </a>
               </div>
             </div>
           </div>
-
-          {/* RIGHT SIDE: 1/4 of the width (approx. 3/12 cols on desktop) */}
-          <div
-            className={`lg:col-span-4 xl:col-span-3 flex flex-col gap-3.5 transition-all duration-1000 ease-out transform ${
-              inView ? 'translate-x-0 opacity-100' : 'translate-x-20 opacity-0'
-            }`}
-          >
-            <div className="flex items-center justify-between px-2 pb-1 border-b border-line/40">
-              <span className="text-xs font-bold text-ink uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-accent" />
-                <span>{language === 'bn' ? 'লক্ষণ তালিকা (১৪টি)' : 'Symptoms (14)'}</span>
-              </span>
-              <span className="text-[10px] text-accent font-mono font-semibold">
-                {language === 'bn' ? 'ক্লিক বা সোয়াইপ করুন' : 'Click or swipe'}
-              </span>
-            </div>
-
-            {/* Scrollable list of 14 symptoms with floating hover effects */}
-            <div className="flex flex-col gap-2 max-h-[580px] overflow-y-auto pr-1.5 custom-scrollbar">
-              {symptomsList.map((symptom, idx) => {
-                const isSelected = activeIndex === idx;
-                const SymIcon = symptom.icon;
-
-                return (
-                  <button
-                    key={symptom.id}
-                    onClick={() => setActiveIndex(idx)}
-                    className={`group w-full text-left p-3.5 rounded-xl border transition-all duration-200 cursor-pointer flex items-center justify-between gap-3 shadow-sm ${
-                      isSelected
-                        ? 'bg-accent text-white border-accent shadow-md shadow-accent/25 scale-[1.02]'
-                        : 'bg-white/60 hover:bg-white/95 text-ink border-white/80 hover:border-accent/40'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span
-                        className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-xs transition-colors ${
-                          isSelected
-                            ? 'bg-white text-accent font-bold'
-                            : 'bg-accent/10 text-accent group-hover:bg-accent/20'
-                        }`}
-                      >
-                        <SymIcon className="w-3.5 h-3.5" />
-                      </span>
-                      <div className="flex flex-col min-w-0">
-                        <span
-                          className={`text-xs md:text-sm font-semibold truncate ${
-                            isSelected ? 'text-white' : 'text-ink group-hover:text-accent'
-                          }`}
-                        >
-                          {language === 'bn' ? symptom.bn : symptom.en}
-                        </span>
-                        <span
-                          className={`text-[10px] truncate ${
-                            isSelected ? 'text-emerald-100' : 'text-muted'
-                          }`}
-                        >
-                          {language === 'bn' ? symptom.categoryBn : symptom.categoryEn}
-                        </span>
-                      </div>
-                    </div>
-
-                    <ArrowRight
-                      className={`w-4 h-4 shrink-0 transition-transform ${
-                        isSelected
-                          ? 'text-white translate-x-1'
-                          : 'text-muted/60 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:text-accent'
-                      }`}
-                    />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
         </div>
+
       </div>
     </section>
   );

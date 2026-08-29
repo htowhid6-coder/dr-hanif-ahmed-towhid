@@ -276,7 +276,7 @@ export default function Blog() {
                           {language === 'bn' ? 'ডা. হানিফ আহমেদ তৌহিদ' : 'Dr. Hanif Ahmed Towhid'}
                         </span>
                         <span className="text-[10px] text-muted">
-                          {language === 'bn' ? 'রেজিস্ট্রার (মেডিসিন)' : 'Registrar, Medicine'}
+                          {language === 'bn' ? 'মেডিসিন বিশেষজ্ঞ' : 'Medicine Specialist'}
                         </span>
                       </div>
                     </div>
@@ -394,7 +394,7 @@ export default function Blog() {
             <p className="text-xs sm:text-sm text-muted leading-relaxed">
               {language === 'bn'
                 ? 'পপুলার মেডিকেল সেন্টার (৬ষ্ঠ তলা, রুম ৬০৫), কাজলশাহ, সিলেট। রোগী দেখার দিন সকাল ৯টার পর সিরিয়াল নিশ্চিত করুন।'
-                : 'Popular Medical Center Ltd. (Room #605), Kazalshah, Sylhet. Daily visiting hours 5:00 PM – 9:00 PM (Friday Closed).'}
+                : 'Popular Medical Center Ltd. (Room #605), Kazalshah, Sylhet. Daily visiting hours 5:00 PM – 9:00 PM (Friday & Tuesday Closed).'}
             </p>
           </div>
 

@@ -138,9 +138,9 @@ Stroke is a devastating condition, but the encouraging truth is that most stroke
 **Dr. Hanif Ahmed Towhid**
 MBBS, MCPS (Medicine), FCPS (Medicine)
 Medicine Specialist
-Registrar (Department of Medicine), Sylhet MAG Osmani Medical College Hospital
+Medicine Specialist (Department of Medicine), Sylhet MAG Osmani Medical College Hospital
 
 **Chamber:** Popular Medical Center Ltd. (Room 605), New Medical Road, Kazalshah, Sylhet
-**Patient Viewing Hours:** 5:00 PM – 9:00 PM (Friday Closed)
+**Patient Viewing Hours:** 5:00 PM – 9:00 PM (Friday & Tuesday Closed)
 
 For a comprehensive stroke risk assessment, blood pressure and cholesterol management, or any internal medicine concern, book a consultation with Dr. Hanif Ahmed Towhid at Popular Medical Center Ltd., Sylhet. **If you suspect someone is having a stroke, go to the nearest emergency department immediately — do not wait for a scheduled appointment.**

@@ -395,7 +395,7 @@ export default function ConditionDetailClient() {
                     <div>
                       <span className="font-bold text-ink">{language === 'bn' ? 'রোগী দেখার সময়:' : 'Visiting Hours:'}</span>
                       <p className="text-[11px] text-muted">
-                        {language === 'bn' ? 'প্রতিদিন বিকাল ৫:০০টা – রাত ৯:০০টা (শুক্রবার বন্ধ)' : '5:00 PM – 9:00 PM (Friday Closed)'}
+                        {language === 'bn' ? 'প্রতিদিন বিকাল ৫:০০টা – রাত ৯:০০টা (শুক্রবার ও মঙ্গলবার বন্ধ)' : '5:00 PM – 9:00 PM (Friday & Tuesday Closed)'}
                       </p>
                     </div>
                   </div>
@@ -450,8 +450,8 @@ export default function ConditionDetailClient() {
                 </div>
                 <p className="text-[11px] text-muted leading-relaxed">
                   {language === 'bn'
-                    ? 'রেজিস্ট্রার (মেডিসিন বিভাগ), সিলেট এম.এ.জি. ওসমানী মেডিকেল কলেজ হাসপাতাল।'
-                    : 'Registrar (Department of Medicine), Sylhet MAG Osmani Medical College Hospital.'}
+                    ? 'মেডিসিন বিশেষজ্ঞ (মেডিসিন বিভাগ), সিলেট এম.এ.জি. ওসমানী মেডিকেল কলেজ হাসপাতাল।'
+                    : 'Medicine Specialist (Department of Medicine), Sylhet MAG Osmani Medical College Hospital.'}
                 </p>
               </div>
             </AnimatedPointCard>

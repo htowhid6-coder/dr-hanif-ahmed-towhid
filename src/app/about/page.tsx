@@ -270,13 +270,13 @@ export default function About() {
     },
     {
       icon: ShieldCheck,
-      label: language === 'bn' ? '৩৭তম বিসিএস (স্বাস্থ্য)' : '37th BCS (Health)',
+      label: language === 'bn' ? 'বিসিএস (স্বাস্থ্য)' : 'BCS (Health)',
       sub: language === 'bn' ? 'সরকারি স্বাস্থ্য কর্মকর্তা' : 'Govt. Health Cadre',
     },
     {
       icon: Building2,
       label: language === 'bn' ? 'সিলেট ওসমানী হাসপাতাল' : 'Sylhet Osmani Hospital',
-      sub: language === 'bn' ? 'রেজিস্ট্রার (মেডিসিন)' : 'Registrar in Medicine',
+      sub: language === 'bn' ? 'মেডিসিন বিশেষজ্ঞ' : 'Medicine Specialist',
     },
     {
       icon: Heart,
@@ -331,14 +331,14 @@ export default function About() {
 
               <p className="font-sans text-xs sm:text-sm md:text-base text-emerald-200 font-medium drop-shadow-md">
                 {language === 'bn'
-                  ? 'MBBS, 37th BCS (Health), MCPS (Medicine), FCPS (Medicine)'
-                  : 'MBBS, 37th BCS (Health), MCPS (Medicine), FCPS (Medicine)'}
+                  ? 'MBBS, BCS (Health), MCPS (Medicine), FCPS (Medicine)'
+                  : 'MBBS, BCS (Health), MCPS (Medicine), FCPS (Medicine)'}
               </p>
 
               <p className="text-xs sm:text-sm md:text-base text-slate-200 leading-relaxed drop-shadow max-w-2xl hidden sm:block">
                 {language === 'bn'
-                  ? 'রেজিস্ট্রার (মেডিসিন বিভাগ), সিলেট এম.এ.জি. ওসমানী মেডিকেল কলেজ হাসপাতাল। সঠিক রোগ নির্ণয় ও রোগীর প্রতি পরম আন্তরিক সেবায় অঙ্গীকারবদ্ধ।'
-                  : 'Registrar, Department of Medicine at Sylhet MAG Osmani Medical College Hospital. Dedicated to scientifically precise internal medicine care.'}
+                  ? 'মেডিসিন বিশেষজ্ঞ (মেডিসিন বিভাগ), সিলেট এম.এ.জি. ওসমানী মেডিকেল কলেজ হাসপাতাল। সঠিক রোগ নির্ণয় ও রোগীর প্রতি পরম আন্তরিক সেবায় অঙ্গীকারবদ্ধ।'
+                  : 'Medicine Specialist, Department of Medicine at Sylhet MAG Osmani Medical College Hospital. Dedicated to scientifically precise internal medicine care.'}
               </p>
 
               {/* Quick Action CTA Buttons */}

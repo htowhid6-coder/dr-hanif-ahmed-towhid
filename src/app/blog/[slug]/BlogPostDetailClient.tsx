@@ -236,7 +236,9 @@ export default function BlogPostDetailClient() {
                   </span>
                 </div>
                 <span className="text-[11px] text-muted truncate">
-                  MBBS, 37th BCS (Health), MCPS, FCPS (Medicine) · Registrar, Osmani Hospital
+                  {language === 'bn'
+                    ? 'MBBS, বিসিএস (স্বাস্থ্য), MCPS, FCPS (মেডিসিন) · মেডিসিন বিশেষজ্ঞ, ওসমানী হাসপাতাল'
+                    : 'MBBS, BCS (Health), MCPS, FCPS (Medicine) · Medicine Specialist, Osmani Hospital'}
                 </span>
               </div>
             </div>

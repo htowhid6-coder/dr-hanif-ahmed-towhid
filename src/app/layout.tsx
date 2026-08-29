@@ -25,7 +25,7 @@ const hind = Hind_Siliguri({
 
 export const metadata: Metadata = {
   title: "Dr. Hanif Ahmed Towhid - General Medicine Specialist | Sylhet",
-  description: "Official website of Dr. Hanif Ahmed Towhid, Medicine Specialist and Registrar (Department of Medicine) practicing at Popular Medical Center, Sylhet. MBBS, MCPS, FCPS (Medicine).",
+  description: "Official website of Dr. Hanif Ahmed Towhid, Medicine Specialist (Department of Medicine, Sylhet MAG Osmani Medical College Hospital) practicing at Popular Medical Center, Sylhet. MBBS, BCS (Health), MCPS, FCPS (Medicine).",
 };
 
 export default function RootLayout({

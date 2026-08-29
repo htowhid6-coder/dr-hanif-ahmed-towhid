@@ -6,6 +6,8 @@ import { GlassPanel } from './GlassPanel';
 import { MapPin, Clock, Phone, PhoneCall, MessageCircle, Sparkles, ArrowRight, Activity, Droplets, HeartPulse, Dna, Heart, Bean, Thermometer } from 'lucide-react';
 import Link from 'next/link';
 import { diseaseData, Disease } from '@/locales/diseaseData';
+import { HeroSlide, defaultHeroSlides, defaultHeroBgImage } from '@/data/heroData';
+import supabase from '@/lib/supabase';
 
 interface SectionStat {
   value: string;
@@ -34,6 +36,60 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
   const { language, t } = useLanguage();
   const [activeSection, setActiveSection] = useState(0);
   const sectionRefs = useRef<(HTMLElement | null)[]>([]);
+  const [slides, setSlides] = useState<HeroSlide[]>(defaultHeroSlides);
+  const [bgImage, setBgImage] = useState<string>(defaultHeroBgImage);
+
+  // Load Hero Slides from Supabase / localStorage
+  useEffect(() => {
+    const loadHeroData = async () => {
+      // 1. Try local storage first for instant rendering
+      if (typeof window !== 'undefined') {
+        const localBg = localStorage.getItem('hero_bg_image');
+        if (localBg) setBgImage(localBg);
+
+        const localSlidesStr = localStorage.getItem('hero_slides_data');
+        if (localSlidesStr) {
+          try {
+            const parsed = JSON.parse(localSlidesStr);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setSlides(parsed);
+            }
+          } catch (e) {
+            console.error('Error parsing local hero slides:', e);
+          }
+        }
+      }
+
+      // 2. Fetch live data from Supabase
+      try {
+        const { data, error } = await supabase
+          .from('hero_slides')
+          .select('*')
+          .order('order_index', { ascending: true });
+
+        if (!error && data && data.length > 0) {
+          setSlides(data as HeroSlide[]);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('hero_slides_data', JSON.stringify(data));
+          }
+        }
+      } catch (err) {
+        // Supabase table may not exist yet or offline, fallback safely
+      }
+    };
+
+    loadHeroData();
+
+    // Listen for live updates from admin panel in same window
+    const handleUpdate = () => loadHeroData();
+    window.addEventListener('hero_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+
+    return () => {
+      window.removeEventListener('hero_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
 
   useEffect(() => {
     const observerOptions = {
@@ -64,7 +120,7 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
     return () => {
       observer.disconnect();
     };
-  }, []);
+  }, [slides]);
 
   const scrollToSection = (idx: number) => {
     sectionRefs.current[idx]?.scrollIntoView({ behavior: 'smooth' });
@@ -88,232 +144,298 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
     diseaseData.find((d) => d.slug === 'enteric-fever'),
   ].filter(Boolean) as Disease[];
 
-  const sectionsData: SectionItem[] = [
-    {
-      id: 'welcome',
-      eyebrow: t('hero.eyebrow'),
-      title: t('hero.title'),
-      lead: t('hero.lead'),
-      cta: t('hero.cta'),
-      ctaHref: 'https://wa.me/8801346132486',
-      ctaType: 'whatsapp',
-    },
-    {
-      id: 'doctor-intro',
-      title: t('doctorIntro.name'),
-      lead: (
-        <div className="flex flex-col sm:flex-row items-center sm:items-stretch gap-6 pt-1">
-          {/* Doctor Portrait Image: Much Larger, Grand Presence (~42%-44% Width on Desktop) */}
-          <div className="relative w-56 sm:w-[42%] md:w-[44%] min-w-[200px] max-w-[280px] aspect-[3.2/4.4] sm:aspect-auto sm:min-h-[290px] shrink-0 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border-2 border-white bg-slate-100 group mx-auto sm:mx-0">
-            <img
-              src="/doctor-hero.png"
-              alt={t('doctorIntro.name')}
-              className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-transparent pointer-events-none" />
-            <div className="absolute bottom-3 left-3 right-3">
-              <span className="text-[10px] sm:text-[11px] font-bold text-white uppercase tracking-wider bg-slate-900/85 backdrop-blur-md px-2.5 py-1 rounded-xl block text-center shadow-md border border-white/20">
-                {language === 'bn' ? 'মেডিসিন বিশেষজ্ঞ' : 'Medicine Specialist'}
+  // Build active sections data from dynamic slides
+  const activeSlides = slides.filter(s => s.is_active !== false).sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+
+  const sectionsData: SectionItem[] = activeSlides.map((slide) => {
+    const isBn = language === 'bn';
+
+    // 1. Welcome Slide
+    if (slide.type === 'welcome') {
+      return {
+        id: slide.id || 'welcome',
+        eyebrow: isBn ? (slide.eyebrow_bn || t('hero.eyebrow')) : (slide.eyebrow_en || t('hero.eyebrow')),
+        title: isBn ? (slide.title_bn || t('hero.title')) : (slide.title_en || t('hero.title')),
+        lead: isBn ? (slide.lead_bn || t('hero.lead')) : (slide.lead_en || t('hero.lead')),
+        cta: isBn ? (slide.cta_text_bn || t('hero.cta')) : (slide.cta_text_en || t('hero.cta')),
+        ctaHref: slide.cta_href || 'https://wa.me/8801346132486',
+        ctaType: slide.cta_type || 'whatsapp',
+        secondaryCta: isBn ? slide.secondary_cta_text_bn : slide.secondary_cta_text_en,
+        secondaryCtaHref: slide.secondary_cta_href,
+      };
+    }
+
+    // 2. Doctor Intro Slide
+    if (slide.type === 'doctor-intro') {
+      const docName = isBn ? (slide.title_bn || t('doctorIntro.name')) : (slide.title_en || t('doctorIntro.name'));
+      const specialty = isBn ? (slide.doctor_specialty_bn || 'মেডিসিন বিশেষজ্ঞ') : (slide.doctor_specialty_en || 'Medicine Specialist');
+      const degrees = isBn ? (slide.doctor_degrees_bn || t('doctorIntro.degrees')) : (slide.doctor_degrees_en || t('doctorIntro.degrees'));
+      const designation = isBn ? (slide.doctor_designation_bn || t('doctorIntro.designation')) : (slide.doctor_designation_en || t('doctorIntro.designation'));
+      const hoursText = isBn 
+        ? (slide.chamber_hours_highlight_bn || t('chamber.hours')) 
+        : (slide.chamber_hours_highlight_en || t('chamber.hours'));
+      const addressText = isBn
+        ? (slide.chamber_address_highlight_bn || 'পপুলার মেডিকেল সেন্টার লিমিটেড (রুম-৬০৫), নিউ মেডিকেল রোড, কাজলশাহ, সিলেট।')
+        : (slide.chamber_address_highlight_en || 'Popular Medical Center Ltd. (Room 605), New Medical Road, Kazalshah, Sylhet.');
+      const docImg = slide.doctor_image || '/doctor-hero.png';
+
+      return {
+        id: slide.id || 'doctor-intro',
+        title: docName,
+        lead: (
+          <div className="flex flex-col sm:flex-row items-center sm:items-stretch gap-6 pt-1">
+            {/* Doctor Portrait Image */}
+            <div className="relative w-56 sm:w-[42%] md:w-[44%] min-w-[200px] max-w-[280px] aspect-[3.2/4.4] sm:aspect-auto sm:min-h-[290px] shrink-0 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border-2 border-white bg-slate-100 group mx-auto sm:mx-0">
+              <img
+                src={docImg}
+                alt={docName}
+                className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-transparent pointer-events-none" />
+              <div className="absolute bottom-3 left-3 right-3">
+                <span className="text-[10px] sm:text-[11px] font-bold text-white uppercase tracking-wider bg-slate-900/85 backdrop-blur-md px-2.5 py-1 rounded-xl block text-center shadow-md border border-white/20">
+                  {specialty}
+                </span>
+              </div>
+            </div>
+
+            {/* Doctor Details */}
+            <div className="flex-1 flex flex-col justify-start gap-4 text-center sm:text-left py-0.5">
+              <div className="flex flex-col gap-2">
+                <div className="inline-flex items-center justify-center sm:justify-start gap-2">
+                  <span className="px-3 py-1 rounded-full bg-accent/10 border border-accent/25 text-accent text-xs sm:text-sm font-bold tracking-wide">
+                    {specialty}
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <h3 className="font-serif font-bold text-accent text-base sm:text-lg md:text-xl tracking-wide">
+                    {degrees}
+                  </h3>
+                  <p className="text-sm sm:text-base text-ink font-semibold leading-snug">
+                    {designation}
+                  </p>
+                </div>
+              </div>
+
+              {/* Chamber & Visiting Hours Highlight Box */}
+              <div className="flex flex-col gap-1.5 p-3.5 sm:p-4 rounded-2xl bg-white/80 border border-white/90 shadow-xs">
+                <div className="inline-flex items-center justify-center sm:justify-start gap-2 text-xs sm:text-sm md:text-base text-ink font-bold">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                  <span>{hoursText}</span>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
+                  {addressText}
+                </p>
+              </div>
+            </div>
+          </div>
+        ),
+        cta: isBn ? (slide.cta_text_bn || t('hero.cta')) : (slide.cta_text_en || t('hero.cta')),
+        ctaHref: slide.cta_href || 'https://wa.me/8801346132486',
+        ctaType: slide.cta_type || 'whatsapp',
+        secondaryCta: isBn ? (slide.secondary_cta_text_bn || "ডাক্তারের জীবন ও ডিগ্রি") : (slide.secondary_cta_text_en || "Doctor's Journey"),
+        secondaryCtaHref: slide.secondary_cta_href || '/about',
+      };
+    }
+
+    // 3. Conditions Slide
+    if (slide.type === 'conditions') {
+      return {
+        id: slide.id || 'conditions',
+        title: isBn ? (slide.title_bn || 'যেসব রোগের চিকিৎসা দেওয়া হয়') : (slide.title_en || 'Diseases We Treat'),
+        lead: (
+          <div className="flex flex-col gap-5">
+            <div className="flex items-center gap-2.5">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              </span>
+              <p className="text-xs md:text-sm text-muted font-medium tracking-wide">
+                {isBn
+                  ? (slide.lead_bn || 'যেকোনো রোগে ক্লিক করে চিকিৎসা পরামর্শ জানুন')
+                  : (slide.lead_en || 'Tap any condition for instant clinical insights')}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              {featuredDiseases.map((disease, idx) => (
+                <button
+                  key={disease.slug}
+                  onClick={() => onSelectDisease?.(disease)}
+                  style={{ animationDelay: `${idx * 80}ms` }}
+                  className="group relative overflow-hidden p-3 sm:p-3.5 rounded-2xl text-left cursor-pointer transition-all duration-300 hover:scale-[1.04] hover:-translate-y-0.5 active:scale-[0.98] animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both bg-gradient-to-br from-white/80 via-white/60 to-white/40 border border-white/70 hover:border-accent/40 shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_30px_rgba(47,111,94,0.18)]"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-accent/0 via-accent/0 to-accent/0 group-hover:from-accent/5 group-hover:via-accent/3 group-hover:to-emerald-400/8 transition-all duration-500 rounded-2xl"></div>
+                  <div className="absolute top-0 left-3 right-3 h-[2px] bg-gradient-to-r from-transparent via-accent/0 to-transparent group-hover:via-accent/60 transition-all duration-500 rounded-full"></div>
+
+                  <div className="relative z-10 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="w-7 h-7 rounded-xl bg-[#317664]/10 text-[#317664] group-hover:bg-[#317664] group-hover:text-white flex items-center justify-center transition-all duration-300 shadow-sm">
+                        {diseaseIconMap[disease.slug] || <Activity className="w-4 h-4" />}
+                      </span>
+                      <ArrowRight className="w-3.5 h-3.5 text-accent/30 group-hover:text-accent group-hover:translate-x-0.5 transition-all duration-300" />
+                    </div>
+
+                    <h4 className="text-[11px] sm:text-xs font-bold text-ink leading-snug group-hover:text-accent transition-colors duration-300 line-clamp-2">
+                      {disease.title[language]}
+                    </h4>
+
+                    <div className="h-[3px] w-0 group-hover:w-full bg-gradient-to-r from-accent via-emerald-400 to-accent/30 rounded-full transition-all duration-500 ease-out"></div>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-4 pt-2 border-t border-panel-border">
+              <div className="flex items-center gap-1.5">
+                <Activity className="w-3.5 h-3.5 text-accent" />
+                <span className="text-[10px] font-bold text-accent uppercase tracking-wider">
+                  {isBn ? 'রোগসমূহ' : 'Diseases'}
+                </span>
+              </div>
+              <span className="text-[10px] text-muted">•</span>
+              <span className="text-[10px] text-muted font-medium">
+                {isBn ? 'বিস্তারিত তথ্য ও চিকিৎসা' : 'Evidence-based care'}
               </span>
             </div>
           </div>
+        ),
+        secondaryCta: isBn ? (slide.secondary_cta_text_bn || 'আরও দেখুন') : (slide.secondary_cta_text_en || 'View More'),
+        secondaryCtaHref: slide.secondary_cta_href || '/diseases',
+      };
+    }
 
-          {/* Doctor Details: Roomy & Elegantly Formatted */}
-          <div className="flex-1 flex flex-col justify-start gap-4 text-center sm:text-left py-0.5">
-            {/* Specialty Badge + Degrees + Designation */}
-            <div className="flex flex-col gap-2">
-              <div className="inline-flex items-center justify-center sm:justify-start gap-2">
-                <span className="px-3 py-1 rounded-full bg-accent/10 border border-accent/25 text-accent text-xs sm:text-sm font-bold tracking-wide">
-                  {language === 'bn' ? 'মেডিসিন বিশেষজ্ঞ' : 'Medicine Specialist'}
-                </span>
+    // 4. Chamber Slide
+    if (slide.type === 'chamber') {
+      const chamberTitle = isBn ? (slide.title_bn || t('chamber.title')) : (slide.title_en || t('chamber.title'));
+      const chamberEyebrow = isBn ? (slide.eyebrow_bn || t('chamber.eyebrow')) : (slide.eyebrow_en || t('chamber.eyebrow'));
+      const roomText = isBn ? (slide.chamber_room_bn || '৬ষ্ঠ তলা, রুম নং-৬০৫') : (slide.chamber_room_en || '6th Floor, Room No-605');
+      const roomBadge = isBn ? (slide.chamber_room_badge_bn || 'প্রধান চেম্বার') : (slide.chamber_room_badge_en || 'Main Chamber');
+      const addressText = isBn ? (slide.chamber_address_bn || 'নিউ মেডিকেল রোড, কাজলশাহ, সিলেট।') : (slide.chamber_address_en || 'New Medical Road, Kazalshah, Sylhet.');
+      const hoursText = isBn ? (slide.chamber_hours_bn || 'প্রতিদিন বিকাল ৫:০০টা – রাত ৯:০০টা') : (slide.chamber_hours_en || '5:00 PM – 9:00 PM (Daily)');
+      const offDaysText = isBn ? (slide.chamber_off_days_bn || 'শুক্রবার ও মঙ্গলবার চেম্বার বন্ধ থাকে') : (slide.chamber_off_days_en || 'Friday & Tuesday Closed');
+      const ticketPhone = slide.chamber_ticket_phone || '01346-132486';
+      const ticketBadge = isBn ? (slide.chamber_ticket_badge_bn || 'সিরিয়াল হটলাইন') : (slide.chamber_ticket_badge_en || 'Serial Hotline');
+      const ticketNote = isBn 
+        ? (slide.chamber_ticket_note_bn || 'সকাল ৯:০০টার পর কল করে সিরিয়াল বুকিং নিশ্চিত করুন') 
+        : (slide.chamber_ticket_note_en || 'Call after 9:00 AM to confirm your appointment serial');
+
+      return {
+        id: slide.id || 'chamber',
+        eyebrow: chamberEyebrow,
+        title: chamberTitle,
+        lead: (
+          <div className="flex flex-col gap-3.5 pt-1">
+            {/* Card 1: Location & Room */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-white/70 hover:bg-white border border-white/80 hover:border-accent/40 shadow-xs hover:shadow-md transition-all duration-300 flex items-start gap-3.5 group">
+              <div className="w-10 h-10 rounded-xl bg-accent/10 text-accent group-hover:bg-accent group-hover:text-white flex items-center justify-center shrink-0 transition-colors shadow-2xs">
+                <MapPin className="w-5 h-5" />
               </div>
-
-              <div className="flex flex-col gap-1">
-                <h3 className="font-serif font-bold text-accent text-base sm:text-lg md:text-xl tracking-wide">
-                  {t('doctorIntro.degrees')}
-                </h3>
-                <p className="text-sm sm:text-base text-ink font-semibold leading-snug">
-                  {t('doctorIntro.designation')}
+              <div className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs sm:text-sm font-bold text-ink group-hover:text-accent transition-colors">
+                    {roomText}
+                  </span>
+                  {roomBadge && (
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60">
+                      {roomBadge}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] sm:text-xs text-muted leading-relaxed">
+                  {addressText}
                 </p>
               </div>
             </div>
 
-            {/* Chamber & Visiting Hours Highlight Box */}
-            <div className="flex flex-col gap-1.5 p-3.5 sm:p-4 rounded-2xl bg-white/80 border border-white/90 shadow-xs">
-              <div className="inline-flex items-center justify-center sm:justify-start gap-2 text-xs sm:text-sm md:text-base text-ink font-bold">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
-                <span>{t('chamber.hours')}</span>
+            {/* Card 2: Visiting Hours */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-white/70 hover:bg-white border border-white/80 hover:border-emerald-400/40 shadow-xs hover:shadow-md transition-all duration-300 flex items-start gap-3.5 group">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white flex items-center justify-center shrink-0 transition-colors shadow-2xs">
+                <Clock className="w-5 h-5" />
               </div>
-              <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
-                {language === 'bn' 
-                  ? 'পপুলার মেডিকেল সেন্টার লিমিটেড (রুম-৬০৫), নিউ মেডিকেল রোড, কাজলশাহ, সিলেট।' 
-                  : 'Popular Medical Center Ltd. (Room 605), New Medical Road, Kazalshah, Sylhet.'}
-              </p>
-            </div>
-          </div>
-        </div>
-      ),
-      cta: t('hero.cta'),
-      ctaHref: 'https://wa.me/8801346132486',
-      ctaType: 'whatsapp',
-      secondaryCta: language === 'bn' ? "ডাক্তারের জীবন ও ডিগ্রি" : "Doctor's Journey",
-      secondaryCtaHref: '/about',
-    },
-    {
-      id: 'conditions',
-      title: language === 'bn' ? 'যেসব রোগের চিকিৎসা দেওয়া হয়' : 'Diseases We Treat',
-      lead: (
-        <div className="flex flex-col gap-5">
-          {/* Animated subtitle with live pulse */}
-          <div className="flex items-center gap-2.5">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-            </span>
-            <p className="text-xs md:text-sm text-muted font-medium tracking-wide">
-              {language === 'bn'
-                ? 'যেকোনো রোগে ক্লিক করে চিকিৎসা পরামর্শ জানুন'
-                : 'Tap any condition for instant clinical insights'}
-            </p>
-          </div>
-
-          {/* Premium Disease Cards Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            {featuredDiseases.map((disease, idx) => (
-              <button
-                key={disease.slug}
-                onClick={() => onSelectDisease?.(disease)}
-                style={{ animationDelay: `${idx * 80}ms` }}
-                className="group relative overflow-hidden p-3 sm:p-3.5 rounded-2xl text-left cursor-pointer transition-all duration-300 hover:scale-[1.04] hover:-translate-y-0.5 active:scale-[0.98] animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both bg-gradient-to-br from-white/80 via-white/60 to-white/40 border border-white/70 hover:border-accent/40 shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_30px_rgba(47,111,94,0.18)]"
-              >
-                {/* Hover glow effect */}
-                <div className="absolute inset-0 bg-gradient-to-br from-accent/0 via-accent/0 to-accent/0 group-hover:from-accent/5 group-hover:via-accent/3 group-hover:to-emerald-400/8 transition-all duration-500 rounded-2xl"></div>
-
-                {/* Top accent line */}
-                <div className="absolute top-0 left-3 right-3 h-[2px] bg-gradient-to-r from-transparent via-accent/0 to-transparent group-hover:via-accent/60 transition-all duration-500 rounded-full"></div>
-
-                {/* Card content */}
-                <div className="relative z-10 flex flex-col gap-2">
-                  {/* Icon + arrow */}
-                  <div className="flex items-center justify-between">
-                    <span className="w-7 h-7 rounded-xl bg-[#317664]/10 text-[#317664] group-hover:bg-[#317664] group-hover:text-white flex items-center justify-center transition-all duration-300 shadow-sm">
-                      {diseaseIconMap[disease.slug] || <Activity className="w-4 h-4" />}
-                    </span>
-                    <ArrowRight className="w-3.5 h-3.5 text-accent/30 group-hover:text-accent group-hover:translate-x-0.5 transition-all duration-300" />
-                  </div>
-
-                  {/* Disease name */}
-                  <h4 className="text-[11px] sm:text-xs font-bold text-ink leading-snug group-hover:text-accent transition-colors duration-300 line-clamp-2">
-                    {disease.title[language]}
-                  </h4>
-
-                  {/* Bottom shimmer bar */}
-                  <div className="h-[3px] w-0 group-hover:w-full bg-gradient-to-r from-accent via-emerald-400 to-accent/30 rounded-full transition-all duration-500 ease-out"></div>
+              <div className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs sm:text-sm font-bold text-ink">
+                    {hoursText}
+                  </span>
                 </div>
-              </button>
-            ))}
-          </div>
-
-          {/* Bottom stat strip */}
-          <div className="flex items-center gap-4 pt-2 border-t border-panel-border">
-            <div className="flex items-center gap-1.5">
-              <Activity className="w-3.5 h-3.5 text-accent" />
-              <span className="text-[10px] font-bold text-accent uppercase tracking-wider">
-                {language === 'bn' ? 'রোগসমূহ' : 'Diseases'}
-              </span>
+                {offDaysText && (
+                  <p className="text-[11px] sm:text-xs text-rose-600 font-semibold flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                    {offDaysText}
+                  </p>
+                )}
+              </div>
             </div>
-            <span className="text-[10px] text-muted">•</span>
-            <span className="text-[10px] text-muted font-medium">
-              {language === 'bn' ? 'বিস্তারিত তথ্য ও চিকিৎসা' : 'Evidence-based care'}
-            </span>
+
+            {/* Card 3: Hotline & Ticket Booking */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-teal-50/70 via-white to-emerald-50/70 hover:from-teal-50 hover:to-emerald-50 border border-teal-200/70 hover:border-accent shadow-xs hover:shadow-md transition-all duration-300 flex items-start gap-3.5 group">
+              <div className="w-10 h-10 rounded-xl bg-teal-600/10 text-teal-700 group-hover:bg-teal-700 group-hover:text-white flex items-center justify-center shrink-0 transition-colors shadow-2xs">
+                <Phone className="w-5 h-5" />
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`tel:${ticketPhone.replace(/[^0-9+]/g, '')}`}
+                    className="text-xs sm:text-sm font-mono font-bold text-accent hover:text-ink transition-colors cursor-pointer"
+                  >
+                    {ticketPhone}
+                  </a>
+                  {ticketBadge && (
+                    <span className="text-[10px] font-bold text-teal-800 bg-teal-100/80 px-2 py-0.5 rounded-md">
+                      {ticketBadge}
+                    </span>
+                  )}
+                </div>
+                {ticketNote && (
+                  <p className="text-[11px] sm:text-xs text-muted">
+                    {ticketNote}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      ),
-      secondaryCta: language === 'bn' ? 'আরও দেখুন' : 'View More',
-      secondaryCtaHref: '/diseases',
-    },
-    {
-      id: 'chamber',
-      eyebrow: t('chamber.eyebrow'),
-      title: t('chamber.title'),
+        ),
+        cta: isBn ? (slide.cta_text_bn || t('chamber.button')) : (slide.cta_text_en || t('chamber.button')),
+        ctaHref: slide.cta_href || 'https://wa.me/8801346132486',
+        ctaType: slide.cta_type || 'whatsapp',
+        secondaryCta: isBn ? (slide.secondary_cta_text_bn || 'সরাসরি কল করুন') : (slide.secondary_cta_text_en || 'Direct Call'),
+        secondaryCtaHref: slide.secondary_cta_href || 'tel:01346132486',
+      };
+    }
+
+    // 5. Custom Slide Fallback
+    return {
+      id: slide.id,
+      eyebrow: isBn ? slide.eyebrow_bn : slide.eyebrow_en,
+      title: isBn ? slide.title_bn : slide.title_en,
       lead: (
-        <div className="flex flex-col gap-3.5 pt-1">
-          {/* Card 1: Location & Room */}
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-white/70 hover:bg-white border border-white/80 hover:border-accent/40 shadow-xs hover:shadow-md transition-all duration-300 flex items-start gap-3.5 group">
-            <div className="w-10 h-10 rounded-xl bg-accent/10 text-accent group-hover:bg-accent group-hover:text-white flex items-center justify-center shrink-0 transition-colors shadow-2xs">
-              <MapPin className="w-5 h-5" />
+        <div className="flex flex-col gap-4">
+          {slide.custom_image && (
+            <div className="w-full max-h-56 rounded-2xl overflow-hidden shadow-md">
+              <img src={slide.custom_image} alt={isBn ? slide.title_bn : slide.title_en} className="w-full h-full object-cover" />
             </div>
-            <div className="flex flex-col gap-0.5">
-              <div className="flex items-center gap-2">
-                <span className="text-xs sm:text-sm font-bold text-ink group-hover:text-accent transition-colors">
-                  {language === 'bn' ? '৬ষ্ঠ তলা, রুম নং-৬০৫' : '6th Floor, Room No-605'}
-                </span>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60">
-                  {language === 'bn' ? 'প্রধান চেম্বার' : 'Main Chamber'}
-                </span>
-              </div>
-              <p className="text-[11px] sm:text-xs text-muted leading-relaxed">
-                {language === 'bn' ? 'নিউ মেডিকেল রোড, কাজলশাহ, সিলেট।' : 'New Medical Road, Kazalshah, Sylhet.'}
-              </p>
-            </div>
-          </div>
-
-          {/* Card 2: Visiting Hours */}
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-white/70 hover:bg-white border border-white/80 hover:border-emerald-400/40 shadow-xs hover:shadow-md transition-all duration-300 flex items-start gap-3.5 group">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white flex items-center justify-center shrink-0 transition-colors shadow-2xs">
-              <Clock className="w-5 h-5" />
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <div className="flex items-center gap-2">
-                <span className="text-xs sm:text-sm font-bold text-ink">
-                  {language === 'bn' ? 'প্রতিদিন বিকাল ৫:০০টা – রাত ৯:০০টা' : '5:00 PM – 9:00 PM (Daily)'}
-                </span>
-              </div>
-              <p className="text-[11px] sm:text-xs text-rose-600 font-semibold flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
-                {language === 'bn' ? 'শুক্রবার চেম্বার বন্ধ থাকে' : 'Friday Closed'}
-              </p>
-            </div>
-          </div>
-
-          {/* Card 3: Hotline & Ticket Booking */}
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-teal-50/70 via-white to-emerald-50/70 hover:from-teal-50 hover:to-emerald-50 border border-teal-200/70 hover:border-accent shadow-xs hover:shadow-md transition-all duration-300 flex items-start gap-3.5 group">
-            <div className="w-10 h-10 rounded-xl bg-teal-600/10 text-teal-700 group-hover:bg-teal-700 group-hover:text-white flex items-center justify-center shrink-0 transition-colors shadow-2xs">
-              <Phone className="w-5 h-5" />
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <div className="flex items-center gap-2">
-                <a
-                  href="tel:01346132486"
-                  className="text-xs sm:text-sm font-mono font-bold text-accent hover:text-ink transition-colors cursor-pointer"
-                >
-                  01346-132486
-                </a>
-                <span className="text-[10px] font-bold text-teal-800 bg-teal-100/80 px-2 py-0.5 rounded-md">
-                  {language === 'bn' ? 'সিরিয়াল হটলাইন' : 'Serial Hotline'}
-                </span>
-              </div>
-              <p className="text-[11px] sm:text-xs text-muted">
-                {language === 'bn' ? 'সকাল ৯:০০টার পর কল করে সিরিয়াল বুকিং নিশ্চিত করুন' : 'Call after 9:00 AM to confirm your appointment serial'}
-              </p>
-            </div>
-          </div>
+          )}
+          <p className="text-sm md:text-base leading-relaxed text-muted">
+            {isBn ? slide.lead_bn : slide.lead_en}
+          </p>
         </div>
       ),
-      cta: t('chamber.button'),
-      ctaHref: 'https://wa.me/8801346132486',
-      ctaType: 'whatsapp',
-      secondaryCta: language === 'bn' ? 'সরাসরি কল করুন' : 'Direct Call',
-      secondaryCtaHref: 'tel:01346132486',
-    },
-  ];
+      cta: isBn ? slide.cta_text_bn : slide.cta_text_en,
+      ctaHref: slide.cta_href,
+      ctaType: slide.cta_type || 'link',
+      secondaryCta: isBn ? slide.secondary_cta_text_bn : slide.secondary_cta_text_en,
+      secondaryCtaHref: slide.secondary_cta_href,
+    };
+  });
 
   return (
     <div className="relative w-full">
       {/* Sticky Viewport Background Container */}
       <div className="sticky top-0 z-0 w-full h-screen overflow-hidden">
         <img
-          src="/hero-desktop.png"
+          src={bgImage || defaultHeroBgImage}
           className="w-full h-full object-cover object-[75%_38%] sm:object-[76%_45%] md:object-[78%_55%] animate-floating pointer-events-none"
           alt={language === 'bn' ? 'ডা. হানিফ আহমেদ তৌহিদ - মেডিসিন বিশেষজ্ঞ' : 'Dr. Hanif Ahmed Towhid - Medicine Specialist'}
         />

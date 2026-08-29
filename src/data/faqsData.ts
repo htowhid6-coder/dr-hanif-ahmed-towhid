@@ -37,8 +37,8 @@ export const faqsData: FAQItem[] = [
       bn: "ডা. হানিফ আহমেদ তৌহিদ কোথায় এবং কখন রোগী দেখেন?"
     },
     a: {
-      en: "Dr. Hanif Ahmed Towhid consults patients in his private chamber at Popular Medical Center Ltd., Sylhet (6th Floor, Room No-605, New Medical Road, Kazalshah, Sylhet). Visiting hours are 5:00 PM to 9:00 PM daily. The chamber remains closed on Fridays.",
-      bn: "ডা. হানিফ আহমেদ তৌহিদ নিয়মিত রোগী দেখেন সিলেটের কাজলশাহের নিউ মেডিকেল রোডে অবস্থিত পপুলার মেডিকেল সেন্টার লিমিটেড (৬ষ্ঠ তলা, রুম নং-৬০৫)-এ। রোগী দেখার সময়: প্রতিদিন বিকাল ৫:০০টা থেকে রাত ৯:০০টা পর্যন্ত (প্রতি শুক্রবার চেম্বার বন্ধ থাকে)।"
+      en: "Dr. Hanif Ahmed Towhid consults patients in his private chamber at Popular Medical Center Ltd., Sylhet (6th Floor, Room No-605, New Medical Road, Kazalshah, Sylhet). Visiting hours are 5:00 PM to 9:00 PM daily. The chamber remains closed on Fridays and Tuesdays.",
+      bn: "ডা. হানিফ আহমেদ তৌহিদ নিয়মিত রোগী দেখেন সিলেটের কাজলশাহের নিউ মেডিকেল রোডে অবস্থিত পপুলার মেডিকেল সেন্টার লিমিটেড (৬ষ্ঠ তলা, রুম নং-৬০৫)-এ। রোগী দেখার সময়: প্রতিদিন বিকাল ৫:০০টা থেকে রাত ৯:০০টা পর্যন্ত (প্রতি শুক্রবার ও মঙ্গলবার চেম্বার বন্ধ থাকে)।"
     }
   },
   {
@@ -97,8 +97,8 @@ export const faqsData: FAQItem[] = [
       bn: "ডা. হানিফ আহমেদ তৌহিদের শিক্ষাগত যোগ্যতা ও বর্তমান সরকারি পদবী কী?"
     },
     a: {
-      en: "Dr. Hanif Ahmed Towhid holds MBBS (SOMC), 37th BCS (Health), MCPS (Medicine), and FCPS (Medicine) credentials. He currently serves as a Registrar in the Department of Medicine at Sylhet MAG Osmani Medical College Hospital.",
-      bn: "ডা. হানিফ আহমেদ তৌহিদ অর্জন করেছেন MBBS (সিলেট এমএজি ওসমানী মেডিকেল কলেজ), ৩৭তম বিসিএস (স্বাস্থ্য), MCPS (মেডিসিন) এবং মেডিসিনের সর্বোচ্চ ডিগ্রি FCPS (মেডিসিন)। বর্তমানে তিনি সিলেট এম.এ.জি. ওসমানী মেডিকেল কলেজ হাসপাতালের মেডিসিন বিভাগের রেজিস্ট্রার হিসেবে দায়িত্ব পালন করছেন।"
+      en: "Dr. Hanif Ahmed Towhid holds MBBS (SOMC), BCS (Health), MCPS (Medicine), and FCPS (Medicine) credentials. He currently serves as a Medicine Specialist in the Department of Medicine at Sylhet MAG Osmani Medical College Hospital.",
+      bn: "ডা. হানিফ আহমেদ তৌহিদ অর্জন করেছেন MBBS (সিলেট এমএজি ওসমানী মেডিকেল কলেজ), বিসিএস (স্বাস্থ্য), MCPS (মেডিসিন) এবং মেডিসিনের সর্বোচ্চ ডিগ্রি FCPS (মেডিসিন)। বর্তমানে তিনি সিলেট এম.এ.জি. ওসমানী মেডিকেল কলেজ হাসপাতালের মেডিসিন বিভাগের মেডিসিন বিশেষজ্ঞ হিসেবে দায়িত্ব পালন করছেন।"
     }
   },
   {

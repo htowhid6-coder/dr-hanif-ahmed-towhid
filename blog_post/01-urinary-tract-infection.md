@@ -141,9 +141,9 @@ Urinary tract infection is a common but manageable condition when diagnosed and 
 **Dr. Hanif Ahmed Towhid**
 MBBS, MCPS (Medicine), FCPS (Medicine)
 Medicine Specialist
-Registrar (Department of Medicine), Sylhet MAG Osmani Medical College Hospital
+Medicine Specialist (Department of Medicine), Sylhet MAG Osmani Medical College Hospital
 
 **Chamber:** Popular Medical Center Ltd. (Room 605), New Medical Road, Kazalshah, Sylhet
-**Patient Viewing Hours:** 5:00 PM – 9:00 PM (Friday Closed)
+**Patient Viewing Hours:** 5:00 PM – 9:00 PM (Friday & Tuesday Closed)
 
 If you are experiencing symptoms of urinary tract infection or any other internal medicine concern, book an appointment with Dr. Hanif Ahmed Towhid at Popular Medical Center Ltd., Sylhet, for expert diagnosis and personalized treatment.

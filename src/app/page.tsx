@@ -193,8 +193,8 @@ export default function Home() {
 
           <p className="text-sm md:text-base leading-relaxed text-white/95 font-normal drop-shadow-sm max-w-3xl">
             {language === 'bn'
-              ? 'ডা. হানিফ আহমেদ তৌহিদ বর্তমানে সিলেট এম.এ.জি. ওসমানী মেডিকেল কলেজ হাসপাতালে মেডিসিনের রেজিস্ট্রার হিসেবে দায়িত্ব পালন করছেন। তিনি রোগীর শারীরিক সমস্যা নিখুঁতভাবে বিশ্লেষণ এবং বিজ্ঞানভিত্তিক চিকিৎসা প্রদানে আন্তরিক। প্রাপ্তবয়স্কদের দীর্ঘস্থায়ী মেডিসিন ব্যাধি, ডায়াবেটিস, হরমোনের ভারসাম্যহীনতা (থাইরয়েড), উচ্চ রক্তচাপ ও জটিল ইনফেকশনের আধুনিক চিকিৎসায় তিনি নিবেদিত।'
-              : 'Dr. Hanif Ahmed Towhid serves as a Registrar at Sylhet MAG Osmani Medical College Hospital. He believes in patient-centric, scientifically precise care. His practice is focused on adult medicine, diabetes, hormonal balance (thyroid), and infectious disease management.'}
+              ? 'ডা. হানিফ আহমেদ তৌহিদ বর্তমানে সিলেট এম.এ.জি. ওসমানী মেডিকেল কলেজ হাসপাতালে মেডিসিন বিশেষজ্ঞ হিসেবে দায়িত্ব পালন করছেন। তিনি রোগীর শারীরিক সমস্যা নিখুঁতভাবে বিশ্লেষণ এবং বিজ্ঞানভিত্তিক চিকিৎসা প্রদানে আন্তরিক। প্রাপ্তবয়স্কদের দীর্ঘস্থায়ী মেডিসিন ব্যাধি, ডায়াবেটিস, হরমোনের ভারসাম্যহীনতা (থাইরয়েড), উচ্চ রক্তচাপ ও জটিল ইনফেকশনের আধুনিক চিকিৎসায় তিনি নিবেদিত।'
+              : 'Dr. Hanif Ahmed Towhid serves as a Medicine Specialist at Sylhet MAG Osmani Medical College Hospital. He believes in patient-centric, scientifically precise care. His practice is focused on adult medicine, diabetes, hormonal balance (thyroid), and infectious disease management.'}
           </p>
 
           <div className="flex flex-wrap gap-4 mt-1 pt-4 border-t border-white/20">
