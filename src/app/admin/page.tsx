@@ -33,8 +33,15 @@ import {
 } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import RichTextEditor from '@/components/RichTextEditor';
-import { Save, Trash2, Download, Plus, LogOut, User, Building2, BookOpen, MessageSquare } from 'lucide-react';
+import { Save, Trash2, Download, Plus, LogOut, User, Building2, BookOpen, MessageSquare, GraduationCap, Sliders, Image as ImageIcon } from 'lucide-react';
+
 import { HeroSlidesManager } from '@/components/admin/HeroSlidesManager';
+import { SiteSettingsManager } from '@/components/admin/SiteSettingsManager';
+import { AboutPageManager } from '@/components/admin/AboutPageManager';
+import { FaqManager } from '@/components/admin/FaqManager';
+import { DiseasesManager } from '@/components/admin/DiseasesManager';
+import { MediaManager } from '@/components/admin/MediaManager';
+import { ImagePickerField } from '@/components/admin/ImagePickerField';
 
 export default function AdminDashboard() {
   const { language } = useLanguage();
@@ -44,8 +51,9 @@ export default function AdminDashboard() {
   const [loginError, setLoginError] = useState('');
 
   // Tab State
-  const [activeTab, setActiveTab] = useState<'profile' | 'chamber' | 'hero' | 'symptoms' | 'blog' | 'reviews' | 'messages'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'chamber' | 'hero' | 'about' | 'symptoms' | 'diseases' | 'faqs' | 'blog' | 'reviews' | 'settings' | 'media' | 'messages'>('profile');
   const [messages, setMessages] = useState<any[]>([]);
+
 
   // Profile Form States
   const [profile, setProfile] = useState({
@@ -1003,31 +1011,35 @@ export default function AdminDashboard() {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-line gap-2 flex-wrap">
-          {(['profile', 'chamber', 'hero', 'symptoms', 'blog', 'reviews', 'messages'] as const).map((tab) => (
+        <div className="flex border-b border-line gap-1.5 flex-wrap">
+          {([
+            { id: 'profile', bn: '১. প্রোফাইল ও ডিগ্রি', en: '1. Profile' },
+            { id: 'chamber', bn: '২. চেম্বার ও ম্যাপ', en: '2. Chamber' },
+            { id: 'hero', bn: '৩. হিরো স্লাইডার', en: '3. Hero Slides' },
+            { id: 'about', bn: '৪. About পেজ', en: '4. About Page' },
+            { id: 'symptoms', bn: '৫. লক্ষণ চেকার', en: '5. Symptoms' },
+            { id: 'diseases', bn: '৬. রোগ ও চিকিৎসা', en: '6. Diseases' },
+            { id: 'faqs', bn: '৭. FAQ ও প্রশ্নোত্তর', en: '7. FAQs' },
+            { id: 'blog', bn: '৮. হেলথ ব্লগ', en: '8. Blog Posts' },
+            { id: 'reviews', bn: '৯. পেশেন্ট রিভিউ', en: '9. Reviews' },
+            { id: 'settings', bn: '১০. সাইট সেটিংস ও ব্যানার', en: '10. Site Settings' },
+            { id: 'media', bn: '১১. মিডিয়া ও ছবি', en: '11. Media Library' },
+            { id: 'messages', bn: '১২. রোগীর বার্তা', en: '12. Messages' },
+          ] as const).map((tab) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 font-serif text-sm font-semibold capitalize border-b-2 transition-all cursor-pointer ${
-                activeTab === tab ? 'border-accent text-accent scale-105' : 'border-transparent text-muted hover:text-ink'
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                activeTab === tab.id
+                  ? 'bg-accent text-white shadow-sm ring-2 ring-accent/20'
+                  : 'bg-white/50 text-muted hover:bg-white hover:text-ink border border-panel-border/50'
               }`}
             >
-              {tab === 'profile'
-                ? language === 'bn' ? 'প্রোফাইল সম্পাদন' : 'Edit Profile'
-                : tab === 'chamber'
-                ? language === 'bn' ? 'চেম্বার তথ্য' : 'Chamber Info'
-                : tab === 'hero'
-                ? language === 'bn' ? 'হোম ও হিরো স্লাইড (Hero Slides)' : 'Hero & Home Slides'
-                : tab === 'symptoms'
-                ? language === 'bn' ? 'লক্ষণ ও রোগ (Symptoms)' : 'Symptoms Manager'
-                : tab === 'blog'
-                ? language === 'bn' ? 'ব্লগ ম্যানেজার' : 'Blog Manager'
-                : tab === 'reviews'
-                ? language === 'bn' ? 'রিভিউ ম্যানেজার' : 'Reviews Manager'
-                : language === 'bn' ? 'রোগীর বার্তা' : 'Patient Messages'}
+              {language === 'bn' ? tab.bn : tab.en}
             </button>
           ))}
         </div>
+
 
         {/* TAB 1: EDIT PROFILE */}
         {activeTab === 'profile' && (
@@ -1314,6 +1326,12 @@ export default function AdminDashboard() {
         {activeTab === 'hero' && (
           <HeroSlidesManager />
         )}
+
+        {/* TAB 4: ABOUT PAGE CONTENT */}
+        {activeTab === 'about' && (
+          <AboutPageManager />
+        )}
+
 
         {/* TAB: SYMPTOMS & CLINICAL CONDITIONS MANAGER */}
         {activeTab === 'symptoms' && (
@@ -2290,6 +2308,15 @@ export default function AdminDashboard() {
                     />
                   </div>
 
+                  {/* Blog Thumbnail Image Picker */}
+                  <ImagePickerField
+                    label={language === 'bn' ? 'ব্লগ থাম্বনেইল ছবি (Blog Featured Image):' : 'Blog Featured Image:'}
+                    value={blogForm.image || ''}
+                    onChange={(val) => setBlogForm({ ...blogForm, image: val })}
+                    placeholder="/blogs/diabetes_care_guide.jpg"
+                    helperText={language === 'bn' ? 'ডিভাইস থেকে ছবি আপলোড বা গ্যালারি থেকে সিলেক্ট করুন' : 'Upload from device or select from gallery'}
+                  />
+
                   <div className="flex flex-col gap-1">
                     <label className="text-[10px] font-bold text-ink">Article Body (Rich Text Editor)</label>
                     <RichTextEditor
@@ -2544,10 +2571,31 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* TAB 4: PATIENT MESSAGES */}
+        {/* TAB: DISEASES & CONDITIONS LIBRARY */}
+        {activeTab === 'diseases' && (
+          <DiseasesManager />
+        )}
+
+        {/* TAB: FAQS & PATIENT ADVISORY */}
+        {activeTab === 'faqs' && (
+          <FaqManager />
+        )}
+
+        {/* TAB: SITE SETTINGS & BANNERS */}
+        {activeTab === 'settings' && (
+          <SiteSettingsManager />
+        )}
+
+        {/* TAB: MEDIA & ASSETS LIBRARY */}
+        {activeTab === 'media' && (
+          <MediaManager />
+        )}
+
+        {/* TAB: PATIENT MESSAGES */}
         {activeTab === 'messages' && (
           <GlassPanel className="p-6 md:p-8 animate-in fade-in duration-300">
             <div className="flex justify-between items-center border-b border-line pb-2 mb-4 flex-wrap gap-2">
+
               <h3 className="font-serif text-base font-bold text-ink">
                 {language === 'bn' ? 'রোগীদের পাঠানো বার্তা ও সিরিয়াল অনুরোধ' : 'Patient Messages & Serial Requests'}
               </h3>

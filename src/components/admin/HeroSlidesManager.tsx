@@ -28,7 +28,10 @@ import {
   Layers
 } from 'lucide-react';
 
+import { ImagePickerField } from '@/components/admin/ImagePickerField';
+
 export const HeroSlidesManager: React.FC = () => {
+
   const { language } = useLanguage();
   const isBn = language === 'bn';
 
@@ -305,58 +308,14 @@ export const HeroSlidesManager: React.FC = () => {
       </GlassPanel>
 
       {/* Hero Background Banner Manager */}
-      <GlassPanel className="p-5 md:p-6 border border-line">
-        <h4 className="font-serif text-sm font-bold text-ink flex items-center gap-2 mb-3">
-          <ImageIcon className="w-4 h-4 text-accent" />
-          <span>{isBn ? 'হিরো ব্যাকগ্রাউন্ড ব্যানার ছবি (Hero Desktop Banner)' : 'Hero Background Banner Image'}</span>
-        </h4>
-        <div className="flex flex-col md:flex-row items-center gap-4">
-          <div className="relative w-full md:w-48 h-28 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0 shadow-inner group">
-            <img src={bgImage} alt="Hero Banner" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold">
-              {isBn ? 'বর্তমান ব্যানার' : 'Current Banner'}
-            </div>
-          </div>
-
-          <div className="flex-1 flex flex-col gap-2 w-full">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <input
-                type="text"
-                value={bgImage}
-                onChange={(e) => setBgImage(e.target.value)}
-                placeholder="Image URL e.g. /hero-desktop.png"
-                className="flex-1 p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none shadow-sm"
-              />
-              <button
-                type="button"
-                onClick={() => handleSaveBgImage(bgImage)}
-                className="px-4 py-2.5 bg-accent hover:bg-ink text-white font-semibold text-xs rounded-xl shadow-xs transition-colors shrink-0 cursor-pointer"
-              >
-                💾 {isBn ? 'ব্যানার সেভ' : 'Save Banner'}
-              </button>
-            </div>
-
-            <div className="flex items-center gap-3 pt-1">
-              <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 cursor-pointer shadow-2xs">
-                <Upload className="w-3.5 h-3.5 text-accent" />
-                <span>{isBn ? 'কম্পিউটার থেকে ছবি আপলোড' : 'Upload from Device'}</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleImageFileUpload(e, 'bgImage')}
-                  className="hidden"
-                />
-              </label>
-              <button
-                type="button"
-                onClick={() => handleSaveBgImage('/hero-desktop.png')}
-                className="text-[11px] text-accent hover:underline cursor-pointer"
-              >
-                {isBn ? 'মূল ছবিতে ফিরুন (/hero-desktop.png)' : 'Restore default (/hero-desktop.png)'}
-              </button>
-            </div>
-          </div>
-        </div>
+      <GlassPanel className="p-5 md:p-6 border border-line flex flex-col gap-3">
+        <ImagePickerField
+          label={isBn ? 'হিরো ব্যাকগ্রাউন্ড ব্যানার ছবি (Hero Desktop Banner):' : 'Hero Background Banner Image:'}
+          value={bgImage}
+          onChange={(val) => handleSaveBgImage(val)}
+          placeholder="/hero-desktop.png"
+          helperText={isBn ? 'কম্পিউটার থেকে ছবি আপলোড করুন অথবা মিডিয়া গ্যালারি থেকে সিলেক্ট করুন' : 'Upload from device or select from media gallery'}
+        />
       </GlassPanel>
 
       {/* Slide Cards List */}
@@ -699,52 +658,14 @@ export const HeroSlidesManager: React.FC = () => {
               {activeModalTab === 'doctor' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-200">
                   {/* Doctor Image Manager */}
-                  <div className="flex flex-col gap-2 md:col-span-2 p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                    <label className="text-xs font-bold text-ink flex items-center gap-2">
-                      <ImageIcon className="w-4 h-4 text-accent" />
-                      <span>Doctor Portrait Photo (ডাক্তারের ছবি)</span>
-                    </label>
-
-                    <div className="flex flex-col sm:flex-row items-center gap-4">
-                      <div className="w-24 h-32 rounded-2xl overflow-hidden bg-slate-200 border-2 border-white shadow-md shrink-0">
-                        <img
-                          src={formData.doctor_image || '/doctor-hero.png'}
-                          alt="Doctor"
-                          className="w-full h-full object-cover object-top"
-                        />
-                      </div>
-
-                      <div className="flex-1 flex flex-col gap-2 w-full">
-                        <input
-                          type="text"
-                          value={formData.doctor_image || ''}
-                          onChange={(e) => setFormData({ ...formData, doctor_image: e.target.value })}
-                          placeholder="Image URL e.g. /doctor-hero.png"
-                          className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none"
-                        />
-
-                        <div className="flex flex-wrap items-center gap-3">
-                          <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 cursor-pointer shadow-2xs">
-                            <Upload className="w-3.5 h-3.5 text-accent" />
-                            <span>{isBn ? 'ডিভাইস থেকে ছবি আপলোড' : 'Upload Image'}</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => handleImageFileUpload(e, 'doctor_image')}
-                              className="hidden"
-                            />
-                          </label>
-
-                          <button
-                            type="button"
-                            onClick={() => setFormData({ ...formData, doctor_image: '/doctor-hero.png' })}
-                            className="text-[11px] text-accent hover:underline cursor-pointer"
-                          >
-                            {isBn ? 'ডিফল্ট ছবি সেট করুন (/doctor-hero.png)' : 'Set Default (/doctor-hero.png)'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                  <div className="md:col-span-2">
+                    <ImagePickerField
+                      label={isBn ? 'ডাক্তারের পোর্ট্রেট ছবি (Doctor Portrait Photo):' : 'Doctor Portrait Photo:'}
+                      value={formData.doctor_image || ''}
+                      onChange={(val) => setFormData({ ...formData, doctor_image: val })}
+                      placeholder="/doctor-hero.png"
+                      helperText={isBn ? 'ডিভাইস থেকে আপলোড বা গ্যালারি থেকে সিলেক্ট করুন' : 'Upload device photo or pick from gallery'}
+                    />
                   </div>
 
                   {/* Specialty Badge */}

@@ -11,6 +11,7 @@ import { SymptomQuestionSection } from '@/components/SymptomQuestionSection';
 import { SymptomCheckerSection } from '@/components/SymptomCheckerSection';
 import { InteractiveReviewsSection } from '@/components/InteractiveReviewsSection';
 import { diseaseData, Disease } from '@/locales/diseaseData';
+import { defaultSiteSettings, SiteSettings } from '@/data/siteSettingsData';
 import Link from 'next/link';
 import { MessageCircle, Phone, PhoneCall, ArrowRight, Activity, Quote, MapPin } from 'lucide-react';
 import supabase from '@/lib/supabase';
@@ -76,11 +77,12 @@ const defaultReviews: Review[] = [
 
 export default function Home() {
   const { language, t } = useLanguage();
+  const isBn = language === 'bn';
   const [selectedDisease, setSelectedDisease] = useState<Disease | null>(null);
   const [bioInView, setBioInView] = useState(false);
   const [reviews, setReviews] = useState<Review[]>(defaultReviews);
+  const [settings, setSettings] = useState<SiteSettings>(defaultSiteSettings);
   const bioRef = useRef<HTMLElement | null>(null);
-
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -97,6 +99,37 @@ export default function Home() {
     }
 
     return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      if (typeof window !== 'undefined') {
+        const local = localStorage.getItem('site_settings_data');
+        if (local) {
+          try {
+            setSettings(prev => ({ ...prev, ...JSON.parse(local) }));
+          } catch (e) {}
+        }
+      }
+
+      try {
+        const { data } = await supabase
+          .from('site_settings')
+          .select('*')
+          .eq('id', 'global_settings')
+          .maybeSingle();
+
+        if (data?.data) {
+          setSettings(prev => ({ ...prev, ...data.data }));
+        }
+      } catch (err) {}
+    };
+
+    loadSettings();
+
+    const handleUpdate = () => loadSettings();
+    window.addEventListener('site_settings_updated', handleUpdate);
+    return () => window.removeEventListener('site_settings_updated', handleUpdate);
   }, []);
 
   useEffect(() => {
@@ -138,7 +171,6 @@ export default function Home() {
     loadReviews();
   }, []);
 
-
   const openDiseaseModal = (slug: string) => {
     const disease = diseaseData.find((d) => d.slug === slug);
     if (disease) {
@@ -162,8 +194,8 @@ export default function Home() {
         {/* Background Image Layer - Full Width Edge to Edge */}
         <div className="absolute inset-0 z-0 overflow-hidden">
           <img
-            src="/doctor-consultation-bg.png"
-            alt={language === 'bn' ? 'ক্লিনিক্যাল চেম্বার পরিবেশ' : 'Doctor Consultation Room'}
+            src={settings.specialistIntroBgImage || '/doctor-consultation-bg.png'}
+            alt={isBn ? 'ক্লিনিক্যাল চেম্বার পরিবেশ' : 'Doctor Consultation Room'}
             className={`w-full h-full object-cover object-center transition-transform duration-1000 ease-out ${
               bioInView ? 'scale-100' : 'scale-105'
             }`}
@@ -182,37 +214,33 @@ export default function Home() {
           <div>
             <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-emerald-200 mb-3 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/25 backdrop-blur-md w-fit shadow-sm">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              {language === 'bn' ? 'বিশেষজ্ঞ চিকিৎসক পরিচিতি' : 'Specialist Introduction'}
+              {isBn ? settings.specialistIntroBadgeBn : settings.specialistIntroBadgeEn}
             </span>
             <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight text-white drop-shadow-md">
-              {language === 'bn'
-                ? 'সিলেটে ডায়াবেটিস, হরমোন ও মেডিসিন রোগের নির্ভরযোগ্য চিকিৎসা পরামর্শ।'
-                : 'Trusted Medical Consultations for Diabetes & Chronic Conditions in Sylhet.'}
+              {isBn ? settings.specialistIntroTitleBn : settings.specialistIntroTitleEn}
             </h2>
           </div>
 
           <p className="text-sm md:text-base leading-relaxed text-white/95 font-normal drop-shadow-sm max-w-3xl">
-            {language === 'bn'
-              ? 'ডা. হানিফ আহমেদ তৌহিদ বর্তমানে সিলেট এম.এ.জি. ওসমানী মেডিকেল কলেজ হাসপাতালে মেডিসিন বিশেষজ্ঞ হিসেবে দায়িত্ব পালন করছেন। তিনি রোগীর শারীরিক সমস্যা নিখুঁতভাবে বিশ্লেষণ এবং বিজ্ঞানভিত্তিক চিকিৎসা প্রদানে আন্তরিক। প্রাপ্তবয়স্কদের দীর্ঘস্থায়ী মেডিসিন ব্যাধি, ডায়াবেটিস, হরমোনের ভারসাম্যহীনতা (থাইরয়েড), উচ্চ রক্তচাপ ও জটিল ইনফেকশনের আধুনিক চিকিৎসায় তিনি নিবেদিত।'
-              : 'Dr. Hanif Ahmed Towhid serves as a Medicine Specialist at Sylhet MAG Osmani Medical College Hospital. He believes in patient-centric, scientifically precise care. His practice is focused on adult medicine, diabetes, hormonal balance (thyroid), and infectious disease management.'}
+            {isBn ? settings.specialistIntroBioBn : settings.specialistIntroBioEn}
           </p>
 
           <div className="flex flex-wrap gap-4 mt-1 pt-4 border-t border-white/20">
             <Link
-              href="/about"
+              href={settings.specialistIntroCtaLink || '/about'}
               className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl border border-white/40 bg-white/20 hover:bg-white/35 text-white font-semibold text-xs md:text-sm backdrop-blur-md transition-all cursor-pointer shadow-sm hover:shadow hover:-translate-y-0.5"
             >
-              <span>{language === 'bn' ? 'ডাক্তারের পরিচিতি ও ডিগ্রি পড়ুন' : 'Read My Journey'}</span>
+              <span>{isBn ? settings.specialistIntroCtaTextBn : settings.specialistIntroCtaTextEn}</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
             <a
-              href="https://wa.me/8801346132486"
+              href={`https://wa.me/${settings.whatsappNumber || '8801346132486'}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-accent hover:bg-ink text-white font-semibold text-xs md:text-sm transition-all cursor-pointer shadow-lg hover:shadow-xl hover:-translate-y-0.5 border border-white/20"
             >
               <MessageCircle className="w-4 h-4" />
-              <span>{language === 'bn' ? 'হোয়াটসঅ্যাপে সিরিয়াল বুক করুন' : 'WhatsApp Appointment'}</span>
+              <span>{isBn ? 'হোয়াটসঅ্যাপে সিরিয়াল বুক করুন' : 'WhatsApp Appointment'}</span>
             </a>
           </div>
         </div>
@@ -227,7 +255,6 @@ export default function Home() {
       {/* Content below Symptom Section */}
       <div className="relative z-10 bg-background w-full py-16 px-6 md:px-12 flex flex-col gap-20 max-w-7xl mx-auto">
 
-
         {/* Testimonials / Patient Trust - 3D Interactive Experience */}
         <InteractiveReviewsSection reviews={reviews} language={language} />
 
@@ -235,30 +262,28 @@ export default function Home() {
         <section className="glass-panel p-8 md:p-12 rounded-3xl bg-accent/10 border border-accent/20 flex flex-col md:flex-row justify-between items-center gap-6 shadow-md">
           <div className="flex flex-col gap-2 text-center md:text-left">
             <h3 className="font-serif text-xl md:text-2xl font-bold text-ink">
-              {language === 'bn' ? 'এপয়েন্টমেন্ট বা সিরিয়াল প্রয়োজন?' : 'Need to Book a Serial?'}
+              {isBn ? settings.urgentCtaTitleBn : settings.urgentCtaTitleEn}
             </h3>
             <p className="text-xs md:text-sm text-muted">
-              {language === 'bn'
-                ? 'পপুলার মেডিকেল সেন্টারে ডা. হানিফ আহমেদ তৌহিদকে দেখাতে সরাসরি চেম্বারে যোগাযোগ করুন।'
-                : 'Book your consulting slot at Popular Medical Center Kazalshah, Sylhet.'}
+              {isBn ? settings.urgentCtaSubtitleBn : settings.urgentCtaSubtitleEn}
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
             <a
-              href="tel:+8801346132486"
+              href={`tel:+${settings.contactPhone?.replace(/[^0-9]/g, '') || '8801346132486'}`}
               className="inline-flex items-center justify-center gap-2 bg-accent text-white px-6 py-3.5 rounded-xl font-semibold text-xs md:text-sm shadow-md hover:-translate-y-0.5 transition-transform text-center cursor-pointer"
             >
               <Phone className="w-4 h-4" />
-              <span>01346-132486</span>
+              <span>{settings.urgentCtaPhoneText || settings.contactPhone || '01346-132486'}</span>
             </a>
             <a
-              href="https://wa.me/8801346132486"
+              href={`https://wa.me/${settings.whatsappNumber || '8801346132486'}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 bg-accent hover:bg-ink text-white px-6 py-3.5 rounded-xl font-semibold text-xs md:text-sm shadow-md hover:-translate-y-0.5 transition-all text-center cursor-pointer"
             >
               <MessageCircle className="w-4 h-4" />
-              <span>WhatsApp</span>
+              <span>{settings.urgentCtaWhatsappText || 'WhatsApp'}</span>
             </a>
           </div>
         </section>

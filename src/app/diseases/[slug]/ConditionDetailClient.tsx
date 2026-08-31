@@ -7,6 +7,7 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { GlassPanel } from '@/components/GlassPanel';
 import { diseaseData, Disease } from '@/locales/diseaseData';
+import supabase from '@/lib/supabase';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -87,14 +88,62 @@ export default function ConditionDetailClient() {
   const params = useParams();
   const router = useRouter();
   const { language } = useLanguage();
+  const [diseases, setDiseases] = useState<Disease[]>(diseaseData);
   
   const slug = params.slug as string;
-  const disease = diseaseData.find((d) => d.slug === slug);
+
+  useEffect(() => {
+    const loadDiseases = async () => {
+      if (typeof window !== 'undefined') {
+        const local = localStorage.getItem('diseases_data');
+        if (local) {
+          try {
+            const parsed = JSON.parse(local);
+            if (Array.isArray(parsed) && parsed.length > 0) setDiseases(parsed);
+          } catch (e) {}
+        }
+      }
+
+      try {
+        const { data, error } = await supabase.from('diseases').select('*');
+        if (!error && data && data.length > 0) {
+          const mapped: Disease[] = data.map((d: any) => ({
+            slug: d.slug,
+            image: d.image || '/Diseases_Images/diabetes.jpg',
+            title: { en: d.title_en, bn: d.title_bn },
+            shortDesc: { en: d.short_desc_en, bn: d.short_desc_bn },
+            fullDesc: { en: d.full_desc_en, bn: d.full_desc_bn },
+            symptoms: {
+              en: Array.isArray(d.symptoms_en) ? d.symptoms_en : [],
+              bn: Array.isArray(d.symptoms_bn) ? d.symptoms_bn : []
+            },
+            treatments: {
+              en: Array.isArray(d.treatments_en) ? d.treatments_en : [],
+              bn: Array.isArray(d.treatments_bn) ? d.treatments_bn : []
+            }
+          }));
+          setDiseases(mapped);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('diseases_data', JSON.stringify(mapped));
+          }
+        }
+      } catch (err) {}
+    };
+
+    loadDiseases();
+
+    const handleUpdate = () => loadDiseases();
+    window.addEventListener('diseases_updated', handleUpdate);
+    return () => window.removeEventListener('diseases_updated', handleUpdate);
+  }, []);
+
+  const disease = diseases.find((d) => d.slug === slug) || diseaseData.find((d) => d.slug === slug);
 
   // Filter other diseases for quick browsing in the sidebar
-  const otherDiseases = diseaseData
+  const otherDiseases = diseases
     .filter((d) => d.slug !== slug)
     .slice(0, 5);
+
 
   if (!disease) {
     return (

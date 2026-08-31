@@ -1,13 +1,47 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import Link from 'next/link';
 import { Globe, PhoneCall, Calendar, Menu, X } from 'lucide-react';
+import { defaultSiteSettings, SiteSettings } from '@/data/siteSettingsData';
+import supabase from '@/lib/supabase';
 
 export const Navbar: React.FC = () => {
   const { language, setLanguage, t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
+  const [settings, setSettings] = useState<SiteSettings>(defaultSiteSettings);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      if (typeof window !== 'undefined') {
+        const local = localStorage.getItem('site_settings_data');
+        if (local) {
+          try {
+            setSettings(prev => ({ ...prev, ...JSON.parse(local) }));
+          } catch (e) {}
+        }
+      }
+
+      try {
+        const { data } = await supabase
+          .from('site_settings')
+          .select('*')
+          .eq('id', 'global_settings')
+          .maybeSingle();
+
+        if (data?.data) {
+          setSettings(prev => ({ ...prev, ...data.data }));
+        }
+      } catch (err) {}
+    };
+
+    loadSettings();
+
+    const handleUpdate = () => loadSettings();
+    window.addEventListener('site_settings_updated', handleUpdate);
+    return () => window.removeEventListener('site_settings_updated', handleUpdate);
+  }, []);
 
   const toggleLanguage = () => {
     setLanguage(language === 'bn' ? 'en' : 'bn');
@@ -23,14 +57,16 @@ export const Navbar: React.FC = () => {
     { name: t('nav.contact'), href: '/contact' },
   ];
 
+  const isBn = language === 'bn';
+
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between w-full px-6 py-4 bg-white/35 backdrop-blur-[18px] border-b border-panel-border shadow-sm md:px-12">
       <div className="flex flex-col">
         <Link href="/" className="font-serif text-lg md:text-xl font-bold tracking-tight text-ink hover:opacity-90">
-          {language === 'bn' ? 'ডা. হানিফ আহমেদ তৌহিদ' : 'Dr. Hanif Ahmed Towhid'}
+          {isBn ? (settings.siteTitleBn || 'ডা. হানিফ আহমেদ তৌহিদ') : (settings.siteTitleEn || 'Dr. Hanif Ahmed Towhid')}
         </Link>
         <span className="text-[10px] text-muted uppercase tracking-wider font-semibold">
-          {language === 'bn' ? 'মেডিসিন বিশেষজ্ঞ' : 'General Medicine Specialist'}
+          {isBn ? (settings.siteTaglineBn || 'মেডিসিন বিশেষজ্ঞ') : (settings.siteTaglineEn || 'General Medicine Specialist')}
         </span>
       </div>
 
@@ -58,7 +94,7 @@ export const Navbar: React.FC = () => {
         </button>
 
         <a
-          href="https://wa.me/8801346132486"
+          href={`https://wa.me/${settings.whatsappNumber || '8801346132486'}`}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1.5 bg-accent text-white px-5 py-2 rounded-full font-semibold text-xs hover:-translate-y-0.5 transition-transform shadow-md hover:shadow-lg cursor-pointer"
@@ -106,7 +142,7 @@ export const Navbar: React.FC = () => {
             </button>
 
             <a
-              href="https://wa.me/8801346132486"
+              href={`https://wa.me/${settings.whatsappNumber || '8801346132486'}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 bg-accent text-white px-5 py-2.5 rounded-full font-semibold text-sm text-center shadow-md cursor-pointer"

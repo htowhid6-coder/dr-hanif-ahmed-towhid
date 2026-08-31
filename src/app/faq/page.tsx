@@ -6,7 +6,9 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { GlassPanel } from '@/components/GlassPanel';
 import { faqsData, faqCategories, FAQItem } from '@/data/faqsData';
+import supabase from '@/lib/supabase';
 import { 
+
   ChevronDown, 
   Phone, 
   MessageCircle, 
@@ -131,9 +133,52 @@ function FAQCard({ faq, index, isOpen, onToggle, language }: FAQCardProps) {
 
 export default function FAQ() {
   const { language } = useLanguage();
+  const [faqs, setFaqs] = useState<FAQItem[]>(faqsData);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [openIndexes, setOpenIndexes] = useState<number[]>([0]);
+
+  useEffect(() => {
+    const loadFaqs = async () => {
+      // 1. LocalStorage
+      if (typeof window !== 'undefined') {
+        const local = localStorage.getItem('faqs_data');
+        if (local) {
+          try {
+            const parsed = JSON.parse(local);
+            if (Array.isArray(parsed) && parsed.length > 0) setFaqs(parsed);
+          } catch (e) {}
+        }
+      }
+
+      // 2. Supabase
+      try {
+        const { data, error } = await supabase
+          .from('faqs')
+          .select('*')
+          .order('order_index', { ascending: true });
+
+        if (!error && data && data.length > 0) {
+          const mapped: FAQItem[] = data.map((d: any, idx: number) => ({
+            id: d.id || idx + 1,
+            category: d.category || 'chamber',
+            q: { en: d.q_en, bn: d.q_bn },
+            a: { en: d.a_en, bn: d.a_bn }
+          }));
+          setFaqs(mapped);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('faqs_data', JSON.stringify(mapped));
+          }
+        }
+      } catch (err) {}
+    };
+
+    loadFaqs();
+
+    const handleUpdate = () => loadFaqs();
+    window.addEventListener('faqs_updated', handleUpdate);
+    return () => window.removeEventListener('faqs_updated', handleUpdate);
+  }, []);
 
   // Map category icons
   const getCategoryIcon = (catId: string) => {
@@ -155,15 +200,15 @@ export default function FAQ() {
 
   // Filter FAQs based on category and search query
   const filteredFaqs = useMemo(() => {
-    return faqsData.filter((item) => {
+    return faqs.filter((item) => {
       const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
       const query = searchQuery.trim().toLowerCase();
       if (!query) return matchesCategory;
 
-      const qEn = item.q.en.toLowerCase();
-      const qBn = item.q.bn.toLowerCase();
-      const aEn = item.a.en.toLowerCase();
-      const aBn = item.a.bn.toLowerCase();
+      const qEn = (item.q?.en || '').toLowerCase();
+      const qBn = (item.q?.bn || '').toLowerCase();
+      const aEn = (item.a?.en || '').toLowerCase();
+      const aBn = (item.a?.bn || '').toLowerCase();
 
       const matchesSearch =
         qEn.includes(query) ||
@@ -173,11 +218,12 @@ export default function FAQ() {
 
       return matchesCategory && matchesSearch;
     });
-  }, [selectedCategory, searchQuery]);
+  }, [faqs, selectedCategory, searchQuery]);
 
   // Toggle single item
   const toggleFaq = (index: number) => {
     if (openIndexes.includes(index)) {
+
       setOpenIndexes(openIndexes.filter((i) => i !== index));
     } else {
       setOpenIndexes([...openIndexes, index]);
