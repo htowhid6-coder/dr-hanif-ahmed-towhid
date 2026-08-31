@@ -36,7 +36,7 @@ export const FaqManager: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   const initialFaqForm: FAQItem = {
-    id: 0,
+    id: '',
     category: 'chamber',
     q: { en: '', bn: '' },
     a: { en: '', bn: '' }
@@ -104,8 +104,8 @@ export const FaqManager: React.FC = () => {
   const handleOpenNew = () => {
     setIsEditing(false);
     setFaqForm({
-      id: Date.now(),
-      category: selectedCategory === 'all' ? 'chamber' : selectedCategory,
+      id: `faq-${Date.now()}`,
+      category: (selectedCategory === 'all' ? 'chamber' : selectedCategory) as FAQItem['category'],
       q: { en: '', bn: '' },
       a: { en: '', bn: '' }
     });
@@ -394,7 +394,7 @@ export const FaqManager: React.FC = () => {
                 <label className="text-xs font-bold text-ink">{isBn ? 'ক্যাটাগরি:' : 'Category:'}</label>
                 <select
                   value={faqForm.category}
-                  onChange={(e) => setFaqForm({ ...faqForm, category: e.target.value })}
+                  onChange={(e) => setFaqForm({ ...faqForm, category: e.target.value as FAQItem['category'] })}
                   className="w-full p-2.5 text-xs rounded-xl border border-slate-300 bg-white mt-1"
                 >
                   {faqCategories.filter(c => c.id !== 'all').map(cat => (
