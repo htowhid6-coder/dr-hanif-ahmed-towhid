@@ -274,13 +274,23 @@ export const SymptomCheckerSection: React.FC = () => {
     setImgSrc(activeSymptom.image);
   }, [activeSymptom]);
 
-  // Auto-scroll active card into view in the top horizontal bar
+  const isInitialMount = useRef(true);
+
+  // Auto-scroll active card inside the horizontal scroll container only
   useEffect(() => {
-    if (cardRefs.current[activeIndex]) {
-      cardRefs.current[activeIndex]?.scrollIntoView({
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    const container = scrollContainerRef.current;
+    const card = cardRefs.current[activeIndex];
+    if (container && card) {
+      const cardLeft = card.offsetLeft;
+      const cardWidth = card.offsetWidth;
+      const containerWidth = container.offsetWidth;
+      container.scrollTo({
+        left: cardLeft - containerWidth / 2 + cardWidth / 2,
         behavior: 'smooth',
-        inline: 'center',
-        block: 'nearest',
       });
     }
   }, [activeIndex]);
