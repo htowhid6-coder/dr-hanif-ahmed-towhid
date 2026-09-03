@@ -25,6 +25,8 @@ interface Review {
   review_text_en: string;
   review_text_bn: string;
   initials: string;
+  rating?: number;
+  google_review_url?: string;
 }
 
 const defaultReviews: Review[] = [
@@ -146,6 +148,22 @@ export default function Home() {
   useEffect(() => {
     async function loadReviews() {
       try {
+        // Read reviews_meta from localStorage or settings
+        let metaMap: Record<string, any> = {};
+        if (typeof window !== 'undefined') {
+          try {
+            const local = localStorage.getItem('site_settings_data');
+            if (local) {
+              const parsed = JSON.parse(local);
+              if (parsed.reviewsMetadata) metaMap = { ...parsed.reviewsMetadata };
+            }
+            const localReviewsMeta = localStorage.getItem('reviews_meta');
+            if (localReviewsMeta) {
+              metaMap = { ...metaMap, ...JSON.parse(localReviewsMeta) };
+            }
+          } catch (e) {}
+        }
+
         const { data, error } = await supabase
           .from('reviews')
           .select('*')
@@ -155,8 +173,17 @@ export default function Home() {
         if (data && data.length > 0) {
           const uniqueDbReviews: Review[] = [];
           const seen = new Set<string>();
-          for (const item of data) {
-            const key = item.reviewer_name_en?.trim().toLowerCase();
+          for (const rawItem of data) {
+            const key = rawItem.reviewer_name_en?.trim().toLowerCase();
+            const id = rawItem.id;
+            const meta = (id && metaMap[id]) || (key && metaMap[key]) || {};
+
+            const item: Review = {
+              ...rawItem,
+              rating: typeof rawItem.rating === 'number' ? rawItem.rating : (meta.rating ?? 5),
+              google_review_url: rawItem.google_review_url || meta.google_review_url || '',
+            };
+
             if (key && !seen.has(key)) {
               seen.add(key);
               uniqueDbReviews.push(item);
@@ -180,7 +207,7 @@ export default function Home() {
       }
     }
     loadReviews();
-  }, []);
+  }, [settings.reviewsMetadata]);
 
   const openDiseaseModal = (slug: string) => {
     const disease = diseaseData.find((d) => d.slug === slug);
@@ -267,7 +294,22 @@ export default function Home() {
       <div className="relative z-10 bg-background w-full py-16 px-6 md:px-12 flex flex-col gap-20 max-w-7xl mx-auto">
 
         {/* Testimonials / Patient Trust - 3D Interactive Experience */}
-        <InteractiveReviewsSection reviews={reviews} language={language} />
+        <InteractiveReviewsSection 
+          reviews={reviews} 
+          language={language} 
+          googleReviewSettings={{
+            businessUrl: settings.googleReviewBusinessUrl,
+            qrCodeImage: settings.googleReviewQrCodeImage,
+            titleEn: settings.googleReviewTitleEn,
+            titleBn: settings.googleReviewTitleBn,
+            subtitleEn: settings.googleReviewSubtitleEn,
+            subtitleBn: settings.googleReviewSubtitleBn,
+            buttonTextEn: settings.googleReviewButtonTextEn,
+            buttonTextBn: settings.googleReviewButtonTextBn,
+            badgeEn: settings.googleReviewBadgeEn,
+            badgeBn: settings.googleReviewBadgeBn,
+          }}
+        />
 
         {/* Urgent Appointment CTA Card */}
         <section className="glass-panel p-8 md:p-12 rounded-3xl bg-accent/10 border border-accent/20 flex flex-col md:flex-row justify-between items-center gap-6 shadow-md">

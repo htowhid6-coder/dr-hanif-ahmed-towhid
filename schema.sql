@@ -147,6 +147,8 @@ CREATE TABLE IF NOT EXISTS public.reviews (
   review_text_en TEXT NOT NULL,
   review_text_bn TEXT NOT NULL,
   initials VARCHAR(10) NOT NULL,
+  rating NUMERIC(2,1) DEFAULT 5.0,
+  google_review_url TEXT DEFAULT '',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

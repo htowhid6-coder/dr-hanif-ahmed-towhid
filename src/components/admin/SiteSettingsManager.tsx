@@ -18,7 +18,12 @@ import {
   MessageCircle,
   ExternalLink,
   Layers,
-  ArrowRight
+  ArrowRight,
+  QrCode,
+  Smartphone,
+  Download,
+  Star,
+  ArrowUpRight
 } from 'lucide-react';
 
 import { ImagePickerField } from '@/components/admin/ImagePickerField';
@@ -29,7 +34,7 @@ export const SiteSettingsManager: React.FC = () => {
   const isBn = language === 'bn';
 
   const [settings, setSettings] = useState<SiteSettings>(defaultSiteSettings);
-  const [activeSubTab, setActiveSubTab] = useState<'specialist' | 'question' | 'banners' | 'urgentCta' | 'global'>('specialist');
+  const [activeSubTab, setActiveSubTab] = useState<'specialist' | 'question' | 'banners' | 'urgentCta' | 'global' | 'googleReview'>('specialist');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -228,6 +233,18 @@ export const SiteSettingsManager: React.FC = () => {
           }`}
         >
           {isBn ? '৫. হেডার, ফুটার ও সোশ্যাল' : '5. Header & Footer'}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('googleReview')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeSubTab === 'googleReview'
+              ? 'bg-accent text-white shadow-sm'
+              : 'bg-white/60 text-muted hover:bg-white hover:text-ink'
+          }`}
+        >
+          {isBn ? '৬. গুগল রিভিউ ও কিউআর' : '6. Google Review & QR'}
         </button>
       </div>
 
@@ -847,6 +864,177 @@ export const SiteSettingsManager: React.FC = () => {
                   onChange={(e) => setSettings({ ...settings, developerUrl: e.target.value })}
                   className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-accent outline-none"
                 />
+              </div>
+            </div>
+          </GlassPanel>
+        )}
+
+        {/* SUBTAB 6: GOOGLE REVIEW & QR CODE */}
+        {activeSubTab === 'googleReview' && (
+          <GlassPanel className="p-6 md:p-8 flex flex-col gap-6 rounded-3xl border border-emerald-200/80 bg-gradient-to-br from-white/95 via-emerald-50/30 to-teal-50/40">
+            <div className="border-b border-line pb-3 flex justify-between items-center flex-wrap gap-2">
+              <div>
+                <h3 className="font-serif text-base md:text-lg font-bold text-ink flex items-center gap-2">
+                  <QrCode className="w-5 h-5 text-accent" />
+                  <span>{isBn ? 'গুগল রিভিউ কিউআর কোড ও কালেকশন সেটিংস' : 'Google Review QR Code & Collection Settings'}</span>
+                </h3>
+                <p className="text-xs text-muted mt-1">
+                  {isBn 
+                    ? 'রোগীদের কাছ থেকে গুগল রিভিউ নেওয়ার জন্য কিউআর কোড এবং গুগল রিভিউ লিঙ্ক পরিচালনা করুন।' 
+                    : 'Manage the Google Review submission link and scannable QR code presented to patients.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              {/* Form inputs */}
+              <div className="lg:col-span-7 flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-ink">
+                      {isBn ? 'গুগল রিভিউ লেখার লিঙ্ক (Business Review URL):' : 'Google Review Direct Link (Business URL):'}
+                    </label>
+                    {settings.googleReviewBusinessUrl && (
+                      <a
+                        href={settings.googleReviewBusinessUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] text-blue-600 hover:underline inline-flex items-center gap-0.5"
+                      >
+                        <span>{isBn ? 'লিঙ্ক টেস্ট করুন' : 'Test Link'}</span>
+                        <ArrowUpRight className="w-3 h-3" />
+                      </a>
+                    )}
+                  </div>
+                  <input
+                    type="url"
+                    value={settings.googleReviewBusinessUrl}
+                    onChange={(e) => setSettings({ ...settings, googleReviewBusinessUrl: e.target.value })}
+                    className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-accent outline-none"
+                    placeholder="https://maps.google.com/?q=..."
+                  />
+                  <span className="text-[10px] text-muted">
+                    {isBn 
+                      ? 'রোগী এই লিঙ্কে ক্লিক করে অথবা কিউআর স্ক্যান করে সরাসরি চেম্বার/ডাক্তারের গুগল রিভিউ পৃষ্ঠায় পৌঁছাবে।' 
+                      : 'Patients will land directly on this page to submit their review on Google.'}
+                  </span>
+                </div>
+
+                <ImagePickerField
+                  label={isBn ? 'কাস্টম কিউআর কোড ছবি (Custom QR Image - খালি রাখলে অটো-জেনারেট হবে):' : 'Custom QR Image (Auto-generated if empty):'}
+                  value={settings.googleReviewQrCodeImage}
+                  onChange={(val) => setSettings({ ...settings, googleReviewQrCodeImage: val })}
+                  placeholder="/qr-code.png or URL..."
+                  helperText={isBn ? 'গুগল বিজনেস থেকে ডাউনলোড করা কিউআর ছবি দিতে পারেন অথবা এটি খালি রাখলে স্বয়ংক্রিয়ভাবে তৈরি হবে।' : 'Upload custom QR code image, or leave blank to auto-generate.'}
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-ink">{isBn ? 'শিরোনাম (English):' : 'Title (English):'}</label>
+                    <input
+                      type="text"
+                      value={settings.googleReviewTitleEn}
+                      onChange={(e) => setSettings({ ...settings, googleReviewTitleEn: e.target.value })}
+                      className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-accent outline-none"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-ink">{isBn ? 'শিরোনাম (বাংলা):' : 'Title (Bangla):'}</label>
+                    <input
+                      type="text"
+                      value={settings.googleReviewTitleBn}
+                      onChange={(e) => setSettings({ ...settings, googleReviewTitleBn: e.target.value })}
+                      className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-accent outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-ink">{isBn ? 'সাবটাইটেল / নির্দেশনা (English):' : 'Subtitle / Instructions (English):'}</label>
+                    <textarea
+                      rows={2}
+                      value={settings.googleReviewSubtitleEn}
+                      onChange={(e) => setSettings({ ...settings, googleReviewSubtitleEn: e.target.value })}
+                      className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-accent outline-none"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-ink">{isBn ? 'সাবটাইটেল / নির্দেশনা (বাংলা):' : 'Subtitle / Instructions (Bangla):'}</label>
+                    <textarea
+                      rows={2}
+                      value={settings.googleReviewSubtitleBn}
+                      onChange={(e) => setSettings({ ...settings, googleReviewSubtitleBn: e.target.value })}
+                      className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-accent outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-ink">{isBn ? 'বাটন টেক্সট (English):' : 'Button Label (English):'}</label>
+                    <input
+                      type="text"
+                      value={settings.googleReviewButtonTextEn}
+                      onChange={(e) => setSettings({ ...settings, googleReviewButtonTextEn: e.target.value })}
+                      className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-accent outline-none"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-ink">{isBn ? 'বাটন টেক্সট (বাংলা):' : 'Button Label (Bangla):'}</label>
+                    <input
+                      type="text"
+                      value={settings.googleReviewButtonTextBn}
+                      onChange={(e) => setSettings({ ...settings, googleReviewButtonTextBn: e.target.value })}
+                      className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-accent outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Preview */}
+              <div className="lg:col-span-5 flex flex-col items-center">
+                <div className="w-full bg-white rounded-3xl p-6 border-2 border-emerald-200/90 shadow-lg flex flex-col items-center text-center">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full mb-3">
+                    {isBn ? 'লাইভ প্রিভিউ' : 'Live Scannable QR'}
+                  </span>
+
+                  <div className="relative p-3 bg-white rounded-2xl shadow-md border border-slate-200 my-2">
+                    <img
+                      src={
+                        settings.googleReviewQrCodeImage?.trim()
+                          ? settings.googleReviewQrCodeImage
+                          : `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(
+                              settings.googleReviewBusinessUrl || 'https://maps.google.com/?q=Popular+Medical+Center+Sylhet'
+                            )}&margin=12`
+                      }
+                      alt="Google Review QR Code"
+                      className="w-44 h-44 object-contain rounded-lg"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-1 text-xs font-bold text-ink mt-2">
+                    <Smartphone className="w-3.5 h-3.5 text-accent" />
+                    <span>{isBn ? 'মোবাইল দিয়ে স্ক্যান করুন' : 'Scan with mobile camera'}</span>
+                  </div>
+
+                  <h4 className="font-serif text-sm font-bold text-ink mt-2">
+                    {isBn ? settings.googleReviewTitleBn : settings.googleReviewTitleEn}
+                  </h4>
+
+                  <a
+                    href={settings.googleReviewBusinessUrl || 'https://maps.google.com/?q=Popular+Medical+Center+Sylhet'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 w-full py-2.5 px-4 rounded-xl bg-accent hover:bg-ink text-white text-xs font-semibold shadow transition-colors inline-flex items-center justify-center gap-1.5"
+                  >
+                    <span>{isBn ? settings.googleReviewButtonTextBn : settings.googleReviewButtonTextEn}</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
               </div>
             </div>
           </GlassPanel>

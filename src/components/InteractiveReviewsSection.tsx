@@ -12,11 +12,14 @@ import {
   CheckCircle2, 
   Star, 
   BookOpen, 
-  X,
-  Volume2,
-  VolumeX,
-  Layers,
-  Activity
+  X, 
+  Layers, 
+  ExternalLink,
+  QrCode,
+  Copy,
+  Check,
+  Smartphone,
+  MessageSquare
 } from 'lucide-react';
 
 export interface Review {
@@ -28,20 +31,48 @@ export interface Review {
   review_text_en: string;
   review_text_bn: string;
   initials: string;
+  rating?: number;
+  google_review_url?: string;
+}
+
+export interface GoogleReviewSettings {
+  businessUrl?: string;
+  qrCodeImage?: string;
+  titleEn?: string;
+  titleBn?: string;
+  subtitleEn?: string;
+  subtitleBn?: string;
+  buttonTextEn?: string;
+  buttonTextBn?: string;
+  badgeEn?: string;
+  badgeBn?: string;
 }
 
 interface InteractiveReviewsProps {
   reviews: Review[];
   language: 'bn' | 'en';
+  googleReviewSettings?: GoogleReviewSettings;
 }
 
-export function InteractiveReviewsSection({ reviews, language }: InteractiveReviewsProps) {
+// Google 4-Color SVG Icon
+export const GoogleIcon: React.FC<{ className?: string }> = ({ className = "w-4 h-4 shrink-0" }) => (
+  <svg className={className} viewBox="0 0 24 24">
+    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+  </svg>
+);
+
+export function InteractiveReviewsSection({ reviews, language, googleReviewSettings }: InteractiveReviewsProps) {
+  const isBn = language === 'bn';
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlay, setIsAutoPlay] = useState(true);
   const [progress, setProgress] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [animKey, setAnimKey] = useState(0);
   const [showAllModal, setShowAllModal] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   // 3D Card tilt state
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
@@ -50,6 +81,14 @@ export function InteractiveReviewsSection({ reviews, language }: InteractiveRevi
 
   const totalReviews = reviews.length > 0 ? reviews.length : 1;
   const currentReview = reviews[currentIndex] || reviews[0];
+
+  // Google review destination link
+  const googleReviewUrl = googleReviewSettings?.businessUrl || 'https://maps.google.com/?q=Popular+Medical+Center+Sylhet';
+  
+  // Scannable QR Image (custom uploaded or instant generated)
+  const qrImageSrc = googleReviewSettings?.qrCodeImage?.trim()
+    ? googleReviewSettings.qrCodeImage
+    : `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(googleReviewUrl)}&margin=12`;
 
   const handleNext = useCallback(() => {
     if (isAnimating) return;
@@ -87,6 +126,14 @@ export function InteractiveReviewsSection({ reviews, language }: InteractiveRevi
     setTimeout(() => {
       setIsAnimating(false);
     }, 650);
+  };
+
+  const handleCopyLink = () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(googleReviewUrl);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    }
   };
 
   // Auto-play timer with smooth progress bar
@@ -142,32 +189,46 @@ export function InteractiveReviewsSection({ reviews, language }: InteractiveRevi
     touchStartX.current = null;
   };
 
+  // Compute active rating
+  const currentRating = typeof currentReview?.rating === 'number' && !isNaN(currentReview.rating)
+    ? currentReview.rating
+    : 5;
+
   return (
     <section className="relative w-full py-16 md:py-24 overflow-hidden" id="patient-reviews">
       {/* Background ambient lighting */}
-      <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-96 h-96 bg-accent/10 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="absolute top-1/3 left-1/4 -translate-y-1/2 w-96 h-96 bg-accent/10 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
 
-      <div className="max-w-7xl mx-auto px-4 md:px-8 flex flex-col gap-10">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 flex flex-col gap-12">
         
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto flex flex-col items-center gap-3">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-accent/10 border border-accent/20 backdrop-blur-md">
             <Sparkles className="w-3.5 h-3.5 text-accent animate-spin text-xs" style={{ animationDuration: '6s' }} />
             <span className="text-[11px] font-bold uppercase tracking-widest text-accent">
-              {language === 'bn' ? 'রোগীদের আস্থা ও সুস্থতার গল্প' : 'Patient Reviews & Trust'}
+              {isBn ? 'রোগীদের আস্থা ও সুস্থতার গল্প' : 'Patient Reviews & Trust'}
             </span>
           </div>
 
           <h2 className="font-serif text-3xl md:text-4xl font-bold text-ink leading-tight">
-            {language === 'bn' ? 'রোগীদের সুস্থতা ও আস্থার বাস্তব গল্প' : 'Stories of Recovery & Patient Trust'}
+            {isBn ? 'রোগীদের সুস্থতা ও আস্থার বাস্তব গল্প' : 'Stories of Recovery & Patient Trust'}
           </h2>
 
           <p className="text-xs md:text-sm text-muted max-w-lg leading-relaxed">
-            {language === 'bn' 
+            {isBn 
               ? 'সুস্থ হয়ে ওঠা রোগীদের অভিজ্ঞতা ও ডাক্তারের সুনির্দিষ্ট চিকিৎসার প্রতি তাদের গভীর আস্থার মুহূর্তগুলো দেখুন।' 
               : 'Witness verified moments of recovery and deep clinical trust shared by our healed patients.'}
           </p>
+
+          <a
+            href="#leave-google-review"
+            className="inline-flex items-center gap-2 mt-1 px-4 py-1.5 rounded-full bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-xs font-semibold transition-all shadow-xs cursor-pointer group"
+          >
+            <GoogleIcon className="w-3.5 h-3.5" />
+            <span>{isBn ? 'আপনার রিভিউ দিন (QR Code)' : 'Leave a Google Review (Scan QR)'}</span>
+            <span className="text-[10px] text-amber-700 bg-white/80 px-1.5 py-0.2 rounded font-bold ml-1">★ 5.0</span>
+          </a>
         </div>
 
         {/* Review Card Showcase (Centered & Clean) */}
@@ -200,20 +261,48 @@ export function InteractiveReviewsSection({ reviews, language }: InteractiveRevi
               {/* Ambient Card Backlight */}
               <div className="absolute top-0 right-0 w-44 h-44 bg-gradient-to-br from-accent/15 to-emerald-400/15 rounded-full blur-2xl pointer-events-none" />
               <div className="absolute bottom-0 left-0 w-36 h-36 bg-emerald-400/10 rounded-full blur-xl pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-36 h-36 bg-emerald-400/10 rounded-full blur-xl pointer-events-none" />
 
-              {/* Top Row: Stars & Verified Badge */}
-              <div className="flex justify-between items-center mb-5 flex-wrap gap-2">
+              {/* Top Row: Dynamic Stars, Google Link & Verified Badge */}
+              <div className="flex justify-between items-center mb-5 flex-wrap gap-2.5">
+                {/* Dynamic Star Rating */}
                 <div className="flex items-center gap-1">
                   {[1, 2, 3, 4, 5].map((star) => (
-                    <Star key={star} className="w-4 h-4 text-amber-400 fill-amber-400 drop-shadow-sm" />
+                    <Star 
+                      key={star} 
+                      className={`w-4 h-4 drop-shadow-xs transition-colors ${
+                        star <= currentRating 
+                          ? 'text-amber-400 fill-amber-400' 
+                          : 'text-slate-300 fill-slate-100'
+                      }`} 
+                    />
                   ))}
-                  <span className="text-xs font-bold text-muted ml-2 font-mono">5.0</span>
+                  <span className="text-xs font-bold text-ink/75 ml-2 font-mono">
+                    {currentRating.toFixed(1)}
+                  </span>
                 </div>
 
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 text-[11px] font-bold">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>{language === 'bn' ? 'যাচাইকৃত রোগী' : 'Verified Patient'}</span>
+                {/* Right Badges: Google Review Link + Verified Patient */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {currentReview?.google_review_url && (
+                    <a
+                      href={currentReview.google_review_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50/90 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[11px] font-semibold transition-all shadow-xs hover:shadow group/glink cursor-pointer"
+                      title={isBn ? 'গুগলে দেওয়া রোগীর আসল রিভিউটি দেখুন' : 'View verified review on Google Maps'}
+                    >
+                      <GoogleIcon className="w-3.5 h-3.5" />
+                      <span className="group-hover/glink:underline">
+                        {isBn ? 'গুগল রিভিউ দেখুন' : 'Google Review'}
+                      </span>
+                      <ExternalLink className="w-3 h-3 opacity-70 group-hover/glink:translate-x-0.5 group-hover/glink:-translate-y-0.5 transition-transform" />
+                    </a>
+                  )}
+
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 text-[11px] font-bold">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>{isBn ? 'যাচাইকৃত রোগী' : 'Verified Patient'}</span>
+                  </div>
                 </div>
               </div>
 
@@ -221,7 +310,7 @@ export function InteractiveReviewsSection({ reviews, language }: InteractiveRevi
               <div className="relative py-2 min-h-[110px] flex items-center">
                 <Quote className="w-9 h-9 text-accent/15 absolute -top-1 -left-2 pointer-events-none" />
                 <p className="text-sm md:text-base text-ink font-serif italic leading-relaxed z-10 pl-3">
-                  "{language === 'bn' 
+                  "{isBn 
                     ? (currentReview?.review_text_bn || currentReview?.review_text_en)
                     : (currentReview?.review_text_en || currentReview?.review_text_bn)}"
                 </p>
@@ -236,11 +325,11 @@ export function InteractiveReviewsSection({ reviews, language }: InteractiveRevi
 
                   <div className="flex flex-col">
                     <h4 className="text-sm font-bold text-ink">
-                      {language === 'bn' ? currentReview?.reviewer_name_bn : currentReview?.reviewer_name_en}
+                      {isBn ? currentReview?.reviewer_name_bn : currentReview?.reviewer_name_en}
                     </h4>
                     <span className="text-xs text-muted flex items-center gap-1 mt-0.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-                      {language === 'bn' ? currentReview?.reviewer_title_bn : currentReview?.reviewer_title_en}
+                      {isBn ? currentReview?.reviewer_title_bn : currentReview?.reviewer_title_en}
                     </span>
                   </div>
                 </div>
@@ -306,7 +395,7 @@ export function InteractiveReviewsSection({ reviews, language }: InteractiveRevi
               >
                 {isAutoPlay ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
                 <span className="text-[10px]">
-                  {isAutoPlay ? (language === 'bn' ? 'অটোপ্লে' : 'Auto') : (language === 'bn' ? 'থামানো' : 'Paused')}
+                  {isAutoPlay ? (isBn ? 'অটোপ্লে' : 'Auto') : (isBn ? 'থামানো' : 'Paused')}
                 </span>
               </button>
 
@@ -318,7 +407,7 @@ export function InteractiveReviewsSection({ reviews, language }: InteractiveRevi
                 title="View All Reviews"
               >
                 <Layers className="w-3 h-3 text-accent" />
-                <span className="text-[10px]">{language === 'bn' ? 'সকল রিভিউ' : 'View All'}</span>
+                <span className="text-[10px]">{isBn ? 'সকল রিভিউ' : 'View All'}</span>
               </button>
             </div>
           </div>
@@ -334,6 +423,114 @@ export function InteractiveReviewsSection({ reviews, language }: InteractiveRevi
           )}
         </div>
 
+        {/* ---------------------------------------------------- */}
+        {/* LEAVE US A GOOGLE REVIEW (QR CODE & ACTION STATION) */}
+        {/* ---------------------------------------------------- */}
+        <div id="leave-google-review" className="w-full max-w-4xl mx-auto pt-6 scroll-mt-24">
+          <div className="relative rounded-3xl p-6 md:p-8 overflow-hidden bg-gradient-to-br from-white/90 via-emerald-50/40 to-teal-50/60 border border-emerald-200/70 shadow-xl backdrop-blur-xl">
+            {/* Ambient Background Glows */}
+            <div className="absolute -top-12 -right-12 w-64 h-64 bg-accent/15 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-10 -left-10 w-64 h-64 bg-amber-300/15 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 md:gap-10">
+              
+              {/* QR Code Presentation Frame */}
+              <div className="flex flex-col items-center shrink-0">
+                <div className="relative p-4 bg-white rounded-2xl shadow-lg border-2 border-emerald-100/90 group hover:shadow-xl transition-all duration-300">
+                  {/* Subtle Corner Markers */}
+                  <div className="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-accent rounded-tl pointer-events-none" />
+                  <div className="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-accent rounded-tr pointer-events-none" />
+                  <div className="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 border-accent rounded-bl pointer-events-none" />
+                  <div className="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 border-accent rounded-br pointer-events-none" />
+
+                  {/* QR Image */}
+                  <img
+                    src={qrImageSrc}
+                    alt="Google Review QR Code"
+                    className="w-36 h-36 md:w-44 md:h-44 object-contain rounded-lg transition-transform duration-300 group-hover:scale-102"
+                    loading="lazy"
+                  />
+
+                  {/* QR center mini logo overlay for aesthetics */}
+                  <div className="absolute inset-0 m-auto w-10 h-10 rounded-full bg-white shadow-md border border-slate-100 flex items-center justify-center pointer-events-none">
+                    <GoogleIcon className="w-5 h-5" />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 mt-2.5 text-[11px] font-semibold text-emerald-800 bg-emerald-100/70 px-3 py-1 rounded-full border border-emerald-200">
+                  <Smartphone className="w-3.5 h-3.5 text-accent animate-bounce" />
+                  <span>{isBn ? 'ক্যামেরা দিয়ে স্ক্যান করুন' : 'Scan with Camera'}</span>
+                </div>
+              </div>
+
+              {/* Callout Information & Actions */}
+              <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left gap-3.5">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20">
+                  <GoogleIcon className="w-3.5 h-3.5" />
+                  <span className="text-[11px] font-bold text-accent uppercase tracking-wider">
+                    {isBn 
+                      ? (googleReviewSettings?.badgeBn || 'আপনার মতামত আমাদের অনুপ্রেরণা') 
+                      : (googleReviewSettings?.badgeEn || 'Your Feedback Matters')}
+                  </span>
+                </div>
+
+                <h3 className="font-serif text-2xl md:text-3xl font-bold text-ink">
+                  {isBn 
+                    ? (googleReviewSettings?.titleBn || 'গুগলে আপনার আরোগ্য ও চিকিৎসা রিভিউ দিন') 
+                    : (googleReviewSettings?.titleEn || 'Leave Us a Google Review')}
+                </h3>
+
+                <p className="text-xs md:text-sm text-muted leading-relaxed max-w-xl">
+                  {isBn 
+                    ? (googleReviewSettings?.subtitleBn || 'ডা. হানিফ আহমেদ তৌহিদের নিকট চিকিৎসা সেবা নিয়ে আপনি কেমন সুস্থ আছেন, আপনার সেই অমূল্য অভিজ্ঞতা গুগলে শেয়ার করে অন্যদের সঠিক চিকিৎসা বেছে নিতে সহায়তা করুন।') 
+                    : (googleReviewSettings?.subtitleEn || 'Have you consulted Dr. Hanif Ahmed Towhid? Scan the QR code with your mobile camera or click below to share your experience on Google.')}
+                </p>
+
+                {/* Rating Badge Display */}
+                <div className="flex items-center gap-2 py-1">
+                  <div className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star key={s} className="w-4 h-4 text-amber-400 fill-amber-400 drop-shadow-xs" />
+                    ))}
+                  </div>
+                  <span className="text-xs font-bold text-ink/80 font-sans">
+                    5.0 Star Rated Care · Verified Patients
+                  </span>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-1.5 w-full">
+                  <a
+                    href={googleReviewUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-accent hover:bg-ink text-white font-semibold text-xs md:text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer"
+                  >
+                    <GoogleIcon className="w-4 h-4" />
+                    <span>
+                      {isBn 
+                        ? (googleReviewSettings?.buttonTextBn || 'গুগলে রিভিউ লিখুন') 
+                        : (googleReviewSettings?.buttonTextEn || 'Write a Review on Google')}
+                    </span>
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-white/90 hover:bg-white text-ink border border-slate-300 font-semibold text-xs shadow-xs hover:shadow transition-all cursor-pointer"
+                    title={isBn ? 'রিভিউ লিংক কপি করুন' : 'Copy Review Link'}
+                  >
+                    {copiedLink ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-muted" />}
+                    <span>{copiedLink ? (isBn ? 'কপি হয়েছে!' : 'Copied!') : (isBn ? 'লিংক কপি করুন' : 'Copy Link')}</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
       </div>
 
       {/* MODAL: View All Stories Grid */}
@@ -345,10 +542,10 @@ export function InteractiveReviewsSection({ reviews, language }: InteractiveRevi
               <div>
                 <h3 className="font-serif text-xl md:text-2xl font-bold text-ink flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-accent" />
-                  <span>{language === 'bn' ? 'সকল রোগীর আরোগ্যের গল্প' : 'All Patient Recovery Stories'}</span>
+                  <span>{isBn ? 'সকল রোগীর আরোগ্যের গল্প' : 'All Patient Recovery Stories'}</span>
                 </h3>
                 <p className="text-xs text-muted mt-1">
-                  {language === 'bn' 
+                  {isBn 
                     ? `মোট ${reviews.length} টি প্রশংসাপত্র ও রিভিউ সংরক্ষিত রয়েছে` 
                     : `Total ${reviews.length} verified reviews and testimonials`}
                 </p>
@@ -365,48 +562,86 @@ export function InteractiveReviewsSection({ reviews, language }: InteractiveRevi
 
             {/* Modal Reviews Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto pr-1 custom-scrollbar max-h-[60vh]">
-              {reviews.map((r, i) => (
-                <GlassPanel key={r.id || i} className="p-5 rounded-2xl flex flex-col justify-between gap-3 border border-white/60 bg-white/70">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-1">
-                      {[1, 2, 3, 4, 5].map(s => (
-                        <Star key={s} className="w-3 h-3 text-amber-400 fill-amber-400" />
-                      ))}
-                    </div>
-                    <span className="text-[10px] font-mono font-bold text-accent bg-accent/10 px-2 py-0.5 rounded-full">
-                      #{i + 1}
-                    </span>
-                  </div>
+              {reviews.map((r, i) => {
+                const rRating = typeof r.rating === 'number' && !isNaN(r.rating) ? r.rating : 5;
+                return (
+                  <GlassPanel key={r.id || i} className="p-5 rounded-2xl flex flex-col justify-between gap-3 border border-white/60 bg-white/70">
+                    <div className="flex justify-between items-start flex-wrap gap-2">
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map(s => (
+                          <Star 
+                            key={s} 
+                            className={`w-3.5 h-3.5 ${
+                              s <= rRating ? 'text-amber-400 fill-amber-400' : 'text-slate-300 fill-slate-100'
+                            }`} 
+                          />
+                        ))}
+                        <span className="text-[11px] font-mono font-bold text-ink/75 ml-1">
+                          {rRating.toFixed(1)}
+                        </span>
+                      </div>
 
-                  <p className="text-xs text-ink/80 italic font-serif leading-relaxed">
-                    "{language === 'bn' ? r.review_text_bn : r.review_text_en}"
-                  </p>
+                      <div className="flex items-center gap-1.5">
+                        {r.google_review_url && (
+                          <a
+                            href={r.google_review_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-semibold hover:bg-blue-100 transition-colors cursor-pointer"
+                            title={isBn ? 'গুগলে মূল রিভিউটি দেখুন' : 'View on Google Maps'}
+                          >
+                            <GoogleIcon className="w-3 h-3" />
+                            <span>{isBn ? 'গুগল রিভিউ' : 'Google'}</span>
+                            <ExternalLink className="w-2.5 h-2.5" />
+                          </a>
+                        )}
+                        <span className="text-[10px] font-mono font-bold text-accent bg-accent/10 px-2 py-0.5 rounded-full">
+                          #{i + 1}
+                        </span>
+                      </div>
+                    </div>
 
-                  <div className="flex items-center gap-2.5 border-t border-line/60 pt-2.5 mt-1">
-                    <div className="w-8 h-8 rounded-xl bg-accent text-white flex items-center justify-center text-xs font-bold shadow-sm">
-                      {r.initials}
+                    <p className="text-xs text-ink/80 italic font-serif leading-relaxed">
+                      "{isBn ? (r.review_text_bn || r.review_text_en) : (r.review_text_en || r.review_text_bn)}"
+                    </p>
+
+                    <div className="flex items-center gap-2.5 border-t border-line/60 pt-2.5 mt-1">
+                      <div className="w-8 h-8 rounded-xl bg-accent text-white flex items-center justify-center text-xs font-bold shadow-sm">
+                        {r.initials || 'PT'}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-ink">
+                          {isBn ? r.reviewer_name_bn : r.reviewer_name_en}
+                        </span>
+                        <span className="text-[10px] text-muted">
+                          {isBn ? r.reviewer_title_bn : r.reviewer_title_en}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-ink">
-                        {language === 'bn' ? r.reviewer_name_bn : r.reviewer_name_en}
-                      </span>
-                      <span className="text-[10px] text-muted">
-                        {language === 'bn' ? r.reviewer_title_bn : r.reviewer_title_en}
-                      </span>
-                    </div>
-                  </div>
-                </GlassPanel>
-              ))}
+                  </GlassPanel>
+                );
+              })}
             </div>
 
             {/* Modal Footer */}
-            <div className="flex justify-end border-t border-line pt-3">
+            <div className="flex justify-between items-center border-t border-line pt-3 flex-wrap gap-2">
+              <a
+                href={googleReviewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:underline cursor-pointer"
+              >
+                <GoogleIcon className="w-3.5 h-3.5" />
+                <span>{isBn ? 'আপনিও কি একটি গুগল রিভিউ দিতে চান?' : 'Want to leave your own Google review?'}</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+
               <button
                 type="button"
                 onClick={() => setShowAllModal(false)}
                 className="px-5 py-2 rounded-xl bg-accent text-white font-semibold text-xs shadow-md hover:bg-ink transition-colors cursor-pointer"
               >
-                {language === 'bn' ? 'বন্ধ করুন' : 'Close'}
+                {isBn ? 'বন্ধ করুন' : 'Close'}
               </button>
             </div>
           </div>

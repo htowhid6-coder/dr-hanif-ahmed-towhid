@@ -53,6 +53,19 @@ export interface SiteSettings {
   urgentCtaPhoneText: string;
   urgentCtaWhatsappText: string;
 
+  // Google Review & QR Code System
+  googleReviewBusinessUrl: string;
+  googleReviewQrCodeImage: string;
+  googleReviewTitleEn: string;
+  googleReviewTitleBn: string;
+  googleReviewSubtitleEn: string;
+  googleReviewSubtitleBn: string;
+  googleReviewButtonTextEn: string;
+  googleReviewButtonTextBn: string;
+  googleReviewBadgeEn: string;
+  googleReviewBadgeBn: string;
+  reviewsMetadata?: Record<string, { rating?: number; google_review_url?: string }>;
+
   // Aesthetic Section Breaker Banner 2
   banner2Image: string;
   banner2BadgeEn: string;
@@ -205,6 +218,19 @@ export const defaultSiteSettings: SiteSettings = {
   urgentCtaSubtitleBn: 'পপুলার মেডিকেল সেন্টারে ডা. হানিফ আহমেদ তৌহিদকে দেখাতে সরাসরি চেম্বারে যোগাযোগ করুন।',
   urgentCtaPhoneText: '01346-132486',
   urgentCtaWhatsappText: 'WhatsApp',
+
+  // Google Review & QR Code System
+  googleReviewBusinessUrl: 'https://maps.google.com/?q=Popular+Medical+Center+Sylhet',
+  googleReviewQrCodeImage: '',
+  googleReviewTitleEn: 'Leave Us a Google Review',
+  googleReviewTitleBn: 'গুগল রিভিউ দিন',
+  googleReviewSubtitleEn: 'Have you received treatment from Dr. Hanif Ahmed Towhid? Scan the QR code with your mobile camera or click below to share your experience on Google.',
+  googleReviewSubtitleBn: 'ডা. হানিফ আহমেদ তৌহিদের নিকট চিকিৎসা নিয়েছেন? আপনার মূল্যবান আরোগ্য ও চিকিৎসা অভিজ্ঞতা জানাতে মোবাইল ক্যামেরা দিয়ে কিউআর কোডটি স্ক্যান করুন অথবা নিচের বাটনে ক্লিক করুন।',
+  googleReviewButtonTextEn: 'Write a Review on Google',
+  googleReviewButtonTextBn: 'গুগলে রিভিউ দিন',
+  googleReviewBadgeEn: 'Share Your Story',
+  googleReviewBadgeBn: 'আপনার মতামত আমাদের অনুপ্রেরণা',
+  reviewsMetadata: {},
 
   // Aesthetic Section Breaker Banner 2
   banner2Image: '/Section Breaking Aesthetic Image_2.png',

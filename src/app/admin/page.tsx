@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import RichTextEditor from '@/components/RichTextEditor';
-import { Save, Trash2, Download, Plus, LogOut, User, Building2, BookOpen, MessageSquare, GraduationCap, Sliders, Image as ImageIcon } from 'lucide-react';
+import { Save, Trash2, Download, Plus, LogOut, User, Building2, BookOpen, MessageSquare, GraduationCap, Sliders, Image as ImageIcon, Star, QrCode, Smartphone, Check } from 'lucide-react';
 
 import { HeroSlidesManager } from '@/components/admin/HeroSlidesManager';
 import { SiteSettingsManager } from '@/components/admin/SiteSettingsManager';
@@ -103,7 +103,23 @@ export default function AdminDashboard() {
     textEn: '',
     textBn: '',
     initials: '',
+    rating: 5,
+    googleReviewUrl: '',
   });
+
+  // Google Review QR & Link Settings
+  const [reviewQrSettings, setReviewQrSettings] = useState({
+    businessUrl: 'https://maps.google.com/?q=Popular+Medical+Center+Sylhet',
+    qrCodeImage: '',
+    titleEn: 'Leave Us a Google Review',
+    titleBn: 'গুগল রিভিউ দিন',
+    subtitleEn: 'Have you received treatment from Dr. Hanif Ahmed Towhid? Scan the QR code with your mobile camera or click below to share your experience on Google.',
+    subtitleBn: 'ডা. হানিফ আহমেদ তৌহিদের নিকট চিকিৎসা নিয়েছেন? আপনার মূল্যবান আরোগ্য ও চিকিৎসা অভিজ্ঞতা জানাতে মোবাইল ক্যামেরা দিয়ে কিউআর কোডটি স্ক্যান করুন অথবা নিচের বাটনে ক্লিক করুন।',
+    buttonTextEn: 'Write a Review on Google',
+    buttonTextBn: 'গুগলে রিভিউ দিন',
+  });
+  const [isSavingQrSettings, setIsSavingQrSettings] = useState(false);
+  const [copiedAdminQrUrl, setCopiedAdminQrUrl] = useState(false);
 
   // Symptoms states
   const [adminSymptoms, setAdminSymptoms] = useState<SymptomDetail[]>(detailedSymptomsList);
@@ -389,6 +405,58 @@ export default function AdminDashboard() {
 
   const fetchReviews = async () => {
     try {
+      // 1. Read metadata and QR settings from site_settings (global_settings) or localStorage
+      let metaMap: Record<string, any> = {};
+      try {
+        const { data: setRow } = await supabase
+          .from('site_settings')
+          .select('data')
+          .eq('id', 'global_settings')
+          .maybeSingle();
+
+        if (setRow?.data) {
+          if (setRow.data.reviewsMetadata) metaMap = { ...setRow.data.reviewsMetadata };
+          setReviewQrSettings(prev => ({
+            ...prev,
+            businessUrl: setRow.data.googleReviewBusinessUrl || prev.businessUrl,
+            qrCodeImage: setRow.data.googleReviewQrCodeImage || '',
+            titleEn: setRow.data.googleReviewTitleEn || prev.titleEn,
+            titleBn: setRow.data.googleReviewTitleBn || prev.titleBn,
+            subtitleEn: setRow.data.googleReviewSubtitleEn || prev.subtitleEn,
+            subtitleBn: setRow.data.googleReviewSubtitleBn || prev.subtitleBn,
+            buttonTextEn: setRow.data.googleReviewButtonTextEn || prev.buttonTextEn,
+            buttonTextBn: setRow.data.googleReviewButtonTextBn || prev.buttonTextBn,
+          }));
+        }
+      } catch (e) {
+        console.warn('Could not read global_settings in admin:', e);
+      }
+
+      if (typeof window !== 'undefined') {
+        try {
+          const localMeta = localStorage.getItem('reviews_meta');
+          if (localMeta) metaMap = { ...metaMap, ...JSON.parse(localMeta) };
+          const localSite = localStorage.getItem('site_settings_data');
+          if (localSite) {
+            const parsed = JSON.parse(localSite);
+            if (parsed.reviewsMetadata) metaMap = { ...metaMap, ...parsed.reviewsMetadata };
+            if (parsed.googleReviewBusinessUrl) {
+              setReviewQrSettings(prev => ({
+                ...prev,
+                businessUrl: parsed.googleReviewBusinessUrl || prev.businessUrl,
+                qrCodeImage: parsed.googleReviewQrCodeImage || '',
+                titleEn: parsed.googleReviewTitleEn || prev.titleEn,
+                titleBn: parsed.googleReviewTitleBn || prev.titleBn,
+                subtitleEn: parsed.googleReviewSubtitleEn || prev.subtitleEn,
+                subtitleBn: parsed.googleReviewSubtitleBn || prev.subtitleBn,
+                buttonTextEn: parsed.googleReviewButtonTextEn || prev.buttonTextEn,
+                buttonTextBn: parsed.googleReviewButtonTextBn || prev.buttonTextBn,
+              }));
+            }
+          }
+        } catch (e) {}
+      }
+
       const { data, error } = await supabase
         .from('reviews')
         .select('*')
@@ -396,7 +464,15 @@ export default function AdminDashboard() {
 
       if (error) throw error;
       if (data) {
-        setAdminReviews(data);
+        const enriched = data.map((r: any) => {
+          const meta = metaMap[r.id] || metaMap[r.reviewer_name_en?.trim().toLowerCase()] || {};
+          return {
+            ...r,
+            rating: typeof r.rating === 'number' ? r.rating : (meta.rating ?? 5),
+            google_review_url: r.google_review_url || meta.google_review_url || '',
+          };
+        });
+        setAdminReviews(enriched);
       }
     } catch (err) {
       console.error("Error loading reviews:", err);
@@ -406,13 +482,15 @@ export default function AdminDashboard() {
   const handleEditReview = (review: any) => {
     setSelectedReview(review);
     setReviewForm({
-      nameEn: review.reviewer_name_en,
-      nameBn: review.reviewer_name_bn,
-      titleEn: review.reviewer_title_en,
-      titleBn: review.reviewer_title_bn,
-      textEn: review.review_text_en,
-      textBn: review.review_text_bn,
-      initials: review.initials,
+      nameEn: review.reviewer_name_en || '',
+      nameBn: review.reviewer_name_bn || '',
+      titleEn: review.reviewer_title_en || '',
+      titleBn: review.reviewer_title_bn || '',
+      textEn: review.review_text_en || '',
+      textBn: review.review_text_bn || '',
+      initials: review.initials || '',
+      rating: typeof review.rating === 'number' ? review.rating : 5,
+      googleReviewUrl: review.google_review_url || '',
     });
   };
 
@@ -434,7 +512,19 @@ export default function AdminDashboard() {
       }
     }
 
-    const reviewPayload = {
+    const fullPayload: any = {
+      reviewer_name_en: reviewForm.nameEn,
+      reviewer_name_bn: reviewForm.nameBn,
+      reviewer_title_en: reviewForm.titleEn,
+      reviewer_title_bn: reviewForm.titleBn,
+      review_text_en: reviewForm.textEn,
+      review_text_bn: reviewForm.textBn,
+      initials: computedInitials,
+      rating: Number(reviewForm.rating) || 5,
+      google_review_url: reviewForm.googleReviewUrl?.trim() || '',
+    };
+
+    const basePayload: any = {
       reviewer_name_en: reviewForm.nameEn,
       reviewer_name_bn: reviewForm.nameBn,
       reviewer_title_en: reviewForm.titleEn,
@@ -444,21 +534,91 @@ export default function AdminDashboard() {
       initials: computedInitials,
     };
 
+    const saveMetaToGlobalSettings = async (reviewIdOrKey: string, rating: number, url: string) => {
+      try {
+        if (typeof window !== 'undefined') {
+          const currentMeta = JSON.parse(localStorage.getItem('reviews_meta') || '{}');
+          currentMeta[reviewIdOrKey] = { rating, google_review_url: url };
+          localStorage.setItem('reviews_meta', JSON.stringify(currentMeta));
+        }
+
+        const { data: setRow } = await supabase
+          .from('site_settings')
+          .select('data')
+          .eq('id', 'global_settings')
+          .maybeSingle();
+
+        const currentData = setRow?.data || {};
+        const reviewsMetadata = currentData.reviewsMetadata || {};
+        reviewsMetadata[reviewIdOrKey] = { rating, google_review_url: url };
+
+        await supabase
+          .from('site_settings')
+          .update({
+            data: { ...currentData, reviewsMetadata },
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', 'global_settings');
+
+        if (typeof window !== 'undefined') {
+          const currentSite = JSON.parse(localStorage.getItem('site_settings_data') || '{}');
+          currentSite.reviewsMetadata = reviewsMetadata;
+          localStorage.setItem('site_settings_data', JSON.stringify(currentSite));
+          window.dispatchEvent(new Event('site_settings_updated'));
+        }
+      } catch (err) {
+        console.warn('Metadata mirror note:', err);
+      }
+    };
+
     try {
       if (selectedReview) {
-        const { error } = await supabase
+        // Try updating with full payload (if columns exist)
+        const updateRes = await supabase
           .from('reviews')
-          .update(reviewPayload)
+          .update(fullPayload)
           .eq('id', selectedReview.id);
 
-        if (error) throw error;
+        if (updateRes.error) {
+          // Fall back to base columns if rating or google_review_url don't exist yet
+          const fallbackRes = await supabase
+            .from('reviews')
+            .update(basePayload)
+            .eq('id', selectedReview.id);
+          if (fallbackRes.error) throw fallbackRes.error;
+        }
+
+        await saveMetaToGlobalSettings(selectedReview.id, Number(reviewForm.rating) || 5, reviewForm.googleReviewUrl?.trim() || '');
+        if (reviewForm.nameEn?.trim()) {
+          await saveMetaToGlobalSettings(reviewForm.nameEn.trim().toLowerCase(), Number(reviewForm.rating) || 5, reviewForm.googleReviewUrl?.trim() || '');
+        }
+
         alert(language === 'bn' ? 'রিভিউ সফলভাবে আপডেট করা হয়েছে!' : 'Review updated successfully!');
       } else {
-        const { error } = await supabase
+        // Try inserting full payload
+        const insertRes = await supabase
           .from('reviews')
-          .insert([reviewPayload]);
+          .insert([fullPayload])
+          .select();
 
-        if (error) throw error;
+        let insertedId = insertRes.data?.[0]?.id;
+
+        if (insertRes.error) {
+          const fallbackRes = await supabase
+            .from('reviews')
+            .insert([basePayload])
+            .select();
+          if (fallbackRes.error) throw fallbackRes.error;
+          insertedId = fallbackRes.data?.[0]?.id;
+        }
+
+        if (insertedId) {
+          await saveMetaToGlobalSettings(insertedId, Number(reviewForm.rating) || 5, reviewForm.googleReviewUrl?.trim() || '');
+        }
+        if (reviewForm.nameEn?.trim()) {
+          await saveMetaToGlobalSettings(reviewForm.nameEn.trim().toLowerCase(), Number(reviewForm.rating) || 5, reviewForm.googleReviewUrl?.trim() || '');
+        }
+
         alert(language === 'bn' ? 'নতুন রিভিউ যুক্ত করা হয়েছে!' : 'New review added successfully!');
       }
 
@@ -471,11 +631,13 @@ export default function AdminDashboard() {
         textEn: '',
         textBn: '',
         initials: '',
+        rating: 5,
+        googleReviewUrl: '',
       });
       fetchReviews();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert(language === 'bn' ? 'রিভিউ সেভ করতে সমস্যা হয়েছে!' : 'Failed to save review!');
+      alert(language === 'bn' ? `রিভিউ সেভ করতে সমস্যা হয়েছে: ${err.message || 'ত্রুটি'}` : `Failed to save review: ${err.message || 'Error'}`);
     }
   };
 
@@ -492,6 +654,35 @@ export default function AdminDashboard() {
 
       if (error) throw error;
 
+      // Clean up reviewsMetadata from global_settings and localStorage
+      try {
+        if (typeof window !== 'undefined') {
+          const currentMeta = JSON.parse(localStorage.getItem('reviews_meta') || '{}');
+          delete currentMeta[review.id];
+          if (review.reviewer_name_en) delete currentMeta[review.reviewer_name_en.trim().toLowerCase()];
+          localStorage.setItem('reviews_meta', JSON.stringify(currentMeta));
+        }
+
+        const { data: setRow } = await supabase
+          .from('site_settings')
+          .select('data')
+          .eq('id', 'global_settings')
+          .maybeSingle();
+
+        if (setRow?.data?.reviewsMetadata) {
+          const updatedMeta = { ...setRow.data.reviewsMetadata };
+          delete updatedMeta[review.id];
+          if (review.reviewer_name_en) delete updatedMeta[review.reviewer_name_en.trim().toLowerCase()];
+          await supabase
+            .from('site_settings')
+            .update({
+              data: { ...setRow.data, reviewsMetadata: updatedMeta },
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', 'global_settings');
+        }
+      } catch (e) {}
+
       alert(language === 'bn' ? 'রিভিউটি সফলভাবে ডিলিট করা হয়েছে!' : 'Review deleted successfully!');
       setSelectedReview(null);
       setReviewForm({
@@ -502,11 +693,61 @@ export default function AdminDashboard() {
         textEn: '',
         textBn: '',
         initials: '',
+        rating: 5,
+        googleReviewUrl: '',
       });
       fetchReviews();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       alert(language === 'bn' ? 'ডিলিট করতে সমস্যা হয়েছে!' : 'Failed to delete review!');
+    }
+  };
+
+  const handleSaveQrSettings = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsSavingQrSettings(true);
+    try {
+      const { data: setRow } = await supabase
+        .from('site_settings')
+        .select('data')
+        .eq('id', 'global_settings')
+        .maybeSingle();
+
+      const currentData = setRow?.data || {};
+      const updatedData = {
+        ...currentData,
+        googleReviewBusinessUrl: reviewQrSettings.businessUrl,
+        googleReviewQrCodeImage: reviewQrSettings.qrCodeImage,
+        googleReviewTitleEn: reviewQrSettings.titleEn,
+        googleReviewTitleBn: reviewQrSettings.titleBn,
+        googleReviewSubtitleEn: reviewQrSettings.subtitleEn,
+        googleReviewSubtitleBn: reviewQrSettings.subtitleBn,
+        googleReviewButtonTextEn: reviewQrSettings.buttonTextEn,
+        googleReviewButtonTextBn: reviewQrSettings.buttonTextBn,
+      };
+
+      const { error } = await supabase
+        .from('site_settings')
+        .update({
+          data: updatedData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', 'global_settings');
+
+      if (error) throw error;
+
+      if (typeof window !== 'undefined') {
+        const local = JSON.parse(localStorage.getItem('site_settings_data') || '{}');
+        localStorage.setItem('site_settings_data', JSON.stringify({ ...local, ...updatedData }));
+        window.dispatchEvent(new Event('site_settings_updated'));
+      }
+
+      alert(language === 'bn' ? 'গুগল রিভিউ কিউআর কোড ও লিংক সেটিংস সফলভাবে সংরক্ষিত হয়েছে!' : 'Google Review QR code and link settings saved successfully!');
+    } catch (err: any) {
+      console.error(err);
+      alert(language === 'bn' ? `সেভ করতে সমস্যা হয়েছে: ${err.message}` : `Failed to save: ${err.message}`);
+    } finally {
+      setIsSavingQrSettings(false);
     }
   };
 
@@ -2353,221 +2594,615 @@ export default function AdminDashboard() {
 
         {/* TAB: REVIEWS MANAGER */}
         {activeTab === 'reviews' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-300">
-            {/* Reviews List */}
-            <div className="lg:col-span-5 flex flex-col gap-3">
-              <div className="flex justify-between items-center flex-wrap gap-2">
-                <h3 className="font-serif text-sm font-bold text-ink">
-                  {language === 'bn' ? 'রোগী রিভিউ তালিকা' : 'Patient Reviews'}
-                </h3>
-                <div className="flex gap-1.5">
-                  {adminReviews.length === 0 && (
+          <div className="flex flex-col gap-8 animate-in fade-in duration-300">
+            {/* Top Grid: Reviews List and Review Creator/Editor */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Reviews List */}
+              <div className="lg:col-span-5 flex flex-col gap-3">
+                <div className="flex justify-between items-center flex-wrap gap-2">
+                  <h3 className="font-serif text-sm font-bold text-ink flex items-center gap-1.5">
+                    <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                    <span>{language === 'bn' ? 'রোগী রিভিউ তালিকা' : 'Patient Reviews'}</span>
+                  </h3>
+                  <div className="flex gap-1.5">
+                    {adminReviews.length === 0 && (
+                      <button
+                        type="button"
+                        onClick={seedDefaultReviews}
+                        className="px-2 py-1 bg-accent/10 text-accent border border-accent/20 text-[9px] font-bold rounded-lg cursor-pointer"
+                        title={language === 'bn' ? 'ডাটাবেজে ডিফল্ট রিভিউ যুক্ত করুন' : 'Seed default reviews to Supabase'}
+                      >
+                        {language === 'bn' ? 'ডিফল্ট লোড করুন' : 'Seed Default'}
+                      </button>
+                    )}
                     <button
                       type="button"
-                      onClick={seedDefaultReviews}
-                      className="px-2 py-1 bg-accent/10 text-accent border border-accent/20 text-[9px] font-bold rounded-lg cursor-pointer"
-                      title={language === 'bn' ? 'ডাটাবেজে ডিফল্ট রিভিউ যুক্ত করুন' : 'Seed default reviews to Supabase'}
+                      onClick={() => {
+                        setSelectedReview(null);
+                        setReviewForm({
+                          nameEn: '',
+                          nameBn: '',
+                          titleEn: '',
+                          titleBn: '',
+                          textEn: '',
+                          textBn: '',
+                          initials: '',
+                          rating: 5,
+                          googleReviewUrl: '',
+                        });
+                      }}
+                      className="px-2.5 py-1 bg-accent text-white text-[9px] font-bold rounded-lg cursor-pointer shadow-xs hover:bg-ink transition-colors"
                     >
-                      {language === 'bn' ? 'ডিফল্ট লোড করুন' : 'Seed Default'}
+                      + Add New
                     </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3 max-h-[560px] overflow-y-auto pr-1">
+                  {adminReviews.length === 0 ? (
+                    <div className="py-8 text-center text-muted text-xs border border-panel-border/30 rounded-xl bg-white/10">
+                      {language === 'bn' ? 'কোনো রিভিউ পাওয়া যায়নি।' : 'No reviews found.'}
+                    </div>
+                  ) : (
+                    adminReviews.map((rev) => (
+                      <div
+                        key={rev.id}
+                        onClick={() => handleEditReview(rev)}
+                        className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                          selectedReview?.id === rev.id
+                            ? 'border-accent bg-accent/5 ring-1 ring-accent/30'
+                            : 'border-panel-border bg-white/20 hover:bg-white/40'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start gap-2">
+                          <h4 className="text-xs font-bold text-ink line-clamp-1">
+                            {language === 'bn' ? rev.reviewer_name_bn : rev.reviewer_name_en}
+                          </h4>
+                          <span className="text-[9.5px] bg-accent/10 text-accent px-1.5 rounded font-mono font-bold">
+                            {rev.initials || 'PT'}
+                          </span>
+                        </div>
+
+                        <span className="text-[9px] text-muted block mt-0.5">
+                          {language === 'bn' ? rev.reviewer_title_bn : rev.reviewer_title_en}
+                        </span>
+
+                        {/* Stars & Google Link Indicator */}
+                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                          <div className="flex items-center gap-0.5">
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <Star
+                                key={s}
+                                className={`w-3 h-3 ${
+                                  s <= (rev.rating ?? 5)
+                                    ? 'text-amber-400 fill-amber-400 drop-shadow-xs'
+                                    : 'text-slate-300'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-[10px] font-mono font-bold text-ink/75">
+                            {(rev.rating ?? 5).toFixed(1)}
+                          </span>
+
+                          {rev.google_review_url && (
+                            <a
+                              href={rev.google_review_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="ml-auto inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 text-[9px] font-semibold border border-blue-200 cursor-pointer transition-colors"
+                              title="Open original review on Google"
+                            >
+                              <span>Google Review</span>
+                              <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          )}
+                        </div>
+
+                        <p className="text-[11px] text-ink/75 line-clamp-2 mt-1.5 italic bg-white/10 p-1.5 rounded border border-panel-border/20">
+                          "{language === 'bn' ? rev.review_text_bn : rev.review_text_en}"
+                        </p>
+                      </div>
+                    ))
                   )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedReview(null);
-                      setReviewForm({
-                        nameEn: '',
-                        nameBn: '',
-                        titleEn: '',
-                        titleBn: '',
-                        textEn: '',
-                        textBn: '',
-                        initials: '',
-                      });
-                    }}
-                    className="px-2.5 py-1 bg-accent text-white text-[9px] font-bold rounded-lg cursor-pointer"
-                  >
-                    + Add New
-                  </button>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto pr-1">
-                {adminReviews.length === 0 ? (
-                  <div className="py-8 text-center text-muted text-xs border border-panel-border/30 rounded-xl bg-white/10">
-                    {language === 'bn' ? 'কোনো রিভিউ পাওয়া যায়নি।' : 'No reviews found.'}
+              {/* Review Form */}
+              <div className="lg:col-span-7">
+                <GlassPanel className="p-5 flex flex-col gap-4">
+                  <div className="flex justify-between items-center border-b border-line pb-2 flex-wrap gap-2">
+                    <h3 className="font-serif text-sm font-bold text-ink flex items-center gap-2">
+                      <Star className="w-4 h-4 text-accent fill-accent" />
+                      <span>
+                        {selectedReview 
+                          ? (language === 'bn' ? 'রিভিউ সম্পাদন করুন' : 'Edit Review') 
+                          : (language === 'bn' ? 'নতুন রিভিউ যুক্ত করুন' : 'Add New Review')}
+                      </span>
+                    </h3>
+
+                    {selectedReview && (
+                      <span className="text-[10px] text-muted font-mono">
+                        ID: {selectedReview.id.slice(0, 8)}...
+                      </span>
+                    )}
                   </div>
-                ) : (
-                  adminReviews.map((rev) => (
-                    <div
-                      key={rev.id}
-                      onClick={() => handleEditReview(rev)}
-                      className={`p-3 rounded-xl border cursor-pointer transition-all ${
-                        selectedReview?.id === rev.id
-                          ? 'border-accent bg-accent/5'
-                          : 'border-panel-border bg-white/20 hover:bg-white/40'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start gap-2">
-                        <h4 className="text-xs font-bold text-ink line-clamp-1">
-                          {language === 'bn' ? rev.reviewer_name_bn : rev.reviewer_name_en}
-                        </h4>
-                        <span className="text-[9.5px] bg-accent/10 text-accent px-1.5 rounded font-mono font-bold">
-                          {rev.initials}
+
+                  <form onSubmit={handleSaveReview} className="flex flex-col gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-bold text-ink">
+                          Reviewer Name (English)
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={reviewForm.nameEn}
+                          onChange={(e) => setReviewForm({ ...reviewForm, nameEn: e.target.value })}
+                          className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                          placeholder="e.g. Abul Hasan"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-bold text-ink">
+                          রিভিউয়ারের নাম (বাংলা)
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={reviewForm.nameBn}
+                          onChange={(e) => setReviewForm({ ...reviewForm, nameBn: e.target.value })}
+                          className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                          placeholder="যেমন: আবুল হাসান"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-bold text-ink">
+                          Location / Title (English)
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={reviewForm.titleEn}
+                          onChange={(e) => setReviewForm({ ...reviewForm, titleEn: e.target.value })}
+                          className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                          placeholder="e.g. Sylhet Sadar"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-bold text-ink">
+                          অবস্থান / পদবী (বাংলা)
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={reviewForm.titleBn}
+                          onChange={(e) => setReviewForm({ ...reviewForm, titleBn: e.target.value })}
+                          className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                          placeholder="যেমন: সিলেট সদর"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-bold text-ink">
+                          Reviewer Initials (Optional - Auto-generated if blank)
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={4}
+                          value={reviewForm.initials}
+                          onChange={(e) => setReviewForm({ ...reviewForm, initials: e.target.value })}
+                          className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                          placeholder="e.g. AH"
+                        />
+                      </div>
+                    </div>
+
+                    {/* FEATURE 3: Customizable Star Rating Picker */}
+                    <div className="flex flex-col gap-1.5 p-3.5 rounded-2xl bg-amber-50/60 border border-amber-200/80">
+                      <div className="flex justify-between items-center flex-wrap gap-2">
+                        <label className="text-[11px] font-bold text-amber-950 flex items-center gap-1.5">
+                          <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                          <span>{language === 'bn' ? 'রিভিউ স্টার রেটিং (Star Rating: ১ - ৫)' : 'Review Star Rating (1 - 5 Stars)'}</span>
+                        </label>
+                        <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-lg bg-amber-200/70 text-amber-900 border border-amber-300">
+                          {reviewForm.rating} {language === 'bn' ? 'স্টার' : 'Stars'}
                         </span>
                       </div>
-                      <span className="text-[9px] text-muted block mt-1">
-                        {language === 'bn' ? rev.reviewer_title_bn : rev.reviewer_title_en}
-                      </span>
-                      <p className="text-[11px] text-ink/75 line-clamp-2 mt-1.5 italic bg-white/10 p-1.5 rounded border border-panel-border/20">
-                        "{language === 'bn' ? rev.review_text_bn : rev.review_text_en}"
+                      
+                      <div className="flex items-center gap-3 flex-wrap mt-1">
+                        {/* Interactive Clickable 5 Stars */}
+                        <div className="flex items-center gap-1 bg-white p-1.5 rounded-xl border border-amber-200 shadow-xs">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => setReviewForm({ ...reviewForm, rating: s })}
+                              className="p-1 hover:scale-125 transition-transform cursor-pointer"
+                              title={`${s} Star${s > 1 ? 's' : ''}`}
+                            >
+                              <Star
+                                className={`w-5 h-5 transition-colors ${
+                                  s <= reviewForm.rating
+                                    ? 'text-amber-400 fill-amber-400 drop-shadow-xs'
+                                    : 'text-slate-300 hover:text-amber-300'
+                                }`}
+                              />
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Quick Presets */}
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {[5, 4, 3, 2, 1].map((num) => (
+                            <button
+                              key={num}
+                              type="button"
+                              onClick={() => setReviewForm({ ...reviewForm, rating: num })}
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all ${
+                                reviewForm.rating === num
+                                  ? 'bg-amber-500 text-white shadow-xs scale-105'
+                                  : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+                              }`}
+                            >
+                              {num}★
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-amber-900/80 mt-0.5">
+                        {language === 'bn' 
+                          ? 'রোগী গুগলে যত স্টার দিয়েছেন (যেমন ৪ বা ৫ স্টার), সেই স্টার নির্বাচন করুন। ওয়েবসাইটে এই রেটিং প্রদর্শিত হবে।' 
+                          : 'Select the actual rating given by the patient on Google (e.g. 4 or 5 stars).'}
                       </p>
                     </div>
-                  ))
-                )}
+
+                    {/* FEATURE 1: Google Review Direct URL Input */}
+                    <div className="flex flex-col gap-1 p-3 rounded-2xl bg-blue-50/40 border border-blue-200/60">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[10px] font-bold text-blue-950 flex items-center gap-1.5">
+                          <ExternalLink className="w-3.5 h-3.5 text-blue-600" />
+                          <span>
+                            {language === 'bn' 
+                              ? 'আসল গুগল রিভিউ লিংক (Google Review URL - ঐচ্ছিক)' 
+                              : 'Real Google Review Link (Optional)'}
+                          </span>
+                        </label>
+
+                        {reviewForm.googleReviewUrl && (
+                          <a
+                            href={reviewForm.googleReviewUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] text-blue-600 font-semibold hover:underline flex items-center gap-0.5"
+                          >
+                            <span>{language === 'bn' ? 'লিংক যাচাই করুন' : 'Test Link'}</span>
+                            <ArrowUpRight className="w-2.5 h-2.5" />
+                          </a>
+                        )}
+                      </div>
+                      <input
+                        type="url"
+                        value={reviewForm.googleReviewUrl}
+                        onChange={(e) => setReviewForm({ ...reviewForm, googleReviewUrl: e.target.value })}
+                        className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                        placeholder="e.g. https://maps.app.goo.gl/... or Google Maps direct review link"
+                      />
+                      <span className="text-[9.5px] text-blue-900/70">
+                        {language === 'bn'
+                          ? 'এখানে লিংক দিলে ভিজিটররা এই রিভিউ কার্ডে "গুগল রিভিউ দেখুন" বাটনে ক্লিক করে আসল রিভিউ দেখতে পারবে।'
+                          : 'Visitors will be able to click "Google Review" on this review to view the verified review on Google.'}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-ink">
+                        Review Content (English)
+                      </label>
+                      <textarea
+                        required
+                        rows={3}
+                        value={reviewForm.textEn}
+                        onChange={(e) => setReviewForm({ ...reviewForm, textEn: e.target.value })}
+                        className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                        placeholder="Enter patient testimonial in English..."
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-ink">
+                        রিভিউ বিবরণ (বাংলা)
+                      </label>
+                      <textarea
+                        required
+                        rows={3}
+                        value={reviewForm.textBn}
+                        onChange={(e) => setReviewForm({ ...reviewForm, textBn: e.target.value })}
+                        className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                        placeholder="রোগীর সুস্থতার বিবরণ বাংলায় লিখুন..."
+                      />
+                    </div>
+
+                    <div className="flex gap-3 mt-2">
+                      <button
+                        type="submit"
+                        className="flex-1 py-3 bg-accent text-white font-semibold text-xs rounded-xl shadow-md hover:bg-ink transition-colors cursor-pointer text-center inline-flex items-center justify-center gap-2"
+                      >
+                        <Save className="w-4 h-4" />
+                        <span>
+                          {selectedReview
+                            ? (language === 'bn' ? 'রিভিউ আপডেট করুন' : 'Update Review')
+                            : (language === 'bn' ? 'রিভিউ সংরক্ষণ করুন' : 'Save Review')}
+                        </span>
+                      </button>
+                      {selectedReview && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteReview(selectedReview)}
+                          className="py-3 px-4 bg-red-50 border border-red-200 text-red-600 font-semibold text-xs rounded-xl hover:bg-red-100 transition-colors cursor-pointer text-center inline-flex items-center justify-center gap-1.5"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>{language === 'bn' ? 'ডিলিট' : 'Delete'}</span>
+                        </button>
+                      )}
+                    </div>
+                  </form>
+                </GlassPanel>
               </div>
             </div>
 
-            {/* Review Form */}
-            <div className="lg:col-span-7">
-              <GlassPanel className="p-5 flex flex-col gap-4">
-                <h3 className="font-serif text-sm font-bold text-ink border-b border-line pb-1.5">
-                  {selectedReview 
-                    ? (language === 'bn' ? 'রিভিউ সম্পাদন করুন' : 'Edit Review') 
-                    : (language === 'bn' ? 'নতুন রিভিউ যুক্ত করুন' : 'Add New Review')}
-                </h3>
-
-                <form onSubmit={handleSaveReview} className="flex flex-col gap-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-bold text-ink">
-                        Reviewer Name (English)
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={reviewForm.nameEn}
-                        onChange={(e) => setReviewForm({ ...reviewForm, nameEn: e.target.value })}
-                        className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
-                        placeholder="e.g. Abul Hasan"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-bold text-ink">
-                        রিভিউয়ারের নাম (বাংলা)
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={reviewForm.nameBn}
-                        onChange={(e) => setReviewForm({ ...reviewForm, nameBn: e.target.value })}
-                        className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
-                        placeholder="যেমন: আবুল হাসান"
-                      />
-                    </div>
+            {/* FEATURE 2: Dedicated "Leave Us a Google Review" QR Code & Review Collection Section */}
+            <GlassPanel className="p-6 md:p-8 rounded-3xl border border-emerald-200/80 bg-gradient-to-br from-white/95 via-emerald-50/30 to-teal-50/40 shadow-xl">
+              <div className="flex justify-between items-center border-b border-line pb-3 mb-6 flex-wrap gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md">
+                    <QrCode className="w-5 h-5" />
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-bold text-ink">
-                        Location / Title (English)
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={reviewForm.titleEn}
-                        onChange={(e) => setReviewForm({ ...reviewForm, titleEn: e.target.value })}
-                        className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
-                        placeholder="e.g. Sylhet Sadar"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-bold text-ink">
-                        অবস্থান / পদবী (বাংলা)
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={reviewForm.titleBn}
-                        onChange={(e) => setReviewForm({ ...reviewForm, titleBn: e.target.value })}
-                        className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
-                        placeholder="যেমন: সিলেট সদর"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-bold text-ink">
-                        Reviewer Initials (Optional - Auto-generated if blank)
-                      </label>
-                      <input
-                        type="text"
-                        maxLength={4}
-                        value={reviewForm.initials}
-                        onChange={(e) => setReviewForm({ ...reviewForm, initials: e.target.value })}
-                        className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
-                        placeholder="e.g. AH"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-ink">
-                      Review Content (English)
-                    </label>
-                    <textarea
-                      required
-                      rows={3}
-                      value={reviewForm.textEn}
-                      onChange={(e) => setReviewForm({ ...reviewForm, textEn: e.target.value })}
-                      className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
-                      placeholder="Enter patient testimonial in English..."
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-ink">
-                      রিভিউ বিবরণ (বাংলা)
-                    </label>
-                    <textarea
-                      required
-                      rows={3}
-                      value={reviewForm.textBn}
-                      onChange={(e) => setReviewForm({ ...reviewForm, textBn: e.target.value })}
-                      className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
-                      placeholder="রোগীর সুস্থতার বিবরণ বাংলায় লিখুন..."
-                    />
-                  </div>
-
-                  <div className="flex gap-3 mt-2">
-                    <button
-                      type="submit"
-                      className="flex-1 py-3 bg-accent text-white font-semibold text-xs rounded-xl shadow-md hover:bg-ink transition-colors cursor-pointer text-center inline-flex items-center justify-center gap-2"
-                    >
-                      <Save className="w-4 h-4" />
-                      <span>
-                        {selectedReview
-                          ? (language === 'bn' ? 'রিভিউ আপডেট করুন' : 'Update Review')
-                          : (language === 'bn' ? 'রিভিউ সংরক্ষণ করুন' : 'Save Review')}
+                  <div>
+                    <h3 className="font-serif text-base font-bold text-ink flex items-center gap-2">
+                      <span>{language === 'bn' ? 'গুগল রিভিউ কিউআর কোড ও কালেকশন সেটিংস' : 'Leave Us a Google Review (QR Code & Settings)'}</span>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 font-sans font-bold px-2 py-0.5 rounded-full border border-emerald-200">
+                        Public QR Station
                       </span>
-                    </button>
-                    {selectedReview && (
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteReview(selectedReview)}
-                        className="py-3 px-4 bg-red-50 border border-red-200 text-red-600 font-semibold text-xs rounded-xl hover:bg-red-100 transition-colors cursor-pointer text-center inline-flex items-center justify-center gap-1.5"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        <span>{language === 'bn' ? 'ডিলিট' : 'Delete'}</span>
-                      </button>
-                    )}
+                    </h3>
+                    <p className="text-xs text-muted mt-0.5">
+                      {language === 'bn' 
+                        ? 'রোগীরা যাতে চেম্বারে বা ওয়েবসাইটে মোবাইল দিয়ে স্ক্যান করে সরাসরি গুগল রিভিউ দিতে পারে, তার কিউআর কোড ও লিংক পরিচালনা করুন।' 
+                        : 'Manage the public QR code and direct submission link where patients leave their Google review.'}
+                    </p>
                   </div>
-                </form>
-              </GlassPanel>
-            </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleSaveQrSettings()}
+                  disabled={isSavingQrSettings}
+                  className="px-5 py-2.5 bg-accent hover:bg-ink text-white text-xs font-semibold rounded-xl shadow-md cursor-pointer inline-flex items-center gap-2 transition-colors disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>
+                    {isSavingQrSettings 
+                      ? (language === 'bn' ? 'সংরক্ষণ হচ্ছে...' : 'Saving...') 
+                      : (language === 'bn' ? 'কিউআর সেটিংস সংরক্ষণ করুন' : 'Save QR Settings')}
+                  </span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                
+                {/* Left Column: QR Configuration Inputs */}
+                <div className="lg:col-span-7 flex flex-col gap-4">
+                  {/* Google Review Submission Link */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between items-center">
+                      <label className="text-[11px] font-bold text-ink flex items-center gap-1.5">
+                        <ExternalLink className="w-3.5 h-3.5 text-accent" />
+                        <span>{language === 'bn' ? 'গুগল রিভিউ লেখার ডিরেক্ট লিংক (Business Review URL)' : 'Google Review Write-A-Review URL'}</span>
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                              navigator.clipboard.writeText(reviewQrSettings.businessUrl);
+                              setCopiedAdminQrUrl(true);
+                              setTimeout(() => setCopiedAdminQrUrl(false), 2000);
+                            }
+                          }}
+                          className="text-[10px] text-accent hover:underline inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          {copiedAdminQrUrl ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                          <span>{copiedAdminQrUrl ? (language === 'bn' ? 'কপি হয়েছে' : 'Copied') : (language === 'bn' ? 'লিংক কপি' : 'Copy')}</span>
+                        </button>
+                        {reviewQrSettings.businessUrl && (
+                          <a
+                            href={reviewQrSettings.businessUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] text-blue-600 hover:underline inline-flex items-center gap-0.5"
+                          >
+                            <span>{language === 'bn' ? 'লিংক খুলুন' : 'Open Link'}</span>
+                            <ArrowUpRight className="w-2.5 h-2.5" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                    <input
+                      type="url"
+                      value={reviewQrSettings.businessUrl}
+                      onChange={(e) => setReviewQrSettings({ ...reviewQrSettings, businessUrl: e.target.value })}
+                      className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                      placeholder="e.g. https://search.google.com/local/writereview?placeid=... or Google Maps link"
+                    />
+                    <span className="text-[10px] text-muted">
+                      {language === 'bn'
+                        ? 'রোগীরা এই লিংকে ঢুকে সরাসরি গুগল রিভিউ লিখতে পারবে। কিউআর কোড এই লিংক থেকেই তৈরি হবে।'
+                        : 'Patients will land on this Google page to write their review. The QR code encodes this URL.'}
+                    </span>
+                  </div>
+
+                  {/* QR Code Image Upload / Picker */}
+                  <ImagePickerField
+                    label={language === 'bn' ? 'কাস্টম কিউআর কোড ছবি (ঐচ্ছিক - খালি রাখলে অটো জেনারেট হবে)' : 'Custom QR Code Image (Optional - Auto-generated if empty)'}
+                    value={reviewQrSettings.qrCodeImage}
+                    onChange={(val) => setReviewQrSettings({ ...reviewQrSettings, qrCodeImage: val })}
+                    placeholder="/qr-google-review.png or URL..."
+                    helperText={language === 'bn' ? 'আপনি চাইলে গুগল বিজনেস থেকে ডাউনলোড করা কিউআর ছবি আপলোড করতে পারেন, অথবা খালি রাখলে স্বয়ংক্রিয়ভাবে তৈরি হবে।' : 'Upload custom Google QR image, or leave empty to auto-generate.'}
+                  />
+
+                  {/* Title En / Bn */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-ink">QR Section Title (English)</label>
+                      <input
+                        type="text"
+                        value={reviewQrSettings.titleEn}
+                        onChange={(e) => setReviewQrSettings({ ...reviewQrSettings, titleEn: e.target.value })}
+                        className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                        placeholder="Leave Us a Google Review"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-ink">কিউআর সেকশন শিরোনাম (বাংলা)</label>
+                      <input
+                        type="text"
+                        value={reviewQrSettings.titleBn}
+                        onChange={(e) => setReviewQrSettings({ ...reviewQrSettings, titleBn: e.target.value })}
+                        className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                        placeholder="গুগলে আপনার আরোগ্য ও চিকিৎসা রিভিউ দিন"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Subtitle En / Bn */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-ink">Instructions / Subtitle (English)</label>
+                      <textarea
+                        rows={2}
+                        value={reviewQrSettings.subtitleEn}
+                        onChange={(e) => setReviewQrSettings({ ...reviewQrSettings, subtitleEn: e.target.value })}
+                        className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                        placeholder="Scan QR code with camera or click below to share your experience on Google."
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-ink">নির্দেশনা / সাবটাইটেল (বাংলা)</label>
+                      <textarea
+                        rows={2}
+                        value={reviewQrSettings.subtitleBn}
+                        onChange={(e) => setReviewQrSettings({ ...reviewQrSettings, subtitleBn: e.target.value })}
+                        className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                        placeholder="আপনার মূল্যবান অভিজ্ঞতা জানাতে মোবাইল ক্যামেরা দিয়ে কিউআর কোড স্ক্যান করুন..."
+                      />
+                    </div>
+                  </div>
+
+                  {/* Button Text En / Bn */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-ink">Button Label (English)</label>
+                      <input
+                        type="text"
+                        value={reviewQrSettings.buttonTextEn}
+                        onChange={(e) => setReviewQrSettings({ ...reviewQrSettings, buttonTextEn: e.target.value })}
+                        className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                        placeholder="Write a Review on Google"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-ink">বাটন টেক্সট (বাংলা)</label>
+                      <input
+                        type="text"
+                        value={reviewQrSettings.buttonTextBn}
+                        onChange={(e) => setReviewQrSettings({ ...reviewQrSettings, buttonTextBn: e.target.value })}
+                        className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                        placeholder="গুগলে রিভিউ দিন"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: Live QR Preview & Print/Download */}
+                <div className="lg:col-span-5 flex flex-col items-center gap-4">
+                  <div className="w-full bg-white rounded-3xl p-6 border-2 border-emerald-200/90 shadow-lg flex flex-col items-center text-center relative overflow-hidden">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full mb-3">
+                      {language === 'bn' ? 'লাইভ প্রিভিউ (স্মার্টফোনে স্ক্যান করুন)' : 'Live Preview (Scan With Phone)'}
+                    </span>
+
+                    {/* QR Code Presentation Box */}
+                    <div className="relative p-3 bg-white rounded-2xl shadow-md border border-slate-200 my-2">
+                      <img
+                        src={
+                          reviewQrSettings.qrCodeImage?.trim()
+                            ? reviewQrSettings.qrCodeImage
+                            : `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(
+                                reviewQrSettings.businessUrl || 'https://maps.google.com/?q=Popular+Medical+Center+Sylhet'
+                              )}&margin=12`
+                        }
+                        alt="Live Google Review QR Code"
+                        className="w-44 h-44 object-contain rounded-lg"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-1 text-xs font-bold text-ink mt-2">
+                      <Smartphone className="w-3.5 h-3.5 text-accent" />
+                      <span>{language === 'bn' ? 'ক্যামেরা দিয়ে স্ক্যান করুন' : 'Scan with phone camera'}</span>
+                    </div>
+
+                    <h4 className="font-serif text-sm font-bold text-ink mt-2">
+                      {language === 'bn' ? reviewQrSettings.titleBn : reviewQrSettings.titleEn}
+                    </h4>
+
+                    <p className="text-[11px] text-muted line-clamp-2 px-2 mt-1">
+                      {language === 'bn' ? reviewQrSettings.subtitleBn : reviewQrSettings.subtitleEn}
+                    </p>
+
+                    <div className="flex items-center gap-2 mt-4 w-full">
+                      <a
+                        href={reviewQrSettings.businessUrl || 'https://maps.google.com/?q=Popular+Medical+Center+Sylhet'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 py-2.5 px-3 rounded-xl bg-accent hover:bg-ink text-white text-xs font-semibold shadow transition-colors inline-flex items-center justify-center gap-1.5"
+                      >
+                        <span>{language === 'bn' ? reviewQrSettings.buttonTextBn : reviewQrSettings.buttonTextEn}</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+
+                      <a
+                        href={
+                          reviewQrSettings.qrCodeImage?.trim()
+                            ? reviewQrSettings.qrCodeImage
+                            : `https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(
+                                reviewQrSettings.businessUrl || 'https://maps.google.com/?q=Popular+Medical+Center+Sylhet'
+                              )}&margin=15`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download="Dr_Hanif_Towhid_Google_Review_QR.png"
+                        className="p-2.5 rounded-xl border border-slate-300 bg-slate-50 hover:bg-slate-100 text-ink text-xs font-semibold transition-colors inline-flex items-center justify-center"
+                        title={language === 'bn' ? 'কিউআর কোড ডাউনলোড করুন' : 'Download High-Res QR for Print'}
+                      >
+                        <Download className="w-4 h-4 text-accent" />
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </GlassPanel>
+
           </div>
         )}
 
