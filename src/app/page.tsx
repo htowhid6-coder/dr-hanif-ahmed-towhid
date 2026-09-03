@@ -31,17 +31,6 @@ interface Review {
 
 const defaultReviews: Review[] = [
   {
-    reviewer_name_en: 'Safwan Uddin Ahmed',
-    reviewer_name_bn: 'সাফওয়ান উদ্দিন আহমেদ',
-    reviewer_title_en: 'Verified Google Patient',
-    reviewer_title_bn: 'যাচাইকৃত গুগল রিভিউয়ার',
-    review_text_en: "Dr. Hanif is truly an excellent doctor. He takes his time with each patient, listens attentively and never seems rushed. He examines patients thoroughly before jumping to any conclusions or prescriptions. Highly recommended!!!",
-    review_text_bn: 'ডা. হানিফ সত্যিই অসাধারণ একজন চিকিৎসক। তিনি প্রতিটি রোগীকে পর্যাপ্ত সময় দেন, অত্যন্ত মনোযোগ দিয়ে শোনেন এবং কখনো তাড়াহুড়ো করেন না। রোগীকে গভীরভাবে পরীক্ষা করে সঠিক চিকিৎসা দেন। সবার জন্য বিশেষভাবে সুপারিশকৃত।',
-    initials: 'SA',
-    rating: 5,
-    google_review_url: 'https://g.page/r/CWPfW1si9Y0MEAE/review'
-  },
-  {
     reviewer_name_en: 'Mizbah Uddin Ornob',
     reviewer_name_bn: 'মিজবাহ উদ্দিন অর্ণব',
     reviewer_title_en: 'Verified Google Patient',
@@ -53,35 +42,13 @@ const defaultReviews: Review[] = [
     google_review_url: 'https://g.page/r/CWPfW1si9Y0MEAE/review'
   },
   {
-    reviewer_name_en: 'Fatema Imu',
-    reviewer_name_bn: 'ফাতেমা ইমু',
+    reviewer_name_en: 'Safwan Uddin Ahmed',
+    reviewer_name_bn: 'সাফওয়ান উদ্দিন আহমেদ',
     reviewer_title_en: 'Verified Google Patient',
     reviewer_title_bn: 'যাচাইকৃত গুগল রিভিউয়ার',
-    review_text_en: "He's one of the best physician and human indeed! He not only cures diseases but also cares about the patient's mental, physical and economic conditions. May Allah bless him.",
-    review_text_bn: 'তিনি নিঃসন্দেহে সেরা একজন চিকিৎসক ও অসাধারণ একজন মানুষ! তিনি কেবল রোগ নিরাময় করেন না, রোগীর মানসিক, শারীরিক এবং আর্থিক অবস্থারও পূর্ণ যত্ন নেন। আল্লাহ উনার মঙ্গল করুন।',
-    initials: 'FI',
-    rating: 5,
-    google_review_url: 'https://g.page/r/CWPfW1si9Y0MEAE/review'
-  },
-  {
-    reviewer_name_en: 'Farhat Chowdhury',
-    reviewer_name_bn: 'ফারহাত চৌধুরী',
-    reviewer_title_en: 'Verified Google Patient',
-    reviewer_title_bn: 'যাচাইকৃত গুগল রিভিউয়ার',
-    review_text_en: "Dr. Hanif Ahmed Touhid is a sincere, attentive and humane doctor. He listens patiently, understands the root cause of the problem and provides appropriate treatment. My family and I are very satisfied.",
-    review_text_bn: 'ডা. হানিফ আহমেদ তৌহিদ অত্যন্ত আন্তরিক, মনোযোগী ও মানবিক একজন চিকিৎসক। তিনি পরম ধৈর্য ধরে শুনে সমস্যার মূল কারণ নির্ণয় করে সঠিক চিকিৎসা দেন। আমি ও আমার পরিবার তার চিকিৎসা সেবায় অত্যন্ত সন্তুষ্ট।',
-    initials: 'FC',
-    rating: 5,
-    google_review_url: 'https://g.page/r/CWPfW1si9Y0MEAE/review'
-  },
-  {
-    reviewer_name_en: 'MD RUBEL',
-    reviewer_name_bn: 'মো. রুবেল',
-    reviewer_title_en: 'Verified Google Patient',
-    reviewer_title_bn: 'যাচাইকৃত গুগল রিভিউয়ার',
-    review_text_en: "Dr Hanif Sir is the best medicine specialist in Sylhet. I am very happy with the treatment sir.",
-    review_text_bn: 'ডা. হানিফ স্যার সিলেটের সেরা মেডিসিন বিশেষজ্ঞ। স্যারের চিকিৎসায় আমি অত্যন্ত সন্তুষ্ট।',
-    initials: 'MR',
+    review_text_en: "Dr. Hanif is truly an excellent doctor. He takes his time with each patient, listens attentively and never seems rushed. He examines patients thoroughly before jumping to any conclusions or prescriptions. He's also very transparent, always explaining the side effects of any medication and making sure he prescribes only what's genuinely necessary. Beyond his clinical skill, Dr. Hanif is incredibly talented and empathetic. Highly recommended!!!",
+    review_text_bn: 'ডা. হানিফ সত্যিই অসাধারণ একজন চিকিৎসক। তিনি প্রতিটি রোগীকে পর্যাপ্ত সময় দেন, অত্যন্ত মনোযোগ দিয়ে শোনেন এবং কখনো তাড়াহুড়ো করেন না। রোগীকে গভীরভাবে পরীক্ষা করে সঠিক চিকিৎসা দেন। সবার জন্য বিশেষভাবে সুপারিশকৃত।',
+    initials: 'SA',
     rating: 5,
     google_review_url: 'https://g.page/r/CWPfW1si9Y0MEAE/review'
   },
@@ -97,6 +64,17 @@ const defaultReviews: Review[] = [
     google_review_url: 'https://g.page/r/CWPfW1si9Y0MEAE/review'
   },
   {
+    reviewer_name_en: 'Fatema Imu',
+    reviewer_name_bn: 'ফাতেমা ইমু',
+    reviewer_title_en: 'Verified Google Patient',
+    reviewer_title_bn: 'যাচাইকৃত গুগল রিভিউয়ার',
+    review_text_en: "He's one of the best physician and human indeed! He not only cures diseases but also cares about the patient's mental, physical and economic conditions. May Allah bless him.",
+    review_text_bn: 'তিনি নিঃসন্দেহে সেরা একজন চিকিৎসক ও অসাধারণ একজন মানুষ! তিনি কেবল রোগ নিরাময় করেন না, রোগীর মানসিক, শারীরিক এবং আর্থিক অবস্থারও পূর্ণ যত্ন নেন। আল্লাহ উনার মঙ্গল করুন।',
+    initials: 'FI',
+    rating: 5,
+    google_review_url: 'https://g.page/r/CWPfW1si9Y0MEAE/review'
+  },
+  {
     reviewer_name_en: 'Dr. Abu Kamran Rahul',
     reviewer_name_bn: 'ডা. আবু কামরান রাহুল',
     reviewer_title_en: 'Physician & Medical Colleague',
@@ -108,12 +86,34 @@ const defaultReviews: Review[] = [
     google_review_url: 'https://g.page/r/CWPfW1si9Y0MEAE/review'
   },
   {
+    reviewer_name_en: 'Dr. Alim Al Razy',
+    reviewer_name_bn: 'ডা. আলিম আল রাজী',
+    reviewer_title_en: 'Physician & Medical Colleague',
+    reviewer_title_bn: 'চিকিৎসক সহকর্মী',
+    review_text_en: "Finest internist of Sylhet. Exceptional clinical acumen and patient dedication.",
+    review_text_bn: 'সিলেটের অন্যতম সেরা ইন্টারনিস্ট (মেডিসিন বিশেষজ্ঞ)। রোগীর প্রতি গভীর যত্ন ও নির্ভুল চিকিৎসায় অসাধারণ।',
+    initials: 'AR',
+    rating: 5,
+    google_review_url: 'https://g.page/r/CWPfW1si9Y0MEAE/review'
+  },
+  {
+    reviewer_name_en: 'Konok Kanti Deb',
+    reviewer_name_bn: 'কনক কান্তি দেব',
+    reviewer_title_en: 'Verified Google Patient',
+    reviewer_title_bn: 'যাচাইকৃত গুগল রিভিউয়ার',
+    review_text_en: "Good behaviour and very attentive consultation. Highly satisfied with the treatment.",
+    review_text_bn: 'অত্যন্ত অমায়িক ব্যবহার এবং যত্নশীল চিকিৎসা পরামর্শ। স্যারের সেবায় অত্যন্ত সন্তুষ্ট।',
+    initials: 'KD',
+    rating: 5,
+    google_review_url: 'https://g.page/r/CWPfW1si9Y0MEAE/review'
+  },
+  {
     reviewer_name_en: 'Md Nakib Sadat Chowdhury',
     reviewer_name_bn: 'মো. নাকিব সাদাত চৌধুরী',
     reviewer_title_en: 'Verified Google Patient',
     reviewer_title_bn: 'যাচাইকৃত গুগল রিভিউয়ার',
-    review_text_en: "A very talented doctor and most importantly, a very good human being. I truly appreciate his dedication and highly recommend him.",
-    review_text_bn: 'অত্যন্ত মেধাবী একজন ডাক্তার এবং সবচেয়ে বড় কথা অসাধারণ একজন মানুষ। তার আন্তরিকতার জন্য আমি সত্যিই কৃতজ্ঞ এবং অভিজ্ঞ চিকিৎসকের খোঁজে থাকা সবাইকে তাকে দেখানোর পরামর্শ দেব।',
+    review_text_en: "A very talented doctor and most importantly, a very good human being. I truly appreciate his dedication and highly recommend him to anyone looking for a knowledgeable and caring physician.",
+    review_text_bn: 'অত্যন্ত মেধাবী একজন ডাক্তার এবং সবচেয়ে বড় কথা অসাধারণ একজন মানুষ। তার আন্তরিকতার জন্য আমি সত্যিই কৃতজ্ঞ এবং সবাইকে তাকে দেখানোর পরামর্শ দেব।',
     initials: 'NC',
     rating: 5,
     google_review_url: 'https://g.page/r/CWPfW1si9Y0MEAE/review'
@@ -134,9 +134,86 @@ const defaultReviews: Review[] = [
     reviewer_name_bn: 'তারেক আহমেদ',
     reviewer_title_en: 'Verified Google Patient',
     reviewer_title_bn: 'যাচাইকৃত গুগল রিভিউয়ার',
-    review_text_en: "He is not only a skilled doctor, but also a wonderful human being. Highly experienced and compassionate physician.",
-    review_text_bn: 'তিনি কেবল একজন দক্ষ চিকিৎসকই নন, অত্যন্ত চমৎকার একজন মানুষ। পরম সহানুভূতিশীল ও অভিজ্ঞ চিকিৎসক।',
+    review_text_en: "He is not only a skilled doctor, but also a wonderful human being. May Allah grant him a healthy, safe and long life and grant him the ability to serve us for a long time. Amen.",
+    review_text_bn: 'তিনি কেবল একজন দক্ষ চিকিৎসকই নন, অত্যন্ত চমৎকার একজন মানুষ। আল্লাহ যেন তাকে সুস্থ, নিরাপদ ও দীর্ঘ জীবন দান করেন এবং দীর্ঘকাল মানবসেবায় যুক্ত রাখেন। আমিন।',
     initials: 'TA',
+    rating: 5,
+    google_review_url: 'https://g.page/r/CWPfW1si9Y0MEAE/review'
+  },
+  {
+    reviewer_name_en: 'MD RUBEL',
+    reviewer_name_bn: 'মো. রুবেল',
+    reviewer_title_en: 'Verified Google Patient',
+    reviewer_title_bn: 'যাচাইকৃত গুগল রিভিউয়ার',
+    review_text_en: "Dr Hanif Sir is the best medicine specialist in Sylhet. I am very happy with the treatment sir.",
+    review_text_bn: 'ডা. হানিফ স্যার সিলেটের সেরা মেডিসিন বিশেষজ্ঞ। স্যারের চিকিৎসায় আমি অত্যন্ত সন্তুষ্ট।',
+    initials: 'MR',
+    rating: 5,
+    google_review_url: 'https://g.page/r/CWPfW1si9Y0MEAE/review'
+  },
+  {
+    reviewer_name_en: 'Farhat Chowdhury',
+    reviewer_name_bn: 'ফারহাত চৌধুরী',
+    reviewer_title_en: 'Verified Google Patient',
+    reviewer_title_bn: 'যাচাইকৃত গুগল রিভিউয়ার',
+    review_text_en: "Dr. Hanif Ahmed Touhid is a sincere, attentive and humane doctor. He listens to each patient patiently, understands the root cause of the problem and provides appropriate treatment. My family and I are very satisfied.",
+    review_text_bn: 'ডা. হানিফ আহমেদ তৌহিদ অত্যন্ত আন্তরিক, মনোযোগী ও মানবিক একজন চিকিৎসক। তিনি পরম ধৈর্য ধরে শুনে সমস্যার মূল কারণ নির্ণয় করে সঠিক চিকিৎসা দেন। আমি ও আমার পরিবার তার চিকিৎসা সেবায় অত্যন্ত সন্তুষ্ট।',
+    initials: 'FC',
+    rating: 5,
+    google_review_url: 'https://g.page/r/CWPfW1si9Y0MEAE/review'
+  },
+  {
+    reviewer_name_en: 'Priyanka Roy Pinki',
+    reviewer_name_bn: 'প্রিয়াঙ্কা রায় পিংকি',
+    reviewer_title_en: 'Verified Google Patient',
+    reviewer_title_bn: 'যাচাইকৃত গুগল রিভিউয়ার',
+    review_text_en: "Very good treatment, any patient will be satisfied.",
+    review_text_bn: 'অত্যন্ত ভালো চিকিৎসা সেবা, যেকোনো রোগীই তার চিকিৎসায় সন্তুষ্ট হবেন।',
+    initials: 'PP',
+    rating: 5,
+    google_review_url: 'https://g.page/r/CWPfW1si9Y0MEAE/review'
+  },
+  {
+    reviewer_name_en: 'Md. Rokon',
+    reviewer_name_bn: 'মো. রোকন',
+    reviewer_title_en: 'Verified Google Patient',
+    reviewer_title_bn: 'যাচাইকৃত গুগল রিভিউয়ার',
+    review_text_en: "Very good doctor. You are a good doctor and a wonderful person. May Allah grant you a good life. Amen.",
+    review_text_bn: 'খুব ভালো ডাক্তার। আপনি একজন দক্ষ চিকিৎসক এবং চমৎকার একজন মানুষ। পরম সহানুভূতিশীল।',
+    initials: 'MR',
+    rating: 5,
+    google_review_url: 'https://g.page/r/CWPfW1si9Y0MEAE/review'
+  },
+  {
+    reviewer_name_en: 'Tanjirul Islam Rupak',
+    reviewer_name_bn: 'তানজিরুল ইসলাম রূপক',
+    reviewer_title_en: 'Verified Google Patient',
+    reviewer_title_bn: 'যাচাইকৃত গুগল রিভিউয়ার',
+    review_text_en: "Outstanding patient care and diagnosis. Highly recommended medicine specialist in Sylhet.",
+    review_text_bn: 'চমৎকার চিকিৎসা ও আন্তরিক সেবা। সিলেটের অন্যতম বিশ্বস্ত ও নির্ভুল মেডিসিন বিশেষজ্ঞ।',
+    initials: 'TR',
+    rating: 5,
+    google_review_url: 'https://g.page/r/CWPfW1si9Y0MEAE/review'
+  },
+  {
+    reviewer_name_en: 'Sakib Mahmud',
+    reviewer_name_bn: 'সাকিব মাহমুদ',
+    reviewer_title_en: 'Verified Google Patient',
+    reviewer_title_bn: 'যাচাইকৃত গুগল রিভিউয়ার',
+    review_text_en: "Excellent diagnosis and supportive physician. Very satisfied with the treatment.",
+    review_text_bn: 'নিখুঁত রোগ নির্ণয় এবং অত্যন্ত সহায়ক চিকিৎসক। চিকিৎসায় সম্পূর্ণ সন্তুষ্ট।',
+    initials: 'SM',
+    rating: 5,
+    google_review_url: 'https://g.page/r/CWPfW1si9Y0MEAE/review'
+  },
+  {
+    reviewer_name_en: 'Es Ebrahim',
+    reviewer_name_bn: 'ইএস ইব্রাহিম',
+    reviewer_title_en: 'Verified Google Patient',
+    reviewer_title_bn: 'যাচাইকৃত গুগল রিভিউয়ার',
+    review_text_en: "Very professional and caring doctor. Highly satisfied with the consultation.",
+    review_text_bn: 'অত্যন্ত পেশাদার এবং যত্নশীল চিকিৎসক। পরামর্শ ও চিকিৎসায় সম্পূর্ণ সন্তুষ্ট।',
+    initials: 'EE',
     rating: 5,
     google_review_url: 'https://g.page/r/CWPfW1si9Y0MEAE/review'
   }
