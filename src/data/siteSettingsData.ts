@@ -220,7 +220,7 @@ export const defaultSiteSettings: SiteSettings = {
   urgentCtaWhatsappText: 'WhatsApp',
 
   // Google Review & QR Code System
-  googleReviewBusinessUrl: 'https://maps.google.com/?q=Popular+Medical+Center+Sylhet',
+  googleReviewBusinessUrl: 'https://g.page/r/CWPfW1si9Y0MEAE/review',
   googleReviewQrCodeImage: '',
   googleReviewTitleEn: 'Leave Us a Google Review',
   googleReviewTitleBn: 'গুগল রিভিউ দিন',
