@@ -9,6 +9,7 @@ import { GlassPanel } from '@/components/GlassPanel';
 import { blogData, BlogPost } from '@/locales/blogData';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
+import DOMPurify from 'isomorphic-dompurify';
 import { 
   ArrowLeft, 
   Calendar, 
@@ -266,7 +267,7 @@ export default function BlogPostDetailClient() {
                 prose-h2:text-lg prose-h2:sm:text-xl prose-h2:md:text-2xl prose-h2:text-accent
                 prose-p:text-xs prose-p:sm:text-sm prose-p:leading-relaxed prose-p:text-slate-700
                 prose-ul:list-disc prose-ul:list-inside prose-ul:space-y-1.5 prose-ul:text-xs prose-ul:sm:text-sm"
-              dangerouslySetInnerHTML={{ __html: post.content }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content || '') }}
             />
           </GlassPanel>
         </article>

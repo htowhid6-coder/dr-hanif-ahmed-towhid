@@ -273,39 +273,73 @@ DO $$ BEGIN
   END IF;
 END $$;
 
--- Authenticated WRITE Policies
+-- ==============================================================================
+-- 12. Admin Users Table & Security Definer
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.admin_users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) UNIQUE NOT NULL,
+  role VARCHAR(50) DEFAULT 'admin',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.admin_users ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.admin_users FROM anon, authenticated;
+
+INSERT INTO public.admin_users (email, role)
+VALUES ('htowhid6@gmail.com', 'superadmin')
+ON CONFLICT (email) DO NOTHING;
+
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.admin_users
+    WHERE LOWER(email) = LOWER(auth.jwt() ->> 'email')
+  ) OR LOWER(auth.jwt() ->> 'email') = LOWER('htowhid6@gmail.com');
+$$;
+
+-- Authenticated Admin WRITE Policies
 DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow auth write profiles') THEN
-    CREATE POLICY "Allow auth write profiles" ON public.profiles FOR ALL TO authenticated USING (true);
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow admin manage profiles') THEN
+    CREATE POLICY "Allow admin manage profiles" ON public.profiles FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow auth write chambers') THEN
-    CREATE POLICY "Allow auth write chambers" ON public.chambers FOR ALL TO authenticated USING (true);
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow admin manage chambers') THEN
+    CREATE POLICY "Allow admin manage chambers" ON public.chambers FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow auth write services') THEN
-    CREATE POLICY "Allow auth write services" ON public.services FOR ALL TO authenticated USING (true);
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow admin manage services') THEN
+    CREATE POLICY "Allow admin manage services" ON public.services FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow auth write diseases') THEN
-    CREATE POLICY "Allow auth write diseases" ON public.diseases FOR ALL TO authenticated USING (true);
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow admin manage diseases') THEN
+    CREATE POLICY "Allow admin manage diseases" ON public.diseases FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow auth write posts') THEN
-    CREATE POLICY "Allow auth write posts" ON public.posts FOR ALL TO authenticated USING (true);
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow admin manage posts') THEN
+    CREATE POLICY "Allow admin manage posts" ON public.posts FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow auth write symptoms') THEN
-    CREATE POLICY "Allow auth write symptoms" ON public.symptoms FOR ALL TO authenticated USING (true);
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow admin manage symptoms') THEN
+    CREATE POLICY "Allow admin manage symptoms" ON public.symptoms FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow auth write reviews') THEN
-    CREATE POLICY "Allow auth write reviews" ON public.reviews FOR ALL TO authenticated USING (true);
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow admin manage reviews') THEN
+    CREATE POLICY "Allow admin manage reviews" ON public.reviews FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow auth write hero_slides') THEN
-    CREATE POLICY "Allow auth write hero_slides" ON public.hero_slides FOR ALL TO authenticated USING (true);
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow admin manage hero_slides') THEN
+    CREATE POLICY "Allow admin manage hero_slides" ON public.hero_slides FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow auth write site_settings') THEN
-    CREATE POLICY "Allow auth write site_settings" ON public.site_settings FOR ALL TO authenticated USING (true);
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow admin manage site_settings') THEN
+    CREATE POLICY "Allow admin manage site_settings" ON public.site_settings FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow auth write faqs') THEN
-    CREATE POLICY "Allow auth write faqs" ON public.faqs FOR ALL TO authenticated USING (true);
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow admin manage faqs') THEN
+    CREATE POLICY "Allow admin manage faqs" ON public.faqs FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow auth read messages') THEN
-    CREATE POLICY "Allow auth read messages" ON public.messages FOR SELECT TO authenticated USING (true);
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow admin read messages') THEN
+    CREATE POLICY "Allow admin read messages" ON public.messages FOR SELECT TO authenticated USING (public.is_admin());
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow admin delete messages') THEN
+    CREATE POLICY "Allow admin delete messages" ON public.messages FOR DELETE TO authenticated USING (public.is_admin());
   END IF;
 END $$;
+

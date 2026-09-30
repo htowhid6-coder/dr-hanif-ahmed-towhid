@@ -30,6 +30,7 @@ export default function Contact() {
     gender: '' as 'Male' | 'Female' | '',
     msg: ''
   });
+  const [honeypot, setHoneypot] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastWhatsappUrl, setLastWhatsappUrl] = useState('');
@@ -78,6 +79,33 @@ export default function Contact() {
     e.preventDefault();
     if (!formData.name || !formData.phone) return;
 
+    // 1. Invisible Anti-Bot Honeypot Defense: silently discard if filled
+    if (honeypot) {
+      setIsSubmitting(false);
+      setSubmitted(true);
+      return;
+    }
+
+    // 2. Client-side Rate Limiting: prevent continuous spam flooding
+    if (typeof window !== 'undefined') {
+      const now = Date.now();
+      const lastTs = localStorage.getItem('last_msg_submit_ts');
+      if (lastTs && now - Number(lastTs) < 10000) {
+        alert(
+          language === 'bn'
+            ? 'অনুগ্রহ করে ১০ সেকেন্ড অপেক্ষা করে পুনরায় চেষ্টা করুন।'
+            : 'Please wait 10 seconds before submitting another request.'
+        );
+        return;
+      }
+      localStorage.setItem('last_msg_submit_ts', String(now));
+    }
+
+    // 3. Input Sanitization
+    const cleanName = formData.name.trim().slice(0, 100);
+    const cleanPhone = formData.phone.trim().slice(0, 25);
+    const cleanMsg = formData.msg.trim().slice(0, 1000);
+
     setIsSubmitting(true);
 
     const genderDisplay = formData.gender
@@ -107,11 +135,11 @@ export default function Contact() {
 
       // Save record to backend messages table for admin logs & CSV records
       await supabase.from('messages').insert({
-        name: formData.name,
+        name: cleanName,
         email: '',
-        phone: formData.phone,
+        phone: cleanPhone,
         subject: details ? `Contact Form (${details})` : 'Contact Form WhatsApp Message',
-        message: `${details ? `[${details}]\n` : ''}${formData.msg || 'Appointment Serial / Consultation Request'}`
+        message: `${details ? `[${details}]\n` : ''}${cleanMsg || 'Appointment Serial / Consultation Request'}`
       });
     } catch (err) {
       console.warn("Backend log notice:", err);
@@ -323,6 +351,19 @@ export default function Contact() {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                  {/* Invisible Honeypot Anti-Bot Field */}
+                  <div className="hidden" aria-hidden="true" style={{ display: 'none' }}>
+                    <label htmlFor="website_fax">Fax / Website</label>
+                    <input
+                      type="text"
+                      id="website_fax"
+                      name="website_fax"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      value={honeypot}
+                      onChange={(e) => setHoneypot(e.target.value)}
+                    />
+                  </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold text-ink" htmlFor="name">
                       {language === 'bn' ? 'রোগীর পূর্ণ নাম (আবশ্যক):' : 'Patient Name (Required):'}

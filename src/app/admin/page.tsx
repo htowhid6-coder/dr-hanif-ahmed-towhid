@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
 import { GlassPanel } from '@/components/GlassPanel';
 import { blogData, BlogPost } from '@/locales/blogData';
 import { detailedSymptomsList, SymptomDetail } from '@/data/symptomsData';
@@ -13,6 +12,7 @@ import {
   Search,
   Edit,
   Eye,
+  EyeOff,
   Sparkles,
   CheckCircle2,
   AlertTriangle,
@@ -26,14 +26,43 @@ import {
   HeartPulse,
   ListPlus,
   ShieldAlert,
+  ShieldCheck,
   TestTubes,
   ExternalLink,
   HelpCircle,
-  Thermometer
+  Thermometer,
+  Save,
+  Trash2,
+  Download,
+  Plus,
+  LogOut,
+  User,
+  Building2,
+  BookOpen,
+  MessageSquare,
+  GraduationCap,
+  Sliders,
+  Image as ImageIcon,
+  Star,
+  QrCode,
+  Smartphone,
+  Check,
+  LayoutDashboard,
+  Menu,
+  Bell,
+  TrendingUp,
+  Calendar,
+  Clock,
+  Globe,
+  PhoneCall,
+  Mail,
+  Lock,
+  ArrowRight,
+  Phone,
+  UserCheck
 } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import RichTextEditor from '@/components/RichTextEditor';
-import { Save, Trash2, Download, Plus, LogOut, User, Building2, BookOpen, MessageSquare, GraduationCap, Sliders, Image as ImageIcon, Star, QrCode, Smartphone, Check } from 'lucide-react';
 
 import { HeroSlidesManager } from '@/components/admin/HeroSlidesManager';
 import { SiteSettingsManager } from '@/components/admin/SiteSettingsManager';
@@ -44,14 +73,54 @@ import { MediaManager } from '@/components/admin/MediaManager';
 import { ImagePickerField } from '@/components/admin/ImagePickerField';
 
 export default function AdminDashboard() {
-  const { language } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
-  // Tab State
-  const [activeTab, setActiveTab] = useState<'profile' | 'chamber' | 'hero' | 'about' | 'symptoms' | 'diseases' | 'faqs' | 'blog' | 'reviews' | 'settings' | 'media' | 'messages'>('profile');
+  // Super Admin Password Management States
+  const [currentAuthUser, setCurrentAuthUser] = useState<any>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [passwordChangeStatus, setPasswordChangeStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 3500);
+  };
+
+  // Authenticate & synchronize session with Supabase
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setIsLoggedIn(true);
+        setCurrentAuthUser(session.user);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session?.user);
+      setCurrentAuthUser(session?.user || null);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Tab State (Default to Overview)
+  const [activeTab, setActiveTab] = useState<'overview' | 'profile' | 'chamber' | 'hero' | 'about' | 'symptoms' | 'diseases' | 'faqs' | 'blog' | 'reviews' | 'settings' | 'media' | 'messages'>('overview');
   const [messages, setMessages] = useState<any[]>([]);
 
 
@@ -1072,24 +1141,40 @@ export default function AdminDashboard() {
     e.preventDefault();
     setLoginError('');
 
+    if (lockoutUntil && Date.now() < lockoutUntil) {
+      const waitSeconds = Math.ceil((lockoutUntil - Date.now()) / 1000);
+      setLoginError(
+        language === 'bn'
+          ? `অতিরিক্ত ভুল চেষ্টার কারণে লগইন সাময়িকভাবে লক করা হয়েছে। অনুগ্রহ করে ${waitSeconds} সেকেন্ড পর চেষ্টা করুন।`
+          : `Too many failed attempts. Login locked. Please try again in ${waitSeconds}s.`
+      );
+      return;
+    }
+
     try {
-      // 1. Try to sign in using Supabase Authentication
+      // Authenticate strictly with Supabase Auth
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: username, // treats username as email (needs to be a valid email in Supabase)
+        email: username.trim(),
         password: password,
       });
 
       if (error) {
-        // If Supabase Auth fails, check if using local demo bypass credentials
-        if (username === 'admin' && password === 'password') {
-          setIsLoggedIn(true);
-          console.warn("Signed in using local demo bypass. Database writes will be blocked by RLS policies.");
-          return;
+        const nextAttempts = failedAttempts + 1;
+        setFailedAttempts(nextAttempts);
+        if (nextAttempts >= 5) {
+          setLockoutUntil(Date.now() + 15 * 60 * 1000); // 15 minute lockout
+          throw new Error(
+            language === 'bn'
+              ? '৫ বার ভুল তথ্য প্রদানের কারণে অ্যাকাউন্ট ১৫ মিনিটের জন্য লক করা হয়েছে।'
+              : 'Too many failed login attempts. Portal locked for 15 minutes.'
+          );
         }
         throw error;
       }
 
       if (data?.user) {
+        setFailedAttempts(0);
+        setLockoutUntil(null);
         setIsLoggedIn(true);
       }
     } catch (err: any) {
@@ -1099,6 +1184,72 @@ export default function AdminDashboard() {
           ? `লগইন ব্যর্থ হয়েছে: ${err.message || 'অনুগ্রহ করে সঠিক তথ্য দিন'}`
           : `Login failed: ${err.message || 'Please check credentials'}`
       );
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('Sign out error:', err);
+    }
+    setIsLoggedIn(false);
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordChangeStatus(null);
+
+    if (!newPassword || newPassword.length < 8) {
+      setPasswordChangeStatus({
+        type: 'error',
+        message: language === 'bn' 
+          ? 'পাসওয়ার্ড অত্যন্ত ছোট! নিরাপত্তার স্বার্থে কমপক্ষে ৮ অক্ষরের পাসওয়ার্ড ব্যবহার করুন।' 
+          : 'Password is too short. Please use at least 8 characters.'
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordChangeStatus({
+        type: 'error',
+        message: language === 'bn' 
+          ? 'নতুন পাসওয়ার্ড এবং নিশ্চিতকরণ পাসওয়ার্ড মেলেনি। অনুগ্রহ করে আবার টাইপ করুন।' 
+          : 'The two passwords do not match. Please verify and re-type.'
+      });
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) throw error;
+
+      setPasswordChangeStatus({
+        type: 'success',
+        message: language === 'bn'
+          ? 'আপনার সুপার এডমিন পাসওয়ার্ড সফলভাবে ডাটাবেজে আপডেট হয়েছে! পরবর্তী প্রতিবার লগইনে এই নতুন পাসওয়ার্ডটি কার্যকর হবে।'
+          : 'Your admin password has been successfully updated in the database! It will be required on your next login.'
+      });
+      setNewPassword('');
+      setConfirmPassword('');
+      showToast(
+        language === 'bn' ? 'এডমিন পাসওয়ার্ড সফলভাবে আপডেট হয়েছে!' : 'Admin password updated successfully!',
+        'success'
+      );
+    } catch (err: any) {
+      console.error('Password update error:', err);
+      setPasswordChangeStatus({
+        type: 'error',
+        message: language === 'bn'
+          ? `পাসওয়ার্ড পরিবর্তন ব্যর্থ হয়েছে: ${err.message || 'ডাটাবেজ ত্রুটি'}`
+          : `Failed to update password: ${err.message || 'Database error'}`
+      });
+    } finally {
+      setIsUpdatingPassword(false);
     }
   };
 
@@ -1299,244 +1450,1026 @@ export default function AdminDashboard() {
   };
 
 
+  type NavItem = {
+    id: string;
+    icon: any;
+    bn: string;
+    en: string;
+    badge?: string | number;
+  };
+
+  type NavGroup = {
+    groupTitleEn: string;
+    groupTitleBn: string;
+    items: NavItem[];
+  };
+
+  // Categorized Navigation Groups for Sidebar
+  const navGroups: NavGroup[] = [
+    {
+      groupTitleEn: 'Main Hub',
+      groupTitleBn: 'প্রধান ড্যাশবোর্ড',
+      items: [
+        { id: 'overview', icon: LayoutDashboard, bn: 'ড্যাশবোর্ড সামারি', en: 'Dashboard Overview' },
+        { id: 'profile', icon: User, bn: 'প্রোফাইল ও ডিগ্রি', en: 'Doctor Profile & BMDC' },
+        { id: 'chamber', icon: Building2, bn: 'চেম্বার ও সময়সূচী', en: 'Chamber & Schedule' },
+      ]
+    },
+    {
+      groupTitleEn: 'Clinical CMS',
+      groupTitleBn: 'ক্লিনিক্যাল সেবা ও কনটেন্ট',
+      items: [
+        { id: 'symptoms', icon: Activity, bn: 'লক্ষণ চেকার', en: 'Symptoms Checker' },
+        { id: 'diseases', icon: HeartPulse, bn: 'রোগ ও চিকিৎসা গাইড', en: 'Diseases & Care' },
+        { id: 'faqs', icon: HelpCircle, bn: 'সাধারণ প্রশ্নোত্তর (FAQ)', en: 'Clinical FAQs' },
+        { id: 'blog', icon: BookOpen, bn: 'মেডিকেল ব্লগ ও আর্টিকেল', en: 'Health Articles' },
+      ]
+    },
+    {
+      groupTitleEn: 'Patients & Feedback',
+      groupTitleBn: 'রোগী যোগাযোগ ও রিভিউ',
+      items: [
+        { id: 'messages', icon: MessageSquare, bn: 'রোগীর বার্তা ও সিরিয়াল', en: 'Patient Inquiries', badge: messages.length },
+        { id: 'reviews', icon: Star, bn: 'গুগল রিভিউ ও কিউআর', en: 'Google Reviews & QR', badge: '4.9 ★' },
+      ]
+    },
+    {
+      groupTitleEn: 'Appearance & Media',
+      groupTitleBn: 'ওয়েবসাইট প্রেজেন্টেশন ও মিডিয়া',
+      items: [
+        { id: 'hero', icon: Sliders, bn: 'হিরো স্লাইডার', en: 'Hero Banner Slides' },
+        { id: 'about', icon: GraduationCap, bn: 'About পেজ কনটেন্ট', en: 'About Page Content' },
+        { id: 'settings', icon: Layers, bn: 'সাইট সেটিংস ও ব্যানার', en: 'Global Site Settings' },
+        { id: 'media', icon: ImageIcon, bn: 'মিডিয়া ও ছবি গ্যালারি', en: 'Media Library' },
+      ]
+    },
+  ];
+
+  const getCurrentTabTitle = () => {
+    switch (activeTab) {
+      case 'overview': return language === 'bn' ? 'ড্যাশবোর্ড ওভারভিউ ও রিয়েলটাইম সামারি' : 'Dashboard Overview & Metrics';
+      case 'profile': return language === 'bn' ? '১. প্রোফাইল, ডিগ্রি ও বিএমডিসি বিবরণী' : '1. Profile, Degrees & BMDC';
+      case 'chamber': return language === 'bn' ? '২. চেম্বার তথ্য, সময়সূচী ও গুগল ম্যাপ' : '2. Chamber Details, Timings & Map';
+      case 'symptoms': return language === 'bn' ? '৩. ক্লিনিক্যাল লক্ষণ ও ডায়াগনস্টিক চেকার' : '3. Symptoms & Diagnostics';
+      case 'diseases': return language === 'bn' ? '৪. বিশেষায়িত রোগ ও চিকিৎসাসেবা গাইড' : '4. Diseases & Clinical Care';
+      case 'faqs': return language === 'bn' ? '৫. রোগী পরামর্শ ও সাধারণ প্রশ্নোত্তর (FAQ)' : '5. Clinical FAQs & Advisories';
+      case 'blog': return language === 'bn' ? '৬. মেডিকেল হেলথ ব্লগ ও স্বাস্থ্য প্রবন্ধ' : '6. Medical Health Blog & Articles';
+      case 'messages': return language === 'bn' ? '৭. ওয়েবসাইট থেকে প্রাপ্ত রোগীর বার্তা ও সিরিয়াল' : '7. Patient Leads & Serial Inquiries';
+      case 'reviews': return language === 'bn' ? '৮. গুগল রিভিউ, স্টার রেটিং ও কিউআর স্টেশন' : '8. Google Reviews & QR Station';
+      case 'hero': return language === 'bn' ? '৯. হোমপেজ হিরো ব্যানার ও ডায়নামিক স্লাইডার' : '9. Homepage Hero Carousel & CTAs';
+      case 'about': return language === 'bn' ? '১০. About পেজ, বায়োগ্রাফি ও ক্যারিয়ার টাইমলাইন' : '10. About Page & Biography';
+      case 'settings': return language === 'bn' ? '১১. সাইট সেটিংস, ফোন নম্বর ও ব্রেকার ব্যানার' : '11. Global Site Settings & Contact';
+      case 'media': return language === 'bn' ? '১২. ফটো গ্যালারি ও অফিসিয়াল মিডিয়া অ্যাসেটস' : '12. Media Library & Photos';
+      default: return 'Admin Portal';
+    }
+  };
+
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen flex flex-col antialiased">
-        <Navbar />
-        <main className="flex-1 flex items-center justify-center p-6 bg-slate-50 relative">
-          <div className="fixed inset-0 z-0">
-            <img src="/about-bg.jpeg" className="w-full h-full object-cover opacity-20 blur-sm" alt="bg" />
-          </div>
-          <div className="relative z-10 w-full max-w-sm">
-            <GlassPanel className="p-8">
-              <div className="text-center mb-6">
-                <span className="text-3xl">🔑</span>
-                <h1 className="font-serif text-xl font-bold text-ink mt-2">
-                  {language === 'bn' ? 'অ্যাডমিন লগইন' : 'Doctor Admin Portal'}
-                </h1>
-                <p className="text-[10px] text-muted mt-1">
-                  Demo credentials: <code className="bg-white/50 px-1 rounded">admin</code> / <code className="bg-white/50 px-1 rounded">password</code>
-                </p>
+      <div className="min-h-screen flex flex-col justify-between bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-white relative overflow-hidden antialiased selection:bg-emerald-500 selection:text-white">
+        {/* Subtle background ambient light */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[140px] pointer-events-none" />
+        <div className="absolute bottom-10 right-10 w-96 h-96 bg-teal-500/10 rounded-full blur-[120px] pointer-events-none" />
+
+        {/* Top Navbar Header */}
+        <header className="relative z-10 w-full max-w-6xl mx-auto px-6 py-6 flex items-center justify-between">
+          <Link href="/" className="inline-flex items-center gap-3 text-slate-200 hover:text-white transition-colors group">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform shadow-lg shadow-emerald-500/10">
+              <Stethoscope className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="font-serif font-bold text-base tracking-wide text-white block">Dr. Hanif Ahmed Towhid</span>
+              <span className="text-[11px] text-slate-400 font-mono">Specialist Physician • Official Chamber CMS</span>
+            </div>
+          </Link>
+
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-slate-200 hover:text-white border border-white/10 transition-all backdrop-blur-md shadow-sm"
+          >
+            <span>{language === 'bn' ? 'মূল ওয়েবসাইট' : 'Live Website'}</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </Link>
+        </header>
+
+        {/* Center Login Modal */}
+        <main className="relative z-10 w-full max-w-md mx-auto px-6 py-8 flex flex-col items-center">
+          <div className="w-full bg-slate-900/80 backdrop-blur-2xl border border-white/15 rounded-3xl p-8 shadow-2xl shadow-black/60">
+            {/* Header Badge */}
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-xl shadow-emerald-500/30 mb-3 border border-emerald-400/40">
+                <ShieldCheck className="w-7 h-7" />
               </div>
+              <h1 className="font-serif text-2xl font-bold text-white tracking-tight">
+                {language === 'bn' ? 'ডাক্তার অ্যাডমিন পোর্টাল' : 'Doctor Admin Portal'}
+              </h1>
+              <p className="text-xs text-slate-300 mt-1 font-medium">
+                {language === 'bn' ? 'শুধুমাত্র অনুমোদিত চিকিৎসকদের জন্য সংরক্ষিত' : 'Restricted Clinical Operations & Management'}
+              </p>
+              <div className="inline-flex items-center gap-1.5 mt-2.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[10px] text-emerald-300 font-mono">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>BMDC Reg: A-76300 • 256-Bit SSL</span>
+              </div>
+            </div>
 
-              {loginError && (
-                <div className="p-2 mb-4 text-center text-xs text-error bg-error-container border border-error/20 rounded-lg">
-                  {loginError}
-                </div>
-              )}
+            {loginError && (
+              <div className="p-3 mb-5 text-center text-xs text-red-200 bg-red-950/70 border border-red-500/30 rounded-xl flex items-center gap-2 justify-center animate-in fade-in">
+                <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                <span>{loginError}</span>
+              </div>
+            )}
 
-              <form onSubmit={handleLogin} className="flex flex-col gap-4">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-ink" htmlFor="username">
-                    {language === 'bn' ? 'ইউজারনেম' : 'Username'}
-                  </label>
+            <form onSubmit={handleLogin} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-slate-200 tracking-wide uppercase" htmlFor="username">
+                  {language === 'bn' ? 'অ্যাডমিন ইমেইল' : 'Admin Email'}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Mail className="w-4 h-4" />
+                  </div>
                   <input
-                    type="text"
+                    type="email"
                     id="username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     required
-                    className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
-                    placeholder="e.g. admin@gmail.com"
+                    autoComplete="username"
+                    className="w-full pl-10 pr-3.5 py-3 text-xs rounded-xl border border-white/20 bg-slate-950/70 text-white placeholder-slate-400 focus:bg-slate-950 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/30 focus:outline-none transition-all shadow-inner"
+                    placeholder="htowhid6@gmail.com"
                   />
                 </div>
+              </div>
 
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-ink" htmlFor="password">
-                    {language === 'bn' ? 'পাসওয়ার্ড' : 'Password'}
-                  </label>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-slate-200 tracking-wide uppercase" htmlFor="password">
+                  {language === 'bn' ? 'গোপন পাসওয়ার্ড' : 'Secure Password'}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Lock className="w-4 h-4" />
+                  </div>
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     id="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                    autoComplete="current-password"
+                    className="w-full pl-10 pr-10 py-3 text-xs rounded-xl border border-white/20 bg-slate-950/70 text-white placeholder-slate-400 focus:bg-slate-950 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/30 focus:outline-none transition-all shadow-inner"
                     placeholder="••••••••"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-white transition-colors cursor-pointer"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
+              </div>
 
-                <button
-                  type="submit"
-                  className="mt-2 py-3 bg-accent text-white font-semibold text-xs rounded-xl shadow-md hover:bg-ink transition-colors cursor-pointer text-center"
-                >
-                  {language === 'bn' ? 'লগইন করুন' : 'Sign In'}
-                </button>
-              </form>
-            </GlassPanel>
+              <button
+                type="submit"
+                disabled={!!(lockoutUntil && Date.now() < lockoutUntil)}
+                className="mt-2 w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/25 transition-all transform active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
+              >
+                <span>{language === 'bn' ? 'পোর্টালে প্রবেশ করুন' : 'Authenticate & Enter Portal'}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
+
+            <div className="mt-6 pt-5 border-t border-white/10 text-center flex items-center justify-center gap-2 text-[11px] text-slate-400">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Multi-Factor Secure Session Protection</span>
+            </div>
           </div>
         </main>
-        <Footer />
+
+        {/* Footer */}
+        <footer className="relative z-10 w-full py-5 text-center text-xs text-slate-400 border-t border-white/5">
+          <p>© {new Date().getFullYear()} Dr. Hanif Ahmed Towhid. All rights reserved.</p>
+        </footer>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col antialiased">
-      <Navbar />
+    <div className="min-h-screen bg-slate-50/70 flex text-slate-800 antialiased selection:bg-emerald-600 selection:text-white">
+      {/* Mobile Drawer Backdrop */}
+      {isMobileMenuOpen && (
+        <div
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm lg:hidden transition-opacity"
+        />
+      )}
 
-      <main className="flex-1 max-w-5xl mx-auto py-10 px-6 w-full flex flex-col gap-8">
-        <div className="flex justify-between items-center bg-white/35 p-6 rounded-2xl border border-panel-border backdrop-blur-md">
-          <div>
-            <h1 className="font-serif text-2xl font-bold text-ink">
-              {language === 'bn' ? 'ড্যাশবোর্ড নিয়ন্ত্রণ প্যানেল' : 'Doctor Control Panel'}
-            </h1>
-            <p className="text-[10px] text-muted">
-              {language === 'bn' ? 'আপনার চেম্বার, প্রোফাইল এবং ব্লগ কন্টেন্ট পরিচালনা করুন।' : 'Directly update chamber details, profile timelines, and publish blogs.'}
-            </p>
+      {/* Modern Fixed Sidebar (Desktop) / Slide-Over Drawer (Mobile) */}
+      <aside
+        className={`fixed top-0 bottom-0 left-0 z-50 w-72 bg-white border-r border-slate-200/80 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+          isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+        }`}
+      >
+        {/* Sidebar Brand Header */}
+        <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 shrink-0">
+              <Stethoscope className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="font-serif font-bold text-sm text-slate-900 truncate leading-tight">
+                {language === 'bn' ? 'ডা. হানিফ তৌহিদ' : 'Dr. Hanif Towhid'}
+              </h2>
+              <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                {language === 'bn' ? 'মেডিসিন বিশেষজ্ঞ' : 'Medicine Specialist'}
+              </span>
+            </div>
           </div>
           <button
-            onClick={() => setIsLoggedIn(false)}
-            className="px-3.5 py-1.5 rounded-lg border border-red-200 bg-red-50 text-red-600 font-semibold text-xs hover:bg-red-100 cursor-pointer"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
           >
-            {language === 'bn' ? 'সাইন আউট' : 'Sign Out'}
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex border-b border-line gap-1.5 flex-wrap">
-          {([
-            { id: 'profile', bn: '১. প্রোফাইল ও ডিগ্রি', en: '1. Profile' },
-            { id: 'chamber', bn: '২. চেম্বার ও ম্যাপ', en: '2. Chamber' },
-            { id: 'hero', bn: '৩. হিরো স্লাইডার', en: '3. Hero Slides' },
-            { id: 'about', bn: '৪. About পেজ', en: '4. About Page' },
-            { id: 'symptoms', bn: '৫. লক্ষণ চেকার', en: '5. Symptoms' },
-            { id: 'diseases', bn: '৬. রোগ ও চিকিৎসা', en: '6. Diseases' },
-            { id: 'faqs', bn: '৭. FAQ ও প্রশ্নোত্তর', en: '7. FAQs' },
-            { id: 'blog', bn: '৮. হেলথ ব্লগ', en: '8. Blog Posts' },
-            { id: 'reviews', bn: '৯. পেশেন্ট রিভিউ', en: '9. Reviews' },
-            { id: 'settings', bn: '১০. সাইট সেটিংস ও ব্যানার', en: '10. Site Settings' },
-            { id: 'media', bn: '১১. মিডিয়া ও ছবি', en: '11. Media Library' },
-            { id: 'messages', bn: '১২. রোগীর বার্তা', en: '12. Messages' },
-          ] as const).map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                activeTab === tab.id
-                  ? 'bg-accent text-white shadow-sm ring-2 ring-accent/20'
-                  : 'bg-white/50 text-muted hover:bg-white hover:text-ink border border-panel-border/50'
-              }`}
-            >
-              {language === 'bn' ? tab.bn : tab.en}
-            </button>
+        {/* Sidebar Navigation Links (Categorized) */}
+        <div className="flex-1 overflow-y-auto px-3.5 py-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-200">
+          {navGroups.map((group, gIdx) => (
+            <div key={gIdx} className="space-y-1">
+              <div className="px-3 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                {language === 'bn' ? group.groupTitleBn : group.groupTitleEn}
+              </div>
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveTab(item.id as any);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer group ${
+                      isActive
+                        ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 font-bold'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-emerald-600'}`} />
+                      <span className="truncate">{language === 'bn' ? item.bn : item.en}</span>
+                    </div>
+                    {item.badge !== undefined && item.badge !== null && (
+                      <span
+                        className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold shrink-0 ${
+                          isActive
+                            ? 'bg-white/20 text-white'
+                            : 'bg-emerald-100 text-emerald-800'
+                        }`}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           ))}
         </div>
 
+        {/* Sidebar Footer User Card */}
+        <div className="p-3.5 border-t border-slate-100 bg-slate-50/70 m-3 rounded-2xl border border-slate-200/50">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-800 flex items-center justify-center font-bold text-xs shrink-0">
+                DH
+              </div>
+              <div className="min-w-0">
+                <span className="text-xs font-bold text-slate-800 block truncate">Dr. Hanif Towhid</span>
+                <span className="text-[10px] text-slate-500 font-mono block truncate">BMDC: A-76300</span>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="p-1.5 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+              title={language === 'bn' ? 'সাইন আউট' : 'Sign Out'}
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </aside>
 
-        {/* TAB 1: EDIT PROFILE */}
-        {activeTab === 'profile' && (
-          <GlassPanel className="p-6 md:p-8 animate-in fade-in duration-300">
-            <form onSubmit={saveProfile} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-ink">Name (English)</label>
-                <input
-                  type="text"
-                  value={profile.nameEn}
-                  onChange={(e) => setProfile({ ...profile, nameEn: e.target.value })}
-                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
-                  placeholder="e.g. Dr. Hanif Ahmed Towhid"
-                />
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col lg:pl-72 min-w-0">
+        {/* Top Header Bar */}
+        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="lg:hidden p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-2 text-xs font-medium text-slate-500 truncate">
+              <span className="hidden sm:inline font-bold text-slate-800">
+                {language === 'bn' ? 'অ্যাডমিন পোর্টাল' : 'Admin Portal'}
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-400 hidden sm:inline shrink-0" />
+              <span className="text-emerald-700 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200/50 truncate">
+                {getCurrentTabTitle()}
+              </span>
+            </div>
+          </div>
+
+          {/* Quick Header Actions */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* View Live Website Button */}
+            <Link
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors cursor-pointer"
+            >
+              <Globe className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="hidden md:inline">{language === 'bn' ? 'ওয়েবসাইট দেখুন' : 'Live Website'}</span>
+              <ArrowUpRight className="w-3 h-3 text-slate-400" />
+            </Link>
+
+            {/* Language Switcher */}
+            <button
+              onClick={() => setLanguage(language === 'bn' ? 'en' : 'bn')}
+              className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 transition-colors cursor-pointer"
+              title="Toggle Language"
+            >
+              {language === 'bn' ? '🇺🇸 EN' : '🇧🇩 বাং'}
+            </button>
+
+            {/* Inquiries Notification Pill */}
+            <button
+              onClick={() => setActiveTab('messages')}
+              className="relative p-2 rounded-xl text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 transition-colors cursor-pointer"
+              title={language === 'bn' ? 'রোগীর বার্তা দেখুন' : 'Patient Messages'}
+            >
+              <Bell className="w-4 h-4" />
+              {messages.length > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              )}
+            </button>
+
+            {/* Sign Out Button */}
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 font-bold text-xs transition-colors cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{language === 'bn' ? 'লগআউট' : 'Sign Out'}</span>
+            </button>
+          </div>
+        </header>
+
+        {/* Dashboard Main Container */}
+        <main className="p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto space-y-8 flex-1">
+          {/* TAB 0: EXECUTIVE MEDICAL OVERVIEW */}
+          {activeTab === 'overview' && (
+            <div className="space-y-6 md:space-y-8 animate-in fade-in duration-300">
+              {/* Top Doctor Executive Banner */}
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 p-6 md:p-8 text-white shadow-xl shadow-slate-900/10 border border-slate-700/60">
+                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-80 h-80 rounded-full bg-emerald-500/15 blur-3xl pointer-events-none" />
+                <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+                  <div className="flex items-start sm:items-center gap-4">
+                    <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 p-0.5 shadow-lg shadow-emerald-500/20 shrink-0">
+                      <img
+                        src="/Hero shot_At dr.hanif towhid.png"
+                        alt="Dr. Hanif Ahmed Towhid"
+                        className="w-full h-full object-cover object-top rounded-2xl bg-slate-900"
+                      />
+                      <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 border-2 border-slate-900 flex items-center justify-center text-white" title="Verified Specialist">
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <h2 className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-white">
+                          {language === 'bn' ? 'ডা. হানিফ আহমেদ তৌহিদ' : 'Dr. Hanif Ahmed Towhid'}
+                        </h2>
+                        <span className="text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                          BMDC: A-76300
+                        </span>
+                      </div>
+                      <p className="text-xs sm:text-sm text-slate-300 font-medium">
+                        {language === 'bn'
+                          ? 'মেডিসিন বিশেষজ্ঞ, মেডিসিন বিভাগ • সহযোগী অধ্যাপক ও কনসালট্যান্ট ফিজিশিয়ান'
+                          : 'Medicine Specialist, Dept. of Medicine • Associate Professor & Consultant'}
+                      </p>
+                      <p className="text-xs text-emerald-400 flex items-center gap-1.5 mt-2 font-semibold">
+                        <Building2 className="w-3.5 h-3.5" />
+                        <span>Popular Medical Center Ltd. (Room 605, 6th Floor), New Medical Rd, Sylhet</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                    <button
+                      onClick={() => setActiveTab('messages')}
+                      className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-md transition-all cursor-pointer"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      <span>{language === 'bn' ? 'রোগীর বার্তা দেখুন' : 'View Inquiries'}</span>
+                      {messages.length > 0 && (
+                        <span className="bg-slate-950 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+                          {messages.length}
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('chamber')}
+                      className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/20 transition-all cursor-pointer"
+                    >
+                      <Clock className="w-4 h-4 text-emerald-400" />
+                      <span>{language === 'bn' ? 'চেম্বার সময়সূচী' : 'Chamber Hours'}</span>
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-ink">নাম (বাংলা)</label>
-                <input
-                  type="text"
-                  value={profile.nameBn}
-                  onChange={(e) => setProfile({ ...profile, nameBn: e.target.value })}
-                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
-                  placeholder="যেমন: ডা. হানিফ আহমেদ তৌহিদ"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-ink">Designation (English)</label>
-                <input
-                  type="text"
-                  value={profile.designationEn}
-                  onChange={(e) => setProfile({ ...profile, designationEn: e.target.value })}
-                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
-                  placeholder="e.g. Medicine Specialist, Department of Medicine"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-ink">পদবী (বাংলা)</label>
-                <input
-                  type="text"
-                  value={profile.designationBn}
-                  onChange={(e) => setProfile({ ...profile, designationBn: e.target.value })}
-                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
-                  placeholder="যেমন: মেডিসিন বিশেষজ্ঞ, মেডিসিন বিভাগ"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-ink">BMDC Registration No</label>
-                <input
-                  type="text"
-                  value={profile.bmdc}
-                  onChange={(e) => setProfile({ ...profile, bmdc: e.target.value })}
-                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
-                  placeholder="e.g. A-76300"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-ink">Cell Phone</label>
-                <input
-                  type="text"
-                  value={profile.phone}
-                  onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
-                  placeholder="e.g. 01721291297"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5 md:col-span-2">
-                <label className="text-xs font-bold text-ink">Email</label>
-                <input
-                  type="email"
-                  value={profile.email}
-                  onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
-                  placeholder="e.g. htowhid6@gmail.com"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-ink">Short Bio (English)</label>
-                <textarea
-                  value={profile.bioEn}
-                  onChange={(e) => setProfile({ ...profile, bioEn: e.target.value })}
-                  rows={4}
-                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
-                  placeholder="Enter biography description in English..."
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-ink">সংক্ষিপ্ত পরিচিতি (বাংলা)</label>
-                <textarea
-                  value={profile.bioBn}
-                  onChange={(e) => setProfile({ ...profile, bioBn: e.target.value })}
-                  rows={4}
-                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
-                  placeholder="বাংলায় পরিচিতি বিবরণ লিখুন..."
-                />
-              </div>
-
-              <div className="md:col-span-2 flex justify-end">
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 bg-accent hover:bg-ink text-white font-semibold text-xs rounded-xl shadow-md cursor-pointer transition-colors"
+              {/* 4 Metric Statistic Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Card 1: Messages / Leads */}
+                <div
+                  onClick={() => setActiveTab('messages')}
+                  className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer group"
                 >
-                  💾 Save Profile Changes
-                </button>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      {language === 'bn' ? 'রোগীর অনুসন্ধান ও বার্তা' : 'Patient Leads'}
+                    </span>
+                    <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                      <MessageSquare className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-bold font-serif text-slate-900">{messages.length}</span>
+                    <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                      {language === 'bn' ? 'সরাসরি লিড' : 'Website Leads'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-2 truncate">
+                    {language === 'bn' ? 'হোয়াটসঅ্যাপ ও সিরিয়াল অনুসন্ধান' : 'Appointments & Inquiries'}
+                  </p>
+                </div>
+
+                {/* Card 2: Google Reviews */}
+                <div
+                  onClick={() => setActiveTab('reviews')}
+                  className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md hover:border-amber-300 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      {language === 'bn' ? 'গুগল রিভিউ স্কোর' : 'Google Rating'}
+                    </span>
+                    <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-500 group-hover:text-white transition-colors">
+                      <Star className="w-4 h-4 fill-current" />
+                    </div>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-bold font-serif text-slate-900">4.9 ★</span>
+                    <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
+                      {adminReviews.length > 0 ? `${adminReviews.length}+` : '17+'} {language === 'bn' ? 'রিভিউ' : 'Reviews'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-2 truncate">
+                    {language === 'bn' ? 'রোগীদের সত্য ও ভেরিফাইড রিভিউ' : 'Authentic Google Reviews'}
+                  </p>
+                </div>
+
+                {/* Card 3: Clinical Symptoms */}
+                <div
+                  onClick={() => setActiveTab('symptoms')}
+                  className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      {language === 'bn' ? 'লক্ষণ ও ডায়াগনস্টিক' : 'Symptom Guides'}
+                    </span>
+                    <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                      <Activity className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-bold font-serif text-slate-900">{adminSymptoms.length}</span>
+                    <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
+                      {language === 'bn' ? 'সক্রিয় রোগ লক্ষণ' : 'Conditions'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-2 truncate">
+                    {language === 'bn' ? 'রেড ফ্ল্যাগ ও ইনভেস্টিগেশন নির্দেশিকা' : 'Red Flags & Management'}
+                  </p>
+                </div>
+
+                {/* Card 4: Health Articles */}
+                <div
+                  onClick={() => setActiveTab('blog')}
+                  className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md hover:border-purple-300 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      {language === 'bn' ? 'স্বাস্থ্য ব্লগ ও প্রবন্ধ' : 'Health Articles'}
+                    </span>
+                    <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                      <BookOpen className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-bold font-serif text-slate-900">{blogs.length}</span>
+                    <span className="text-xs font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full">
+                      {language === 'bn' ? 'প্রকাশিত প্রবন্ধ' : 'Published'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-2 truncate">
+                    {language === 'bn' ? 'স্বাস্থ্য সচেতনতামূলক মেডিকেল গাইড' : 'Live Patient Advisories'}
+                  </p>
+                </div>
               </div>
-            </form>
-          </GlassPanel>
+
+              {/* Quick Action Navigation Grid (6 Cards) */}
+              <div className="space-y-3">
+                <h3 className="font-serif text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-emerald-600" />
+                  <span>{language === 'bn' ? 'কুইক অ্যাকশন সেন্টার' : 'Quick Operations Hub'}</span>
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                  {[
+                    {
+                      tab: 'messages',
+                      icon: MessageSquare,
+                      titleBn: 'রোগীর বার্তা ও সিরিয়াল ম্যানেজ করুন',
+                      titleEn: 'Patient Inquiries & Leads',
+                      descBn: 'ওয়েবসাইট থেকে আসা মেসেজ পড়ুন, কল দিন বা এক্সেলে নামান।',
+                      descEn: 'Review patient leads, click to call, or export CSV log.',
+                    },
+                    {
+                      tab: 'chamber',
+                      icon: Building2,
+                      titleBn: 'চেম্বার শিডিউল ও ভিজিটিং আওয়ার',
+                      titleEn: 'Chamber Schedule & Address',
+                      descBn: 'পপুলার সেন্টারের রুম নম্বর, সময় ও সিরিয়াল নম্বর পরিবর্তন করুন।',
+                      descEn: 'Update Popular Medical Center timings & appointment phone.',
+                    },
+                    {
+                      tab: 'reviews',
+                      icon: Star,
+                      titleBn: 'গুগল রিভিউ ও কিউআর স্টেশন',
+                      titleEn: 'Google Reviews & QR Station',
+                      descBn: 'রোগীদের জন্য কিউআর কোড ডাউনলোড করুন ও গুগল রিভিউ লিংক দিন।',
+                      descEn: 'Download chamber review QR code and update Google link.',
+                    },
+                    {
+                      tab: 'symptoms',
+                      icon: Activity,
+                      titleBn: 'ক্লিনিক্যাল লক্ষণ ও ইনভেস্টিগেশন',
+                      titleEn: 'Symptom Checker & Diagnostics',
+                      descBn: 'লক্ষণ তালিকা এডিট করুন, কারণ ও বিপদচিহ্ন আপডেট করুন।',
+                      descEn: 'Manage clinical symptoms, red flags, and investigations.',
+                    },
+                    {
+                      tab: 'blog',
+                      icon: BookOpen,
+                      titleBn: 'নতুন মেডিকেল হেলথ আর্টিকেল লিখুন',
+                      titleEn: 'Publish Medical Health Blog',
+                      descBn: 'স্বাস্থ্য সচেতনতামূলক নতুন প্রবন্ধ লিখুন ও ছবি যুক্ত করুন।',
+                      descEn: 'Write and publish medical health advice and articles.',
+                    },
+                    {
+                      tab: 'hero',
+                      icon: Sliders,
+                      titleBn: 'হোমপেজ হিরো ব্যানার ও স্লাইডার',
+                      titleEn: 'Hero Banners & Slider',
+                      descBn: 'ওয়েবসাইটের প্রধান ব্যানার, স্লোগান ও ডাক্তারের ছবি সাজান।',
+                      descEn: 'Customize homepage hero carousel, CTAs, and banners.',
+                    },
+                  ].map((action, aIdx) => {
+                    const Icon = action.icon;
+                    return (
+                      <button
+                        key={aIdx}
+                        onClick={() => setActiveTab(action.tab as any)}
+                        className="p-4 rounded-2xl bg-white border border-slate-200/80 hover:border-emerald-300 hover:shadow-md transition-all text-left flex items-start gap-3.5 group cursor-pointer"
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-600 group-hover:bg-emerald-600 group-hover:text-white transition-all shrink-0">
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-xs font-bold text-slate-800 group-hover:text-emerald-700 transition-colors truncate">
+                              {language === 'bn' ? action.titleBn : action.titleEn}
+                            </h4>
+                            <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all shrink-0" />
+                          </div>
+                          <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                            {language === 'bn' ? action.descBn : action.descEn}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Recent Patient Leads Preview */}
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                      <MessageSquare className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="font-serif text-base font-bold text-slate-900 leading-tight">
+                        {language === 'bn' ? 'সম্প্রতি প্রাপ্ত রোগীর বার্তা' : 'Recent Patient Inquiries'}
+                      </h3>
+                      <p className="text-[10px] text-slate-500">
+                        {language === 'bn' ? 'ওয়েবসাইট কন্টাক্ট ফর্ম থেকে প্রাপ্ত সাম্প্রতিক অনুসন্ধান' : 'Latest submissions from website contact form'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={exportToExcel}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-colors cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>{language === 'bn' ? 'এক্সেল ডাউনলোড' : 'Export CSV'}</span>
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('messages')}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs transition-colors cursor-pointer"
+                    >
+                      <span>{language === 'bn' ? 'সকল বার্তা দেখুন' : 'View All'}</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {messages.length === 0 ? (
+                  <div className="py-12 text-center text-slate-400 text-xs">
+                    <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                    <p>{language === 'bn' ? 'এখনও পর্যন্ত কোনো রোগীর বার্তা আসেনি।' : 'No patient inquiries received yet.'}</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100">
+                    {messages.slice(0, 4).map((msg) => (
+                      <div key={msg.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/60 rounded-xl px-2.5 transition-colors">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-xs font-bold text-slate-900">{msg.name}</h4>
+                            <span className="text-[11px] font-mono text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md">
+                              {msg.phone}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-600 mt-1 line-clamp-1">
+                            {msg.message || msg.subject || 'Patient Consultation Request'}
+                          </p>
+                          <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">
+                            {msg.created_at ? new Date(msg.created_at).toLocaleString() : ''}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          {msg.phone && (
+                            <a
+                              href={`tel:${msg.phone.replace(/[^0-9+]/g, '')}`}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-[11px] font-semibold text-slate-700"
+                            >
+                              <Phone className="w-3 h-3 text-emerald-600" />
+                              <span>{language === 'bn' ? 'কল' : 'Call'}</span>
+                            </a>
+                          )}
+                          {msg.phone && (
+                            <a
+                              href={`https://wa.me/${msg.phone.replace(/[^0-9]/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-[11px] font-semibold text-white shadow-xs"
+                            >
+                              <MessageSquare className="w-3 h-3" />
+                              <span>{language === 'bn' ? 'হোয়াটসঅ্যাপ' : 'WhatsApp'}</span>
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+
+        {/* TAB 1: EDIT PROFILE & CREDENTIALS */}
+        {activeTab === 'profile' && (
+          <div className="space-y-8 animate-in fade-in duration-300">
+            <GlassPanel className="p-6 md:p-8">
+              <div className="flex items-center gap-3 pb-6 mb-6 border-b border-slate-100">
+                <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent">
+                  <User className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-ink">
+                    {language === 'bn' ? 'ডাক্তারের পাবলিক প্রোফাইল তথ্য' : 'Doctor Public Profile'}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    {language === 'bn' ? 'ওয়েবসাইটে প্রদর্শিত নাম, পদবী, বিএমডিসি ও সংক্ষিপ্ত পরিচিতি আপডেট করুন' : 'Update public credentials, designation, BMDC registry & bio'}
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={saveProfile} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-ink">Name (English)</label>
+                  <input
+                    type="text"
+                    value={profile.nameEn}
+                    onChange={(e) => setProfile({ ...profile, nameEn: e.target.value })}
+                    className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                    placeholder="e.g. Dr. Hanif Ahmed Towhid"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-ink">নাম (বাংলা)</label>
+                  <input
+                    type="text"
+                    value={profile.nameBn}
+                    onChange={(e) => setProfile({ ...profile, nameBn: e.target.value })}
+                    className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                    placeholder="যেমন: ডা. হানিফ আহমেদ তৌহিদ"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-ink">Designation (English)</label>
+                  <input
+                    type="text"
+                    value={profile.designationEn}
+                    onChange={(e) => setProfile({ ...profile, designationEn: e.target.value })}
+                    className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                    placeholder="e.g. Medicine Specialist, Department of Medicine"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-ink">পদবী (বাংলা)</label>
+                  <input
+                    type="text"
+                    value={profile.designationBn}
+                    onChange={(e) => setProfile({ ...profile, designationBn: e.target.value })}
+                    className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                    placeholder="যেমন: মেডিসিন বিশেষজ্ঞ, মেডিসিন বিভাগ"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-ink">BMDC Registration No</label>
+                  <input
+                    type="text"
+                    value={profile.bmdc}
+                    onChange={(e) => setProfile({ ...profile, bmdc: e.target.value })}
+                    className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                    placeholder="e.g. A-76300"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-ink">Cell Phone</label>
+                  <input
+                    type="text"
+                    value={profile.phone}
+                    onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                    className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                    placeholder="e.g. 01721291297"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5 md:col-span-2">
+                  <label className="text-xs font-bold text-ink">Email</label>
+                  <input
+                    type="email"
+                    value={profile.email}
+                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                    className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                    placeholder="e.g. htowhid6@gmail.com"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-ink">Short Bio (English)</label>
+                  <textarea
+                    value={profile.bioEn}
+                    onChange={(e) => setProfile({ ...profile, bioEn: e.target.value })}
+                    rows={4}
+                    className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                    placeholder="Enter biography description in English..."
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-ink">সংক্ষিপ্ত পরিচিতি (বাংলা)</label>
+                  <textarea
+                    value={profile.bioBn}
+                    onChange={(e) => setProfile({ ...profile, bioBn: e.target.value })}
+                    rows={4}
+                    className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white/95 focus:bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                    placeholder="বাংলায় পরিচিতি বিবরণ লিখুন..."
+                  />
+                </div>
+
+                <div className="md:col-span-2 flex justify-end">
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 bg-accent hover:bg-ink text-white font-semibold text-xs rounded-xl shadow-md cursor-pointer transition-colors"
+                  >
+                    💾 Save Profile Changes
+                  </button>
+                </div>
+              </form>
+            </GlassPanel>
+
+            {/* SUPER ADMIN CREDENTIALS & SECURITY MANAGEMENT */}
+            <GlassPanel className="p-6 md:p-8 border border-emerald-500/20 bg-gradient-to-br from-white via-slate-50/50 to-emerald-50/20 shadow-xl rounded-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 mb-6 border-b border-slate-100 gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 shadow-sm shrink-0">
+                    <ShieldCheck className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-bold text-ink">
+                        {language === 'bn' ? 'সুপার এডমিন সিকিউরিটি ও পাসওয়ার্ড পরিচালনা' : 'Super Admin Credentials & Security'}
+                      </h3>
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        {language === 'bn' ? 'ডাটাবেজে সক্রিয় ও সুরক্ষিত' : 'Verified Live in Database'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {language === 'bn'
+                        ? 'আপনার মাস্টার লগইন ক্রেডেনশিয়াল এবং ডাটাবেজ অথেনটিকেশন নিয়ন্ত্রণ করুন।'
+                        : 'Manage master authentication credentials and Supabase database authorization.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Active Admin Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="p-4 rounded-xl bg-white border border-slate-200/80 shadow-xs">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                    {language === 'bn' ? 'রেজিস্টার্ড এডমিন ইমেইল' : 'Admin Auth Email'}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-accent shrink-0" />
+                    <span className="text-xs font-bold text-ink truncate">
+                      {currentAuthUser?.email || profile.email || 'htowhid6@gmail.com'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white border border-slate-200/80 shadow-xs">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                    {language === 'bn' ? 'রোল ও পারমিশন' : 'Role & Permissions'}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <UserCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span className="text-xs font-bold text-ink">
+                      Super Administrator
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white border border-slate-200/80 shadow-xs">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                    {language === 'bn' ? 'ডাটাবেজ প্রোটেকশন' : 'Database RLS Policy'}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span className="text-xs font-bold text-emerald-700">
+                      Row Level Security (Active)
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Password Change Sub-form */}
+              <form onSubmit={handleUpdatePassword} className="bg-white/90 p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-slate-700" />
+                    <h4 className="text-xs font-bold text-ink uppercase tracking-wide">
+                      {language === 'bn' ? 'মাস্টার পাসওয়ার্ড পরিবর্তন করুন' : 'Change Master Password'}
+                    </h4>
+                  </div>
+                  <span className="text-[11px] text-muted-foreground">
+                    {language === 'bn' ? 'ন্যূনতম ৮ অক্ষর' : 'Min. 8 characters'}
+                  </span>
+                </div>
+
+                {passwordChangeStatus && (
+                  <div
+                    className={`p-3.5 rounded-xl text-xs font-medium flex items-start gap-2.5 ${
+                      passwordChangeStatus.type === 'success'
+                        ? 'bg-emerald-50 text-emerald-900 border border-emerald-200'
+                        : 'bg-rose-50 text-rose-900 border border-rose-200'
+                    }`}
+                  >
+                    {passwordChangeStatus.type === 'success' ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    )}
+                    <span>{passwordChangeStatus.message}</span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-ink">
+                      {language === 'bn' ? 'নতুন পাসওয়ার্ড' : 'New Password'}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showNewPassword ? 'text' : 'password'}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="••••••••••••"
+                        required
+                        minLength={8}
+                        className="w-full p-2.5 pr-10 text-xs rounded-xl border border-slate-300 bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      >
+                        {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-ink">
+                      {language === 'bn' ? 'নতুন পাসওয়ার্ড নিশ্চিত করুন' : 'Confirm New Password'}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••••••"
+                        required
+                        minLength={8}
+                        className="w-full p-2.5 pr-10 text-xs rounded-xl border border-slate-300 bg-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all shadow-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-2 gap-3">
+                  <p className="text-[11px] text-muted-foreground">
+                    {language === 'bn'
+                      ? 'নতুন পাসওয়ার্ড সেভ করার সাথে সাথেই ডাটাবেজে এনক্রিপ্ট হয়ে সক্রিয় হয়ে যাবে।'
+                      : 'Updated password is encrypted directly via Supabase Auth cryptographic hashing.'}
+                  </p>
+                  <button
+                    type="submit"
+                    disabled={isUpdatingPassword}
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-ink hover:bg-slate-800 disabled:opacity-50 text-white font-semibold text-xs rounded-xl shadow-md cursor-pointer transition-all"
+                  >
+                    {isUpdatingPassword ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Lock className="w-3.5 h-3.5 text-emerald-400" />
+                    )}
+                    {isUpdatingPassword
+                      ? (language === 'bn' ? 'আপডেট হচ্ছে...' : 'Updating...')
+                      : (language === 'bn' ? 'পাসওয়ার্ড আপডেট করুন' : 'Update Password')}
+                  </button>
+                </div>
+              </form>
+            </GlassPanel>
+          </div>
         )}
 
         {/* TAB 2: CHAMBER INFO */}
@@ -3434,8 +4367,29 @@ export default function AdminDashboard() {
           </GlassPanel>
         )}
       </main>
+      </div>
 
-      <Footer />
+      {/* Floating Modern Toast Notification */}
+      {toast && (
+        <div
+          className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl border animate-in slide-in-from-bottom-5 duration-300 backdrop-blur-md ${
+            toast.type === 'error'
+              ? 'bg-red-950/95 text-white border-red-500/50 shadow-red-900/30'
+              : toast.type === 'info'
+              ? 'bg-slate-900/95 text-white border-slate-700 shadow-black/30'
+              : 'bg-emerald-950/95 text-white border-emerald-500/50 shadow-emerald-950/30'
+          }`}
+        >
+          {toast.type === 'error' ? (
+            <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
+          ) : toast.type === 'info' ? (
+            <Sparkles className="w-5 h-5 text-teal-400 shrink-0" />
+          ) : (
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+          )}
+          <span className="text-xs font-semibold">{toast.message}</span>
+        </div>
+      )}
     </div>
   );
 }
