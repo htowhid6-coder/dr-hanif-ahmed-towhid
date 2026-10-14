@@ -32,8 +32,13 @@ export default function BlogPostDetailClient() {
   const { language } = useLanguage();
   
   const slug = params.slug as string;
-  const [post, setPost] = useState<BlogPost | null>(null);
-  const [loading, setLoading] = useState(true);
+  const initialPost = React.useMemo(() => {
+    if (!slug) return null;
+    const decoded = decodeURIComponent(slug).toLowerCase().trim();
+    return blogData.find(p => p.slug === decoded || p.slug.toLowerCase().replace(/-+/g, '-') === decoded.replace(/-+/g, '-')) || null;
+  }, [slug]);
+  const [post, setPost] = useState<BlogPost | null>(initialPost);
+  const [loading, setLoading] = useState(!initialPost);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {

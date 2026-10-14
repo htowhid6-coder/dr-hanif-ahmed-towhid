@@ -30,8 +30,8 @@ import {
 
 export default function Blog() {
   const { language } = useLanguage();
-  const [blogs, setBlogs] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [blogs, setBlogs] = useState<BlogPost[]>(() => blogData.filter(p => p.lang === 'bn'));
+  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [heroInView, setHeroInView] = useState(false);
