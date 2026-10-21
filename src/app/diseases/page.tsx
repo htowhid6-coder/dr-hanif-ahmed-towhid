@@ -6,6 +6,7 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { GlassPanel } from '@/components/GlassPanel';
 import { diseaseData, Disease } from '@/locales/diseaseData';
+import { defaultSiteSettings, SiteSettings } from '@/data/siteSettingsData';
 import Link from 'next/link';
 import { Activity, ArrowRight, Sparkles, Search, Stethoscope } from 'lucide-react';
 import supabase from '@/lib/supabase';
@@ -13,7 +14,42 @@ import supabase from '@/lib/supabase';
 export default function DiseasesPage() {
   const { language } = useLanguage();
   const [diseases, setDiseases] = useState<Disease[]>(diseaseData);
+  const [settings, setSettings] = useState<SiteSettings>(defaultSiteSettings);
   const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      // 1. LocalStorage
+      if (typeof window !== 'undefined') {
+        const localSettings = localStorage.getItem('site_settings_data');
+        if (localSettings) {
+          try {
+            setSettings(prev => ({ ...prev, ...JSON.parse(localSettings) }));
+          } catch (e) {}
+        }
+      }
+
+      // 2. Supabase
+      try {
+        const { data: setRes } = await supabase
+          .from('site_settings')
+          .select('*')
+          .eq('id', 'global_settings')
+          .maybeSingle();
+
+        if (setRes?.data) {
+          setSettings(prev => ({ ...prev, ...setRes.data }));
+        }
+      } catch (e) {}
+    };
+
+    loadSettings();
+
+    const handleSettingsUpdate = () => loadSettings();
+    window.addEventListener('site_settings_updated', handleSettingsUpdate);
+
+    return () => window.removeEventListener('site_settings_updated', handleSettingsUpdate);
+  }, []);
 
   useEffect(() => {
     const loadDiseases = async () => {
@@ -95,8 +131,8 @@ export default function DiseasesPage() {
       <section className="relative z-10 w-full bg-slate-950 border-b border-line overflow-hidden">
         <div className="relative w-full h-[320px] sm:h-[420px] md:h-[500px] lg:h-[560px] bg-slate-900 overflow-hidden">
           <img
-            src="/diseases-cover-banner.png"
-            alt={language === 'bn' ? 'ডা. হানিফ তৌহিদ - চিকিৎসাধীন রোগসমূহ' : 'Dr. Hanif Towhid Diseases We Treat'}
+            src={settings.diseasesHeroImage || '/diseases-cover-banner.png'}
+            alt={language === 'bn' ? (settings.diseasesHeroTitleBn || 'ডা. হানিফ তৌহিদ - চিকিৎসাধীন রোগসমূহ') : (settings.diseasesHeroTitleEn || 'Dr. Hanif Towhid Diseases We Treat')}
             className="w-full h-full object-cover object-center brightness-95"
           />
           {/* Subtle Gradient Overlays for readability */}
@@ -109,20 +145,20 @@ export default function DiseasesPage() {
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-950/75 border border-white/30 backdrop-blur-md w-fit shadow-md">
                 <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
                 <span className="text-[11px] font-bold text-white uppercase tracking-wider">
-                  {language === 'bn' ? 'চিকিৎসাধীন রোগসমূহ' : 'Diseases We Treat'}
+                  {language === 'bn' ? (settings.diseasesHeroBadgeBn || 'চিকিৎসাধীন রোগসমূহ') : (settings.diseasesHeroBadgeEn || 'Diseases We Treat')}
                 </span>
               </div>
 
               <h1 className="font-serif text-2xl sm:text-4xl md:text-5xl font-bold text-white leading-tight drop-shadow-lg">
                 {language === 'bn'
-                  ? 'ডায়াবেটিস, হরমোনজনিত ও জটিল শারীরিক সমস্যা'
-                  : 'Advanced Care for Diabetes, Hormones & Chronic Illnesses'}
+                  ? (settings.diseasesHeroTitleBn || 'ডায়াবেটিস, হরমোনজনিত ও জটিল শারীরিক সমস্যা')
+                  : (settings.diseasesHeroTitleEn || 'Advanced Care for Diabetes, Hormones & Chronic Illnesses')}
               </h1>
 
               <p className="text-xs sm:text-sm md:text-base text-slate-200 leading-relaxed drop-shadow max-w-2xl hidden sm:block">
                 {language === 'bn'
-                  ? 'সিলেটে চিকিৎসাধীন প্রধান প্রধান রোগের বিজ্ঞানসম্মত ও আধুনিক ক্লিনিকাল চিকিৎসা বিশ্লেষণ।'
-                  : 'Evidence-based clinical care and targeted medical management protocols for chronic metabolic, cardiovascular, and systemic diseases by Dr. Hanif Towhid.'}
+                  ? (settings.diseasesHeroSubtitleBn || 'সিলেটে চিকিৎসাধীন প্রধান প্রধান রোগের বিজ্ঞানসম্মত ও আধুনিক ক্লিনিকাল চিকিৎসা বিশ্লেষণ।')
+                  : (settings.diseasesHeroSubtitleEn || 'Evidence-based clinical care and targeted medical management protocols for chronic metabolic, cardiovascular, and systemic diseases by Dr. Hanif Towhid.')}
               </p>
             </div>
           </div>

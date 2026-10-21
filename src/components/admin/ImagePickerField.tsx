@@ -64,6 +64,12 @@ export const defaultMediaAssets: MediaAsset[] = [
     description: 'Patient care & chamber consultation parallax breaker'
   },
   {
+    name: 'Diseases Page Cover Banner (রোগসমূহ কভার ব্যানার)',
+    category: 'banners',
+    path: '/diseases-cover-banner.png',
+    description: 'Dr. Hanif Towhid with patient consultation cover banner for /diseases'
+  },
+  {
     name: 'Ambient Watercolor Background (অ্যাম্বিয়েন্ট ব্যাকগ্রাউন্ড)',
     category: 'general',
     path: '/about-bg.jpeg',

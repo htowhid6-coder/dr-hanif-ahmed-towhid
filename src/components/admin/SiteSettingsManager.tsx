@@ -656,6 +656,93 @@ export const SiteSettingsManager: React.FC = () => {
                 </div>
               </div>
             </GlassPanel>
+
+            {/* Diseases Page Cover Banner Editor */}
+            <GlassPanel className="p-6 md:p-8 flex flex-col gap-5">
+              <div className="border-b border-line pb-3">
+                <h3 className="font-serif text-base md:text-lg font-bold text-ink flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-accent" />
+                  <span>{isBn ? 'ডিজিজেস পেজ কভার ব্যানার (Diseases Page Cover Banner)' : 'Diseases Page Cover Banner'}</span>
+                </h3>
+                <p className="text-xs text-muted mt-0.5">
+                  {isBn
+                    ? '/diseases পেজের উপরের ফুল-উইডথ কভার ব্যানার ছবি, শিরোনাম ও টেক্সট।'
+                    : 'Full-width top cover banner image, title, and subtitle on the /diseases page.'}
+                </p>
+              </div>
+
+              <ImagePickerField
+                label={isBn ? 'ডিজিজেস পেজ কভার ইমেজ (Cover Image):' : 'Diseases Page Cover Image:'}
+                value={settings.diseasesHeroImage}
+                onChange={(val) => setSettings({ ...settings, diseasesHeroImage: val })}
+                placeholder="/diseases-cover-banner.png"
+                defaultFallback="/diseases-cover-banner.png"
+                helperText={isBn ? 'ডিভাইস থেকে ছবি আপলোড বা গ্যালারি থেকে সিলেক্ট করুন' : 'Upload from device or select from media gallery'}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-ink">{isBn ? 'টপ ব্যাজ (বাংলা):' : 'Top Badge (Bengali):'}</label>
+                  <input
+                    type="text"
+                    value={settings.diseasesHeroBadgeBn}
+                    onChange={(e) => setSettings({ ...settings, diseasesHeroBadgeBn: e.target.value })}
+                    className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-accent outline-none"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-ink">{isBn ? 'টপ ব্যাজ (English):' : 'Top Badge (English):'}</label>
+                  <input
+                    type="text"
+                    value={settings.diseasesHeroBadgeEn}
+                    onChange={(e) => setSettings({ ...settings, diseasesHeroBadgeEn: e.target.value })}
+                    className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-accent outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-ink">{isBn ? 'হেডিং (বাংলা):' : 'Heading (Bengali):'}</label>
+                  <input
+                    type="text"
+                    value={settings.diseasesHeroTitleBn}
+                    onChange={(e) => setSettings({ ...settings, diseasesHeroTitleBn: e.target.value })}
+                    className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-accent outline-none font-serif"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-ink">{isBn ? 'হেডিং (English):' : 'Heading (English):'}</label>
+                  <input
+                    type="text"
+                    value={settings.diseasesHeroTitleEn}
+                    onChange={(e) => setSettings({ ...settings, diseasesHeroTitleEn: e.target.value })}
+                    className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-accent outline-none font-serif"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-ink">{isBn ? 'সাবটেক্সট (বাংলা):' : 'Subtext (Bengali):'}</label>
+                  <textarea
+                    rows={2}
+                    value={settings.diseasesHeroSubtitleBn}
+                    onChange={(e) => setSettings({ ...settings, diseasesHeroSubtitleBn: e.target.value })}
+                    className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-accent outline-none"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-ink">{isBn ? 'সাবটেক্সট (English):' : 'Subtext (English):'}</label>
+                  <textarea
+                    rows={2}
+                    value={settings.diseasesHeroSubtitleEn}
+                    onChange={(e) => setSettings({ ...settings, diseasesHeroSubtitleEn: e.target.value })}
+                    className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-accent outline-none"
+                  />
+                </div>
+              </div>
+            </GlassPanel>
           </div>
         )}
 

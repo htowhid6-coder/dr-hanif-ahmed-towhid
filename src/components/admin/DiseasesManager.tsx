@@ -18,10 +18,15 @@ import {
   ArrowDown,
   Image as ImageIcon,
   X,
-  ListPlus
+  ListPlus,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  Layers
 } from 'lucide-react';
 
 import { ImagePickerField } from '@/components/admin/ImagePickerField';
+import { defaultSiteSettings, SiteSettings } from '@/data/siteSettingsData';
 
 export const DiseasesManager: React.FC = () => {
 
@@ -34,6 +39,20 @@ export const DiseasesManager: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
+
+  // Diseases Page Cover Banner State
+  const [isBannerSectionOpen, setIsBannerSectionOpen] = useState(true);
+  const [isSavingBanner, setIsSavingBanner] = useState(false);
+  const [bannerSaveSuccess, setBannerSaveSuccess] = useState(false);
+  const [bannerSettings, setBannerSettings] = useState({
+    diseasesHeroImage: defaultSiteSettings.diseasesHeroImage,
+    diseasesHeroBadgeEn: defaultSiteSettings.diseasesHeroBadgeEn,
+    diseasesHeroBadgeBn: defaultSiteSettings.diseasesHeroBadgeBn,
+    diseasesHeroTitleEn: defaultSiteSettings.diseasesHeroTitleEn,
+    diseasesHeroTitleBn: defaultSiteSettings.diseasesHeroTitleBn,
+    diseasesHeroSubtitleEn: defaultSiteSettings.diseasesHeroSubtitleEn,
+    diseasesHeroSubtitleBn: defaultSiteSettings.diseasesHeroSubtitleBn,
+  });
 
   const initialForm: Disease = {
     slug: '',
@@ -55,6 +74,24 @@ export const DiseasesManager: React.FC = () => {
         try {
           const parsed = JSON.parse(local);
           if (Array.isArray(parsed) && parsed.length > 0) setDiseases(parsed);
+        } catch (e) {}
+      }
+
+      // Load banner settings from local storage
+      const localSettings = localStorage.getItem('site_settings_data');
+      if (localSettings) {
+        try {
+          const parsed = JSON.parse(localSettings);
+          setBannerSettings(prev => ({
+            ...prev,
+            diseasesHeroImage: parsed.diseasesHeroImage || prev.diseasesHeroImage,
+            diseasesHeroBadgeEn: parsed.diseasesHeroBadgeEn || prev.diseasesHeroBadgeEn,
+            diseasesHeroBadgeBn: parsed.diseasesHeroBadgeBn || prev.diseasesHeroBadgeBn,
+            diseasesHeroTitleEn: parsed.diseasesHeroTitleEn || prev.diseasesHeroTitleEn,
+            diseasesHeroTitleBn: parsed.diseasesHeroTitleBn || prev.diseasesHeroTitleBn,
+            diseasesHeroSubtitleEn: parsed.diseasesHeroSubtitleEn || prev.diseasesHeroSubtitleEn,
+            diseasesHeroSubtitleBn: parsed.diseasesHeroSubtitleBn || prev.diseasesHeroSubtitleBn,
+          }));
         } catch (e) {}
       }
     }
@@ -89,11 +126,112 @@ export const DiseasesManager: React.FC = () => {
     } catch (err) {
       console.warn('Could not load diseases from Supabase:', err);
     }
+
+    // Fetch site_settings from Supabase for banner
+    try {
+      const { data: setRes } = await supabase
+        .from('site_settings')
+        .select('*')
+        .eq('id', 'global_settings')
+        .maybeSingle();
+
+      if (setRes?.data) {
+        const s = setRes.data;
+        setBannerSettings(prev => ({
+          ...prev,
+          diseasesHeroImage: s.diseasesHeroImage || prev.diseasesHeroImage,
+          diseasesHeroBadgeEn: s.diseasesHeroBadgeEn || prev.diseasesHeroBadgeEn,
+          diseasesHeroBadgeBn: s.diseasesHeroBadgeBn || prev.diseasesHeroBadgeBn,
+          diseasesHeroTitleEn: s.diseasesHeroTitleEn || prev.diseasesHeroTitleEn,
+          diseasesHeroTitleBn: s.diseasesHeroTitleBn || prev.diseasesHeroTitleBn,
+          diseasesHeroSubtitleEn: s.diseasesHeroSubtitleEn || prev.diseasesHeroSubtitleEn,
+          diseasesHeroSubtitleBn: s.diseasesHeroSubtitleBn || prev.diseasesHeroSubtitleBn,
+        }));
+      }
+    } catch (err) {
+      console.warn('Could not load banner settings from Supabase:', err);
+    }
   };
 
   useEffect(() => {
     fetchDiseases();
+
+    const handleSettingsUpdate = () => {
+      if (typeof window !== 'undefined') {
+        const localSettings = localStorage.getItem('site_settings_data');
+        if (localSettings) {
+          try {
+            const parsed = JSON.parse(localSettings);
+            setBannerSettings(prev => ({
+              ...prev,
+              diseasesHeroImage: parsed.diseasesHeroImage || prev.diseasesHeroImage,
+              diseasesHeroBadgeEn: parsed.diseasesHeroBadgeEn || prev.diseasesHeroBadgeEn,
+              diseasesHeroBadgeBn: parsed.diseasesHeroBadgeBn || prev.diseasesHeroBadgeBn,
+              diseasesHeroTitleEn: parsed.diseasesHeroTitleEn || prev.diseasesHeroTitleEn,
+              diseasesHeroTitleBn: parsed.diseasesHeroTitleBn || prev.diseasesHeroTitleBn,
+              diseasesHeroSubtitleEn: parsed.diseasesHeroSubtitleEn || prev.diseasesHeroSubtitleEn,
+              diseasesHeroSubtitleBn: parsed.diseasesHeroSubtitleBn || prev.diseasesHeroSubtitleBn,
+            }));
+          } catch (e) {}
+        }
+      }
+    };
+
+    window.addEventListener('site_settings_updated', handleSettingsUpdate);
+    return () => window.removeEventListener('site_settings_updated', handleSettingsUpdate);
   }, []);
+
+  const handleSaveBanner = async () => {
+    setIsSavingBanner(true);
+    setBannerSaveSuccess(false);
+
+    try {
+      // 1. Load current full site settings
+      let currentSettings = { ...defaultSiteSettings };
+      if (typeof window !== 'undefined') {
+        const local = localStorage.getItem('site_settings_data');
+        if (local) {
+          try {
+            currentSettings = { ...currentSettings, ...JSON.parse(local) };
+          } catch (e) {}
+        }
+      }
+
+      const updatedSettings = {
+        ...currentSettings,
+        ...bannerSettings
+      };
+
+      // 2. Save to LocalStorage and broadcast
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('site_settings_data', JSON.stringify(updatedSettings));
+        window.dispatchEvent(new Event('site_settings_updated'));
+      }
+
+      // 3. Upsert to Supabase
+      const { error } = await supabase
+        .from('site_settings')
+        .upsert({
+          id: 'global_settings',
+          category: 'general',
+          data: updatedSettings,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+
+      if (error) {
+        console.warn('Supabase site_settings upsert notice:', error);
+      }
+
+      setBannerSaveSuccess(true);
+      setTimeout(() => setBannerSaveSuccess(false), 3000);
+      alert(isBn ? 'ডিজিজেস পেজের কভার ব্যানার সফলভাবে সংরক্ষিত হয়েছে!' : 'Diseases page cover banner saved successfully!');
+    } catch (err: any) {
+      console.error(err);
+      alert(isBn ? `সংরক্ষণ ত্রুটি: ${err.message || 'ব্যর্থ হয়েছে'}` : `Failed to save: ${err.message || 'Error'}`);
+    } finally {
+      setIsSavingBanner(false);
+    }
+  };
 
   const persistDiseases = async (updated: Disease[]) => {
     setDiseases(updated);
@@ -296,6 +434,186 @@ export const DiseasesManager: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* DISEASES PAGE COVER BANNER & HEADER SECTION */}
+      <GlassPanel className="p-5 md:p-6 flex flex-col gap-5 border border-panel-border bg-white/90 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-line">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shrink-0">
+              <Layers className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-accent uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  {isBn ? 'পেজ কভার ব্যানার ও হেডার সেটিংস' : 'Page Cover Banner & Header'}
+                </span>
+              </div>
+              <h3 className="font-serif text-base sm:text-lg font-bold text-ink">
+                {isBn ? 'ডিজিজেস পেজের কভার ব্যানার ছবি ও বিবরণ' : 'Diseases Page Cover Banner & Texts'}
+              </h3>
+              <p className="text-xs text-muted">
+                {isBn
+                  ? 'drhaniftowhid.com/diseases পেজের উপরের ফুল-উইডথ ব্যানার ছবি ও টেক্সট কাস্টমাইজ করুন'
+                  : 'Customize the edge-to-edge cover banner image and headers for /diseases'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setIsBannerSectionOpen(!isBannerSectionOpen)}
+              className="inline-flex items-center gap-1 px-3 py-2 text-xs font-semibold rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-ink cursor-pointer transition-colors"
+            >
+              {isBannerSectionOpen ? (
+                <>
+                  <ChevronUp className="w-4 h-4 text-muted" />
+                  <span>{isBn ? 'সংক্ষিপ্ত করুন' : 'Collapse'}</span>
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4 text-muted" />
+                  <span>{isBn ? 'সম্পাদনা করুন' : 'Edit Banner'}</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSaveBanner}
+              disabled={isSavingBanner}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl bg-accent hover:bg-ink text-white shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-50"
+            >
+              {isSavingBanner ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : bannerSaveSuccess ? (
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
+              ) : (
+                <Save className="w-3.5 h-3.5" />
+              )}
+              <span>
+                {isSavingBanner
+                  ? (isBn ? 'সংরক্ষণ হচ্ছে...' : 'Saving...')
+                  : bannerSaveSuccess
+                  ? (isBn ? 'সংরক্ষিত!' : 'Saved!')
+                  : (isBn ? 'ব্যানার সংরক্ষণ করুন' : 'Save Banner')}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {isBannerSectionOpen && (
+          <div className="flex flex-col gap-5 pt-1 animate-in fade-in duration-300">
+            {/* Live Visual Preview */}
+            <div className="flex flex-col gap-2">
+              <span className="text-xs font-bold text-ink flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5 text-accent" />
+                {isBn ? 'লাইভ কভার ব্যানার প্রিভিউ (Live Preview):' : 'Live Cover Banner Preview:'}
+              </span>
+              <div className="relative w-full h-44 sm:h-56 md:h-64 rounded-2xl overflow-hidden border border-slate-200 bg-slate-900 shadow-md">
+                <img
+                  src={bannerSettings.diseasesHeroImage || '/diseases-cover-banner.png'}
+                  alt="Live Cover Preview"
+                  className="w-full h-full object-cover object-center brightness-95"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-950/30 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 flex flex-col justify-end p-4 sm:p-6 pointer-events-none">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-950/75 border border-white/30 backdrop-blur-md w-fit shadow-md mb-2">
+                    <Sparkles className="w-3 h-3 text-emerald-300" />
+                    <span className="text-[10px] font-bold text-white uppercase tracking-wider">
+                      {isBn ? bannerSettings.diseasesHeroBadgeBn : bannerSettings.diseasesHeroBadgeEn}
+                    </span>
+                  </div>
+                  <h4 className="font-serif text-lg sm:text-2xl font-bold text-white leading-tight drop-shadow-md line-clamp-1">
+                    {isBn ? bannerSettings.diseasesHeroTitleBn : bannerSettings.diseasesHeroTitleEn}
+                  </h4>
+                  <p className="text-xs text-slate-200 line-clamp-2 mt-1 drop-shadow max-w-xl hidden sm:block">
+                    {isBn ? bannerSettings.diseasesHeroSubtitleBn : bannerSettings.diseasesHeroSubtitleEn}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Image Picker Field */}
+            <ImagePickerField
+              label={isBn ? 'কভার ব্যানার ইমেজ (Cover Banner Image):' : 'Cover Banner Image:'}
+              value={bannerSettings.diseasesHeroImage}
+              onChange={(val) => setBannerSettings(prev => ({ ...prev, diseasesHeroImage: val }))}
+              placeholder="/diseases-cover-banner.png"
+              defaultFallback="/diseases-cover-banner.png"
+              helperText={isBn ? 'সরাসরি ডিভাইস থেকে ছবি আপলোড করুন অথবা ফটো লাইব্রেরি থেকে নির্বাচন করুন' : 'Upload custom image from device or pick from gallery'}
+            />
+
+            {/* Badges Input */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-ink">{isBn ? 'টপ ব্যাজ (বাংলা):' : 'Top Badge (Bengali):'}</label>
+                <input
+                  type="text"
+                  value={bannerSettings.diseasesHeroBadgeBn}
+                  onChange={(e) => setBannerSettings(prev => ({ ...prev, diseasesHeroBadgeBn: e.target.value }))}
+                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-accent outline-none"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-ink">{isBn ? 'টপ ব্যাজ (English):' : 'Top Badge (English):'}</label>
+                <input
+                  type="text"
+                  value={bannerSettings.diseasesHeroBadgeEn}
+                  onChange={(e) => setBannerSettings(prev => ({ ...prev, diseasesHeroBadgeEn: e.target.value }))}
+                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-accent outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Title Inputs */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-ink">{isBn ? 'প্রধান শিরোনাম (বাংলা):' : 'Main Title (Bengali):'}</label>
+                <input
+                  type="text"
+                  value={bannerSettings.diseasesHeroTitleBn}
+                  onChange={(e) => setBannerSettings(prev => ({ ...prev, diseasesHeroTitleBn: e.target.value }))}
+                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-accent outline-none"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-ink">{isBn ? 'প্রধান শিরোনাম (English):' : 'Main Title (English):'}</label>
+                <input
+                  type="text"
+                  value={bannerSettings.diseasesHeroTitleEn}
+                  onChange={(e) => setBannerSettings(prev => ({ ...prev, diseasesHeroTitleEn: e.target.value }))}
+                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-accent outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Subtitle Inputs */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-ink">{isBn ? 'সাবটাইটেল / বিবরণ (বাংলা):' : 'Subtitle / Description (Bengali):'}</label>
+                <textarea
+                  rows={2}
+                  value={bannerSettings.diseasesHeroSubtitleBn}
+                  onChange={(e) => setBannerSettings(prev => ({ ...prev, diseasesHeroSubtitleBn: e.target.value }))}
+                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-accent outline-none resize-none"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-ink">{isBn ? 'সাবটাইটেল / বিবরণ (English):' : 'Subtitle / Description (English):'}</label>
+                <textarea
+                  rows={2}
+                  value={bannerSettings.diseasesHeroSubtitleEn}
+                  onChange={(e) => setBannerSettings(prev => ({ ...prev, diseasesHeroSubtitleEn: e.target.value }))}
+                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:border-accent outline-none resize-none"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </GlassPanel>
 
       {/* Search Bar */}
       <GlassPanel className="p-4 flex items-center justify-between">

@@ -95,6 +95,15 @@ export interface SiteSettings {
   aboutHeroLeadEn: string;
   aboutHeroLeadBn: string;
 
+  // Diseases Page Hero Cover Banner
+  diseasesHeroImage: string;
+  diseasesHeroBadgeEn: string;
+  diseasesHeroBadgeBn: string;
+  diseasesHeroTitleEn: string;
+  diseasesHeroTitleBn: string;
+  diseasesHeroSubtitleEn: string;
+  diseasesHeroSubtitleBn: string;
+
   // About Page Journey Story
   aboutJourneyEyebrowEn: string;
   aboutJourneyEyebrowBn: string;
@@ -260,6 +269,15 @@ export const defaultSiteSettings: SiteSettings = {
   aboutHeroDegreesBn: 'এমবিবিএস, বিসিএস (স্বাস্থ্য), এমসিপিএস (মেডিসিন), এফসিপিএস (মেডিসিন)',
   aboutHeroLeadEn: 'Medicine Specialist, Department of Medicine at Sylhet MAG Osmani Medical College Hospital. Dedicated to scientifically precise internal medicine care.',
   aboutHeroLeadBn: 'মেডিসিন বিশেষজ্ঞ (মেডিসিন বিভাগ), সিলেট এম.এ.জি. ওসমানী মেডিকেল কলেজ হাসপাতাল। সঠিক রোগ নির্ণয় ও রোগীর প্রতি পরম আন্তরিক সেবায় অঙ্গীকারবদ্ধ।',
+
+  // Diseases Page Hero Cover Banner
+  diseasesHeroImage: '/diseases-cover-banner.png',
+  diseasesHeroBadgeEn: 'Diseases We Treat',
+  diseasesHeroBadgeBn: 'চিকিৎসাধীন রোগসমূহ',
+  diseasesHeroTitleEn: 'Advanced Care for Diabetes, Hormones & Chronic Illnesses',
+  diseasesHeroTitleBn: 'ডায়াবেটিস, হরমোনজনিত ও জটিল শারীরিক সমস্যা',
+  diseasesHeroSubtitleEn: 'Evidence-based clinical care and targeted medical management protocols for chronic metabolic, cardiovascular, and systemic diseases by Dr. Hanif Towhid.',
+  diseasesHeroSubtitleBn: 'সিলেটে চিকিৎসাধীন প্রধান প্রধান রোগের বিজ্ঞানসম্মত ও আধুনিক ক্লিনিকাল চিকিৎসা বিশ্লেষণ।',
 
   // About Page Journey Story
   aboutJourneyEyebrowEn: 'My Medical Journey',
