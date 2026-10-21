@@ -276,6 +276,9 @@ export default function Home() {
 
         if (data?.data) {
           setSettings(prev => ({ ...prev, ...data.data }));
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('site_settings_data', JSON.stringify({ ...defaultSiteSettings, ...data.data }));
+          }
         }
       } catch (err) {}
     };
@@ -365,11 +368,37 @@ export default function Home() {
       {/* Hero Section with LOCKED fixed background and scrolling panels */}
       <Hero onSelectDisease={setSelectedDisease} />
 
+      {/* Dedicated Hooking Question Banner Section */}
+      <SymptomQuestionSection />
+
+      {/* Interactive Full-Width Symptom Evaluation Section */}
+      <SymptomCheckerSection />
+
+      {/* Testimonials / Patient Trust - 3D Interactive Experience */}
+      <div className="relative z-10 bg-background w-full pt-16 pb-8 px-6 md:px-12 flex flex-col gap-20 max-w-7xl mx-auto">
+        <InteractiveReviewsSection 
+          reviews={reviews} 
+          language={language} 
+          googleReviewSettings={{
+            businessUrl: settings.googleReviewBusinessUrl,
+            qrCodeImage: settings.googleReviewQrCodeImage,
+            titleEn: settings.googleReviewTitleEn,
+            titleBn: settings.googleReviewTitleBn,
+            subtitleEn: settings.googleReviewSubtitleEn,
+            subtitleBn: settings.googleReviewSubtitleBn,
+            buttonTextEn: settings.googleReviewButtonTextEn,
+            buttonTextBn: settings.googleReviewButtonTextBn,
+            badgeEn: settings.googleReviewBadgeEn,
+            badgeBn: settings.googleReviewBadgeBn,
+          }}
+        />
+      </div>
+
       {/* Full-width Specialist Introduction Section with Background Image & Animated Watercolor Glass Card */}
       <section
         id="doctor-bio"
         ref={bioRef}
-        className="relative w-full overflow-hidden border-y border-line py-20 md:py-28 px-6 md:px-12 flex items-center justify-center scroll-mt-20"
+        className="relative w-full overflow-hidden border-y border-line py-20 md:py-28 px-6 md:px-12 flex items-center justify-center scroll-mt-20 my-4"
       >
         {/* Background Image Layer - Full Width Edge to Edge */}
         <div className="absolute inset-0 z-0 overflow-hidden">
@@ -426,34 +455,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Dedicated Hooking Question Banner Section */}
-      <SymptomQuestionSection />
-
-      {/* Interactive Full-Width Symptom Evaluation Section */}
-      <SymptomCheckerSection />
-
-      {/* Content below Symptom Section */}
+      {/* Urgent Appointment CTA Card Section */}
       <div className="relative z-10 bg-background w-full py-16 px-6 md:px-12 flex flex-col gap-20 max-w-7xl mx-auto">
-
-        {/* Testimonials / Patient Trust - 3D Interactive Experience */}
-        <InteractiveReviewsSection 
-          reviews={reviews} 
-          language={language} 
-          googleReviewSettings={{
-            businessUrl: settings.googleReviewBusinessUrl,
-            qrCodeImage: settings.googleReviewQrCodeImage,
-            titleEn: settings.googleReviewTitleEn,
-            titleBn: settings.googleReviewTitleBn,
-            subtitleEn: settings.googleReviewSubtitleEn,
-            subtitleBn: settings.googleReviewSubtitleBn,
-            buttonTextEn: settings.googleReviewButtonTextEn,
-            buttonTextBn: settings.googleReviewButtonTextBn,
-            badgeEn: settings.googleReviewBadgeEn,
-            badgeBn: settings.googleReviewBadgeBn,
-          }}
-        />
-
-        {/* Urgent Appointment CTA Card */}
         <section className="glass-panel p-8 md:p-12 rounded-3xl bg-accent/10 border border-accent/20 flex flex-col md:flex-row justify-between items-center gap-6 shadow-md">
           <div className="flex flex-col gap-2 text-center md:text-left">
             <h3 className="font-serif text-xl md:text-2xl font-bold text-ink">
@@ -482,7 +485,6 @@ export default function Home() {
             </a>
           </div>
         </section>
-
       </div>
 
       <Footer />

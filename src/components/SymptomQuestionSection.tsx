@@ -50,6 +50,9 @@ export const SymptomQuestionSection: React.FC = () => {
 
         if (data?.data) {
           setSettings(prev => ({ ...prev, ...data.data }));
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('site_settings_data', JSON.stringify({ ...defaultSiteSettings, ...data.data }));
+          }
         }
       } catch (err) {}
     };
@@ -84,7 +87,9 @@ export const SymptomQuestionSection: React.FC = () => {
 
         {/* The Big Hooking Question */}
         <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-ink leading-[1.15] max-w-4xl drop-shadow-sm">
-          {isBn ? settings.questionBannerTitleBn : settings.questionBannerTitleEn}
+          {isBn
+            ? (settings.questionBannerTitleBn === 'আপনার কি এই অসুবিধাগুলো হচ্ছে?' ? 'আপনি কি এই সমস্যায় ভুগছেন?' : (settings.questionBannerTitleBn || 'আপনি কি এই সমস্যায় ভুগছেন?'))
+            : (settings.questionBannerTitleEn === 'Are you having these issues?' ? 'Are You Suffering From Any of These Issues?' : (settings.questionBannerTitleEn || 'Are You Suffering From Any of These Issues?'))}
         </h2>
 
         <p className="text-sm sm:text-base md:text-lg text-muted max-w-2xl leading-relaxed">

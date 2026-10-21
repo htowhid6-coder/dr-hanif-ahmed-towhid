@@ -22,6 +22,7 @@ import {
   ChevronRight,
   MoveHorizontal,
 } from 'lucide-react';
+import supabase from '@/lib/supabase';
 
 export interface SymptomItem {
   id: number;
@@ -239,12 +240,54 @@ export const symptomsList: SymptomItem[] = [
 
 export const SymptomCheckerSection: React.FC = () => {
   const { language } = useLanguage();
+  const [symptoms, setSymptoms] = useState<SymptomItem[]>(symptomsList);
   const [activeIndex, setActiveIndex] = useState(0);
   const [inView, setInView] = useState(false);
   const [imgSrc, setImgSrc] = useState(symptomsList[0].image);
   const sectionRef = useRef<HTMLElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  // Load live symptoms from Supabase (Database 1st priority)
+  useEffect(() => {
+    const fetchLiveSymptoms = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('symptoms')
+          .select('*')
+          .order('order_index', { ascending: true });
+
+        if (!error && data && data.length > 0) {
+          const mapped: SymptomItem[] = data.map((d: any, index: number) => {
+            const staticMatch = symptomsList.find((s) => s.slug === d.slug) || symptomsList[index];
+            return {
+              id: d.id || index + 1,
+              slug: d.slug,
+              en: d.title_en || staticMatch?.en,
+              bn: d.title_bn || staticMatch?.bn,
+              categoryEn: d.category_en || staticMatch?.categoryEn,
+              categoryBn: d.category_bn || staticMatch?.categoryBn,
+              organEn: d.organ_en || staticMatch?.organEn,
+              organBn: d.organ_bn || staticMatch?.organBn,
+              noteEn: staticMatch?.noteEn || (d.short_desc_en && d.short_desc_en.length < 250 ? d.short_desc_en : '') || staticMatch?.noteEn || '',
+              noteBn: staticMatch?.noteBn || (d.short_desc_bn && d.short_desc_bn.length < 250 ? d.short_desc_bn : '') || staticMatch?.noteBn || '',
+              image: d.image || staticMatch?.image || `/symptoms/${d.slug}.png`,
+              icon: staticMatch?.icon || Thermometer,
+            };
+          });
+          setSymptoms(mapped);
+        }
+      } catch (err) {
+        // Fallback to symptomsList
+      }
+    };
+
+    fetchLiveSymptoms();
+
+    const handleUpdate = () => fetchLiveSymptoms();
+    window.addEventListener('symptoms_updated', handleUpdate);
+    return () => window.removeEventListener('symptoms_updated', handleUpdate);
+  }, []);
 
   // Touch Swipe coordinates
   const touchStartX = useRef<number | null>(null);
@@ -267,7 +310,7 @@ export const SymptomCheckerSection: React.FC = () => {
     return () => observer.disconnect();
   }, []);
 
-  const activeSymptom = symptomsList[activeIndex] || symptomsList[0];
+  const activeSymptom = symptoms[activeIndex] || symptoms[0];
   const IconComponent = activeSymptom.icon;
 
   useEffect(() => {
@@ -296,11 +339,11 @@ export const SymptomCheckerSection: React.FC = () => {
   }, [activeIndex]);
 
   const nextSymptom = () => {
-    setActiveIndex((prev) => (prev + 1) % symptomsList.length);
+    setActiveIndex((prev) => (prev + 1) % symptoms.length);
   };
 
   const prevSymptom = () => {
-    setActiveIndex((prev) => (prev - 1 + symptomsList.length) % symptomsList.length);
+    setActiveIndex((prev) => (prev - 1 + symptoms.length) % symptoms.length);
   };
 
   const scrollLeft = () => {
@@ -367,7 +410,7 @@ export const SymptomCheckerSection: React.FC = () => {
                 <h3 className="font-serif text-sm sm:text-base md:text-lg font-bold text-ink flex items-center gap-2">
                   <span>{language === 'bn' ? 'লক্ষণ তালিকা (১৪টি)' : 'Symptoms List (14)'}</span>
                   <span className="text-[10px] sm:text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20">
-                    {activeIndex + 1} / {symptomsList.length}
+                    {activeIndex + 1} / {symptoms.length}
                   </span>
                 </h3>
                 <span className="text-[10px] sm:text-xs text-muted">
@@ -401,7 +444,7 @@ export const SymptomCheckerSection: React.FC = () => {
             className="flex items-center gap-3 overflow-x-auto pb-2 pt-1 px-1 scroll-smooth no-scrollbar select-none"
             style={{ scrollSnapType: 'x proximity' }}
           >
-            {symptomsList.map((symptom, idx) => {
+            {symptoms.map((symptom, idx) => {
               const isSelected = activeIndex === idx;
               const SymIcon = symptom.icon;
 
@@ -446,14 +489,6 @@ export const SymptomCheckerSection: React.FC = () => {
                       </span>
                     </div>
                   </div>
-
-                  <span
-                    className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md shrink-0 ${
-                      isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
-                    }`}
-                  >
-                    #{symptom.id}
-                  </span>
                 </button>
               );
             })}
@@ -508,7 +543,7 @@ export const SymptomCheckerSection: React.FC = () => {
             <div className="md:hidden flex items-center justify-between gap-2 px-3 py-1 rounded-full bg-white/85 border border-white backdrop-blur-md w-fit self-end text-[10px] sm:text-[11px] text-accent font-semibold shadow-sm mb-1">
               <MoveHorizontal className="w-3.5 h-3.5 animate-pulse" />
               <span>
-                {language === 'bn' ? 'সোয়াইপ করে পরিবর্তন করুন' : 'Swipe left/right to change'} ({activeIndex + 1}/{symptomsList.length})
+                {language === 'bn' ? 'সোয়াইপ করে পরিবর্তন করুন' : 'Swipe left/right to change'} ({activeIndex + 1}/{symptoms.length})
               </span>
             </div>
 
@@ -531,9 +566,6 @@ export const SymptomCheckerSection: React.FC = () => {
                     </h3>
                   </div>
                 </div>
-                <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-accent/10 text-accent border border-accent/20 backdrop-blur-sm shadow-sm shrink-0">
-                  #{activeSymptom.id}
-                </span>
               </div>
 
               <p className="text-xs sm:text-sm text-muted leading-relaxed border-t border-line/40 pt-2 font-normal">

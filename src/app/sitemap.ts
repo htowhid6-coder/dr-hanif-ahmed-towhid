@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next';
 import { diseaseData } from '@/locales/diseaseData';
+import { detailedSymptomsList } from '@/data/symptomsData';
 import { blogData } from '@/locales/blogData';
 import { supabase } from '@/lib/supabase';
 
@@ -61,6 +62,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
+  const symptomRoutes: MetadataRoute.Sitemap = detailedSymptomsList.map((symptom) => ({
+    url: `${baseUrl}/symptoms/${symptom.slug}`,
+    lastModified,
+    changeFrequency: 'weekly',
+    priority: 0.8,
+  }));
+
   // Map to hold unique blog entries by slug
   const blogMap = new Map<string, { url: string; lastModified: Date; changeFrequency: 'daily' | 'weekly' | 'monthly'; priority: number }>();
 
@@ -102,6 +110,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const blogRoutes: MetadataRoute.Sitemap = Array.from(blogMap.values());
 
-  return [...staticRoutes, ...diseaseRoutes, ...blogRoutes];
+  return [...staticRoutes, ...diseaseRoutes, ...symptomRoutes, ...blogRoutes];
 }
 

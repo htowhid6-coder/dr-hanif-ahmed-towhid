@@ -75,15 +75,22 @@ export const HeroSlidesManager: React.FC = () => {
 
     // 2. Supabase
     try {
-      const { data, error } = await supabase
-        .from('hero_slides')
-        .select('*')
-        .order('order_index', { ascending: true });
+      const [{ data, error }, { data: bgData }] = await Promise.all([
+        supabase.from('hero_slides').select('*').order('order_index', { ascending: true }),
+        supabase.from('site_settings').select('data').eq('id', 'hero_bg_image').maybeSingle(),
+      ]);
 
       if (!error && data && data.length > 0) {
         setSlides(data as HeroSlide[]);
         if (typeof window !== 'undefined') {
           localStorage.setItem('hero_slides_data', JSON.stringify(data));
+        }
+      }
+
+      if (bgData?.data?.url) {
+        setBgImage(bgData.data.url);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('hero_bg_image', bgData.data.url);
         }
       }
     } catch (err) {
@@ -212,11 +219,21 @@ export const HeroSlidesManager: React.FC = () => {
   };
 
   // Save Background Banner Image
-  const handleSaveBgImage = (newUrl: string) => {
+  const handleSaveBgImage = async (newUrl: string) => {
     setBgImage(newUrl);
     if (typeof window !== 'undefined') {
       localStorage.setItem('hero_bg_image', newUrl);
       window.dispatchEvent(new Event('hero_updated'));
+    }
+    try {
+      await supabase.from('site_settings').upsert({
+        id: 'hero_bg_image',
+        category: 'hero',
+        data: { url: newUrl },
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' });
+    } catch (err) {
+      console.warn('Could not save hero_bg_image to Supabase:', err);
     }
     alert(isBn ? 'হিরো ব্যাকগ্রাউন্ড ইমেজ সফলভাবে আপডেট হয়েছে!' : 'Hero background banner updated successfully!');
   };
@@ -367,8 +384,9 @@ export const HeroSlidesManager: React.FC = () => {
                     slide.type === 'doctor-intro' ? 'bg-emerald-100 text-emerald-800' :
                     slide.type === 'chamber' ? 'bg-teal-100 text-teal-800' :
                     slide.type === 'welcome' ? 'bg-blue-100 text-blue-800' :
+                    slide.type === 'symptoms' ? 'bg-amber-100 text-amber-800' :
                     slide.type === 'conditions' ? 'bg-purple-100 text-purple-800' :
-                    'bg-amber-100 text-amber-800'
+                    'bg-slate-100 text-slate-800'
                   }`}>
                     {slide.type}
                   </span>
@@ -384,6 +402,7 @@ export const HeroSlidesManager: React.FC = () => {
                   {slide.type === 'doctor-intro' && `${slide.doctor_degrees_bn || slide.doctor_degrees_en} • ${slide.doctor_designation_bn || slide.doctor_designation_en}`}
                   {slide.type === 'chamber' && `${slide.chamber_room_bn || slide.chamber_room_en} • ${slide.chamber_hours_bn || slide.chamber_hours_en}`}
                   {slide.type === 'welcome' && (isBn ? slide.lead_bn : slide.lead_en)}
+                  {slide.type === 'symptoms' && (isBn ? '১৪টি লক্ষণ তালিকা ও পেজিনেশন কার্ড (৭টি করে)' : '14 Clinical Symptoms Card with 7 per page pagination')}
                   {slide.type === 'conditions' && (isBn ? '১৪টি ক্লিনিক্যাল রোগের গ্রিড ও ড্যাশবোর্ড' : 'Diseases Grid Presentation')}
                   {slide.type === 'custom' && (isBn ? slide.lead_bn : slide.lead_en)}
                 </p>
@@ -578,6 +597,7 @@ export const HeroSlidesManager: React.FC = () => {
                     >
                       <option value="welcome">Welcome Headline Slide (স্বাগতম শিরোনাম)</option>
                       <option value="doctor-intro">Doctor Intro & Portrait Slide (ডাক্তার পরিচিতি ও ছবি)</option>
+                      <option value="symptoms">Clinical Symptoms Slide (১৪টি লক্ষণ কার্ড ও পপআপ)</option>
                       <option value="conditions">Diseases We Treat Slide (রোগসমূহের তালিকা)</option>
                       <option value="chamber">Chamber & Visiting Hours Slide (চেম্বার ও সময়সূচী)</option>
                       <option value="custom">Custom Slide (কাস্টম স্লাইড)</option>

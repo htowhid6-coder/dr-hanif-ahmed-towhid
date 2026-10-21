@@ -41,9 +41,11 @@ export default function Contact() {
   
   const [mapEmbedUrl, setMapEmbedUrl] = useState<string>(defaultEmbed);
   const [directMapLink, setDirectMapLink] = useState<string>(defaultDirect);
+  const [liveChamber, setLiveChamber] = useState<any>(null);
+  const [liveProfile, setLiveProfile] = useState<any>(null);
 
   useEffect(() => {
-    async function loadChamberMap() {
+    async function loadChamberAndProfile() {
       try {
         if (typeof window !== 'undefined') {
           const localMap = localStorage.getItem('chamber_map_url');
@@ -52,27 +54,38 @@ export default function Contact() {
           if (localDirect) setDirectMapLink(localDirect);
         }
 
-        const { data } = await supabase
-          .from('chambers')
-          .select('*')
-          .eq('id', '00000000-0000-0000-0000-000000000000')
-          .maybeSingle();
+        const [chamberRes, profileRes] = await Promise.all([
+          supabase.from('chambers').select('*').eq('id', '00000000-0000-0000-0000-000000000000').maybeSingle(),
+          supabase.from('profiles').select('*').eq('id', '00000000-0000-0000-0000-000000000000').maybeSingle(),
+        ]);
 
-        if (data) {
-          if (data.map_url) {
-            setMapEmbedUrl(data.map_url);
-            if (typeof window !== 'undefined') localStorage.setItem('chamber_map_url', data.map_url);
+        if (chamberRes.data) {
+          setLiveChamber(chamberRes.data);
+          if (chamberRes.data.map_url) {
+            setMapEmbedUrl(chamberRes.data.map_url);
+            if (typeof window !== 'undefined') localStorage.setItem('chamber_map_url', chamberRes.data.map_url);
           }
-          if (data.direct_map_link) {
-            setDirectMapLink(data.direct_map_link);
-            if (typeof window !== 'undefined') localStorage.setItem('chamber_direct_map_link', data.direct_map_link);
+          if (chamberRes.data.direct_map_link) {
+            setDirectMapLink(chamberRes.data.direct_map_link);
+            if (typeof window !== 'undefined') localStorage.setItem('chamber_direct_map_link', chamberRes.data.direct_map_link);
           }
+        }
+        if (profileRes.data) {
+          setLiveProfile(profileRes.data);
         }
       } catch (err) {
         console.warn("Chamber map fetch notice:", err);
       }
     }
-    loadChamberMap();
+    loadChamberAndProfile();
+
+    const handleUpdate = () => loadChamberAndProfile();
+    window.addEventListener('chamber_updated', handleUpdate);
+    window.addEventListener('profile_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('chamber_updated', handleUpdate);
+      window.removeEventListener('profile_updated', handleUpdate);
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -215,8 +228,8 @@ export default function Contact() {
                   <div>
                     <h4 className="text-xs font-bold text-ink">{language === 'bn' ? 'চেম্বার ঠিকানা:' : 'Chamber Address:'}</h4>
                     <p className="text-xs text-muted leading-relaxed mt-0.5 font-normal">
-                      Popular Medical Center Ltd.<br />
-                      {language === 'bn' ? '(৬ষ্ঠ তলা, রুম ৬০৫), নিউ মেডিকেল রোড, কাজলশাহ, সিলেট।' : '(6th Floor, Room #605), New Medical Road, Kazalshah, Sylhet.'}
+                      {(language === 'bn' ? liveChamber?.name_bn : liveChamber?.name_en) || 'Popular Medical Center Ltd.'}<br />
+                      {(language === 'bn' ? liveChamber?.address_bn : liveChamber?.address_en) || (language === 'bn' ? '(৬ষ্ঠ তলা, রুম ৬০৫), নিউ মেডিকেল রোড, কাজলশাহ, সিলেট।' : '(6th Floor, Room #605), New Medical Road, Kazalshah, Sylhet.')}
                     </p>
                   </div>
                 </div>
@@ -229,7 +242,7 @@ export default function Contact() {
                   <div>
                     <h4 className="text-xs font-bold text-ink">{language === 'bn' ? 'রোগী দেখার সময়সূচী:' : 'Visiting Hours:'}</h4>
                     <p className="text-xs text-muted leading-relaxed mt-0.5">
-                      {language === 'bn' ? 'প্রতিদিন বিকাল ৫:০০টা – রাত ৯:০০টা' : '5:00 PM – 9:00 PM Daily'}
+                      {(language === 'bn' ? liveChamber?.hours_bn : liveChamber?.hours_en) || (language === 'bn' ? 'প্রতিদিন বিকাল ৫:০০টা – রাত ৯:০০টা' : '5:00 PM – 9:00 PM Daily')}
                     </p>
                     <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full inline-block mt-1">
                       {language === 'bn' ? 'প্রতি শুক্রবার ও মঙ্গলবার চেম্বার বন্ধ' : 'Friday & Tuesday Closed'}
@@ -244,8 +257,8 @@ export default function Contact() {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-ink">{language === 'bn' ? 'টিকিট ও সিরিয়াল নম্বর:' : 'Serial Booking Phone:'}</h4>
-                    <a href="tel:+8801346132486" className="text-xs text-accent font-bold hover:underline block mt-0.5">
-                      01346-132486
+                    <a href={`tel:${(liveChamber?.ticket_phone || '01346132486').replace(/[^0-9+]/g, '')}`} className="text-xs text-accent font-bold hover:underline block mt-0.5">
+                      {liveChamber?.ticket_phone || '01346-132486'}
                     </a>
                     <span className="text-[10px] text-muted block">({language === 'bn' ? 'রোগী দেখানোর দিন সকাল ৯টার পর কল দিন' : 'Call starting from 9:00 AM on visit day'})</span>
                   </div>
@@ -258,8 +271,8 @@ export default function Contact() {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-ink">{language === 'bn' ? 'ইমেইল ঠিকানা:' : 'Official Email:'}</h4>
-                    <a href="mailto:htowhid6@gmail.com" className="text-xs text-accent font-semibold hover:underline block mt-0.5">
-                      htowhid6@gmail.com
+                    <a href={`mailto:${liveProfile?.email || 'htowhid6@gmail.com'}`} className="text-xs text-accent font-semibold hover:underline block mt-0.5">
+                      {liveProfile?.email || 'htowhid6@gmail.com'}
                     </a>
                   </div>
                 </div>

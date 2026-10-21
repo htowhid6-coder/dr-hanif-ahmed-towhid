@@ -45,7 +45,7 @@ export const AboutPageManager: React.FC = () => {
   const [milestones, setMilestones] = useState<AboutMilestone[]>(defaultMilestones);
   const [quickStats, setQuickStats] = useState<QuickStat[]>(defaultQuickStats);
 
-  const [activeTab, setActiveTab] = useState<'hero' | 'journey' | 'milestones' | 'stats' | 'expertise' | 'philosophy'>('hero');
+  const [activeTab, setActiveTab] = useState<'hero' | 'journey' | 'milestones' | 'stats' | 'expertise' | 'philosophy' | 'banners'>('hero');
   const [isSaving, setIsSaving] = useState(false);
 
   // Milestone edit modal
@@ -67,7 +67,16 @@ export const AboutPageManager: React.FC = () => {
       if (localMilestones) {
         try {
           const parsed = JSON.parse(localMilestones);
-          if (Array.isArray(parsed) && parsed.length > 0) setMilestones(parsed);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const sanitized = parsed.map((m: any) => ({
+              ...m,
+              titleEn: m.titleEn ? m.titleEn.replace(/38th/g, '37th').replace(/38(?=\s*BCS)/g, '37') : m.titleEn,
+              titleBn: m.titleBn ? m.titleBn.replace(/৩৮তম/g, '৩৭তম').replace(/৩৮(?=\s*বিসিএস)/g, '৩৭') : m.titleBn,
+              descBn: m.descBn ? m.descBn.replace(/৩৮তম/g, '৩৭তম').replace(/৩৮(?=\s*বিসিএস)/g, '৩৭') : m.descBn,
+              descEn: m.descEn ? m.descEn.replace(/38th/g, '37th').replace(/38(?=\s*BCS)/g, '37') : m.descEn,
+            }));
+            setMilestones(sanitized);
+          }
         } catch (e) {}
       }
 
@@ -99,7 +108,17 @@ export const AboutPageManager: React.FC = () => {
         .maybeSingle();
 
       if (msRes?.data && Array.isArray(msRes.data)) {
-        setMilestones(msRes.data);
+        const sanitized = msRes.data.map((m: any) => ({
+          ...m,
+          titleEn: m.titleEn ? m.titleEn.replace(/38th/g, '37th').replace(/38(?=\s*BCS)/g, '37') : m.titleEn,
+          titleBn: m.titleBn ? m.titleBn.replace(/৩৮তম/g, '৩৭তম').replace(/৩৮(?=\s*বিসিএস)/g, '৩৭') : m.titleBn,
+          descBn: m.descBn ? m.descBn.replace(/৩৮তম/g, '৩৭তম').replace(/৩৮(?=\s*বিসিএস)/g, '৩৭') : m.descBn,
+          descEn: m.descEn ? m.descEn.replace(/38th/g, '37th').replace(/38(?=\s*BCS)/g, '37') : m.descEn,
+        }));
+        setMilestones(sanitized);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('about_milestones_data', JSON.stringify(sanitized));
+        }
       }
 
       const { data: stRes } = await supabase
@@ -181,7 +200,7 @@ export const AboutPageManager: React.FC = () => {
     setIsMilestoneModalOpen(true);
   };
 
-  const handleSaveMilestoneModal = (e: React.FormEvent) => {
+  const handleSaveMilestoneModal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingMilestone) return;
 
@@ -201,9 +220,20 @@ export const AboutPageManager: React.FC = () => {
       localStorage.setItem('about_milestones_data', JSON.stringify(updated));
       window.dispatchEvent(new Event('about_data_updated'));
     }
+
+    try {
+      await supabase.from('site_settings').upsert({
+        id: 'about_milestones',
+        category: 'about',
+        data: updated,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' });
+    } catch (err) {
+      console.warn('Could not auto-sync milestone to Supabase:', err);
+    }
   };
 
-  const handleDeleteMilestone = (id: number) => {
+  const handleDeleteMilestone = async (id: number) => {
     if (!confirm(isBn ? 'আপনি কি নিশ্চিতভাবে এই মাইলস্টোনটি ডিলিট করতে চান?' : 'Are you sure you want to delete this milestone?')) return;
     const updated = milestones.filter(m => m.id !== id);
     setMilestones(updated);
@@ -211,9 +241,20 @@ export const AboutPageManager: React.FC = () => {
       localStorage.setItem('about_milestones_data', JSON.stringify(updated));
       window.dispatchEvent(new Event('about_data_updated'));
     }
+
+    try {
+      await supabase.from('site_settings').upsert({
+        id: 'about_milestones',
+        category: 'about',
+        data: updated,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' });
+    } catch (err) {
+      console.warn('Could not auto-sync milestone delete to Supabase:', err);
+    }
   };
 
-  const moveMilestone = (index: number, direction: 'up' | 'down') => {
+  const moveMilestone = async (index: number, direction: 'up' | 'down') => {
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= milestones.length) return;
     const clone = [...milestones];
@@ -224,6 +265,17 @@ export const AboutPageManager: React.FC = () => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('about_milestones_data', JSON.stringify(clone));
       window.dispatchEvent(new Event('about_data_updated'));
+    }
+
+    try {
+      await supabase.from('site_settings').upsert({
+        id: 'about_milestones',
+        category: 'about',
+        data: clone,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' });
+    } catch (err) {
+      console.warn('Could not auto-sync milestone reorder to Supabase:', err);
     }
   };
 
@@ -317,6 +369,16 @@ export const AboutPageManager: React.FC = () => {
         >
           {isBn ? '৬. চিকিৎসা দর্শন ও উক্তি' : '6. Philosophy & Quote'}
         </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('banners')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'banners' ? 'bg-accent text-white shadow-sm' : 'bg-white/60 text-muted hover:bg-white hover:text-ink'
+          }`}
+        >
+          {isBn ? '৭. সেকশন ব্রেকার ব্যানার (২ ও ৩)' : '7. Section Banners (2 & 3)'}
+        </button>
       </div>
 
       {/* 1. COVER HERO TAB */}
@@ -334,6 +396,7 @@ export const AboutPageManager: React.FC = () => {
             value={settings.aboutHeroImage}
             onChange={(val) => setSettings({ ...settings, aboutHeroImage: val })}
             placeholder="/Dr. Hanif_About page hero section image.png"
+            defaultFallback="/Dr. Hanif_About page hero section image.png"
             helperText={isBn ? 'লোকাল ডিভাইস থেকে ছবি আপলোড বা গ্যালারি থেকে সিলেক্ট করুন' : 'Upload from device or select from media gallery'}
           />
 
@@ -899,6 +962,181 @@ export const AboutPageManager: React.FC = () => {
             </div>
           </div>
         </GlassPanel>
+      )}
+
+      {/* 7. SECTION BANNERS TAB */}
+      {activeTab === 'banners' && (
+        <div className="flex flex-col gap-6 animate-in fade-in duration-300">
+          {/* Banner 2 Panel */}
+          <GlassPanel className="p-6 md:p-8 flex flex-col gap-5">
+            <div className="border-b border-line pb-3">
+              <span className="text-[10px] font-bold text-accent uppercase tracking-wider">
+                {isBn ? 'ফুল-উইডথ প্যারালাক্স ব্যানার ২' : 'Full-Width Parallax Banner 2'}
+              </span>
+              <h3 className="font-serif text-base md:text-lg font-bold text-ink flex items-center gap-2 mt-0.5">
+                <Sparkles className="w-4 h-4 text-accent" />
+                <span>{isBn ? 'ক্লিনিক্যাল উৎকর্ষ ও নির্ভুল রোগ নির্ণয় ব্যানার' : 'Clinical Excellence & Medical Diagnostics Banner'}</span>
+              </h3>
+            </div>
+
+            <ImagePickerField
+              label={isBn ? 'ব্যানার ২ এর ছবি (Section Breaking Aesthetic Banner 2):' : 'Banner 2 Image (Section Breaking Aesthetic Banner 2):'}
+              value={settings.banner2Image}
+              onChange={(val) => setSettings({ ...settings, banner2Image: val })}
+              placeholder="/Section Breaking Aesthetic Image_2.png"
+              defaultFallback="/Section Breaking Aesthetic Image_2.png"
+              helperText={isBn ? 'ডিভাইস থেকে ব্যানার ছবি আপলোড করুন অথবা ডিফল্ট ছবি রিস্টোর করুন' : 'Upload banner from local device or restore default'}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-ink">{isBn ? 'ব্যানার ২ ব্যাজ (বাংলা):' : 'Banner 2 Badge (Bengali):'}</label>
+                <input
+                  type="text"
+                  value={settings.banner2BadgeBn}
+                  onChange={(e) => setSettings({ ...settings, banner2BadgeBn: e.target.value })}
+                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-ink">{isBn ? 'ব্যানার ২ ব্যাজ (English):' : 'Banner 2 Badge (English):'}</label>
+                <input
+                  type="text"
+                  value={settings.banner2BadgeEn}
+                  onChange={(e) => setSettings({ ...settings, banner2BadgeEn: e.target.value })}
+                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-ink">{isBn ? 'ব্যানার ২ শিরোনাম (বাংলা):' : 'Banner 2 Heading (Bengali):'}</label>
+                <input
+                  type="text"
+                  value={settings.banner2HeadingBn}
+                  onChange={(e) => setSettings({ ...settings, banner2HeadingBn: e.target.value })}
+                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white font-semibold"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-ink">{isBn ? 'ব্যানার ২ শিরোনাম (English):' : 'Banner 2 Heading (English):'}</label>
+                <input
+                  type="text"
+                  value={settings.banner2HeadingEn}
+                  onChange={(e) => setSettings({ ...settings, banner2HeadingEn: e.target.value })}
+                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white font-semibold"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-ink">{isBn ? 'ব্যানার ২ সাবটেক্সট (বাংলা):' : 'Banner 2 Subtext (Bengali):'}</label>
+                <textarea
+                  rows={2}
+                  value={settings.banner2SubtextBn}
+                  onChange={(e) => setSettings({ ...settings, banner2SubtextBn: e.target.value })}
+                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-ink">{isBn ? 'ব্যানার ২ সাবটেক্সট (English):' : 'Banner 2 Subtext (English):'}</label>
+                <textarea
+                  rows={2}
+                  value={settings.banner2SubtextEn}
+                  onChange={(e) => setSettings({ ...settings, banner2SubtextEn: e.target.value })}
+                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white"
+                />
+              </div>
+            </div>
+          </GlassPanel>
+
+          {/* Banner 3 Panel */}
+          <GlassPanel className="p-6 md:p-8 flex flex-col gap-5">
+            <div className="border-b border-line pb-3">
+              <span className="text-[10px] font-bold text-accent uppercase tracking-wider">
+                {isBn ? 'ফুল-উইডথ প্যারালাক্স ব্যানার ৩' : 'Full-Width Parallax Banner 3'}
+              </span>
+              <h3 className="font-serif text-base md:text-lg font-bold text-ink flex items-center gap-2 mt-0.5">
+                <Sparkles className="w-4 h-4 text-accent" />
+                <span>{isBn ? 'রোগীসেবা ও চেম্বার পরামর্শ ব্যানার' : 'Patient Care & Chamber Consultation Banner'}</span>
+              </h3>
+            </div>
+
+            <ImagePickerField
+              label={isBn ? 'ব্যানার ৩ এর ছবি (Section Breaking Aesthetic Banner 3):' : 'Banner 3 Image (Section Breaking Aesthetic Banner 3):'}
+              value={settings.banner3Image}
+              onChange={(val) => setSettings({ ...settings, banner3Image: val })}
+              placeholder="/Section Breaking Aesthetic Image_3.png"
+              defaultFallback="/Section Breaking Aesthetic Image_3.png"
+              helperText={isBn ? 'ডিভাইস থেকে ব্যানার ছবি আপলোড করুন অথবা ডিফল্ট ছবি রিস্টোর করুন' : 'Upload banner from local device or restore default'}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-ink">{isBn ? 'ব্যানার ৩ ব্যাজ (বাংলা):' : 'Banner 3 Badge (Bengali):'}</label>
+                <input
+                  type="text"
+                  value={settings.banner3BadgeBn}
+                  onChange={(e) => setSettings({ ...settings, banner3BadgeBn: e.target.value })}
+                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-ink">{isBn ? 'ব্যানার ৩ ব্যাজ (English):' : 'Banner 3 Badge (English):'}</label>
+                <input
+                  type="text"
+                  value={settings.banner3BadgeEn}
+                  onChange={(e) => setSettings({ ...settings, banner3BadgeEn: e.target.value })}
+                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-ink">{isBn ? 'ব্যানার ৩ শিরোনাম (বাংলা):' : 'Banner 3 Heading (Bengali):'}</label>
+                <input
+                  type="text"
+                  value={settings.banner3HeadingBn}
+                  onChange={(e) => setSettings({ ...settings, banner3HeadingBn: e.target.value })}
+                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white font-semibold"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-ink">{isBn ? 'ব্যানার ৩ শিরোনাম (English):' : 'Banner 3 Heading (English):'}</label>
+                <input
+                  type="text"
+                  value={settings.banner3HeadingEn}
+                  onChange={(e) => setSettings({ ...settings, banner3HeadingEn: e.target.value })}
+                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white font-semibold"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-ink">{isBn ? 'ব্যানার ৩ সাবটেক্সট (বাংলা):' : 'Banner 3 Subtext (Bengali):'}</label>
+                <textarea
+                  rows={2}
+                  value={settings.banner3SubtextBn}
+                  onChange={(e) => setSettings({ ...settings, banner3SubtextBn: e.target.value })}
+                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-ink">{isBn ? 'ব্যানার ৩ সাবটেক্সট (English):' : 'Banner 3 Subtext (English):'}</label>
+                <textarea
+                  rows={2}
+                  value={settings.banner3SubtextEn}
+                  onChange={(e) => setSettings({ ...settings, banner3SubtextEn: e.target.value })}
+                  className="p-2.5 text-xs rounded-xl border border-slate-300 bg-white"
+                />
+              </div>
+            </div>
+          </GlassPanel>
+        </div>
       )}
 
       {/* MILESTONE CREATE / EDIT MODAL */}

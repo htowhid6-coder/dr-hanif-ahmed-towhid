@@ -92,7 +92,7 @@ export default function BlogPostDetailClient() {
             content: data.content,
             date: data.created_at ? data.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
             readTime: data.read_time || '5 min read',
-            image: data.image_url || local?.image || '/blogs/diabetes_care_guide.jpg',
+            image: (data as any).image_url || (data as any).image || local?.image || '/blogs/diabetes_care_guide.jpg',
             category: data.category || local?.category || 'General Medicine',
             categoryBn: data.category_bn || local?.categoryBn || 'মেডিসিন পরামর্শ',
           });

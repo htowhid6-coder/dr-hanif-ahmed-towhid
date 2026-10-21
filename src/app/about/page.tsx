@@ -254,7 +254,16 @@ export default function About() {
         if (localMilestones) {
           try {
             const parsed = JSON.parse(localMilestones);
-            if (Array.isArray(parsed) && parsed.length > 0) setMilestones(parsed);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const sanitized = parsed.map((m: any) => ({
+                ...m,
+                titleEn: m.titleEn ? m.titleEn.replace(/38th/g, '37th').replace(/38(?=\s*BCS)/g, '37') : m.titleEn,
+                titleBn: m.titleBn ? m.titleBn.replace(/৩৮তম/g, '৩৭তম').replace(/৩৮(?=\s*বিসিএস)/g, '৩৭') : m.titleBn,
+                descBn: m.descBn ? m.descBn.replace(/৩৮তম/g, '৩৭তম').replace(/৩৮(?=\s*বিসিএস)/g, '৩৭') : m.descBn,
+                descEn: m.descEn ? m.descEn.replace(/38th/g, '37th').replace(/38(?=\s*BCS)/g, '37') : m.descEn,
+              }));
+              setMilestones(sanitized);
+            }
           } catch (e) {}
         }
 
@@ -277,6 +286,9 @@ export default function About() {
 
         if (setRes?.data) {
           setSettings(prev => ({ ...prev, ...setRes.data }));
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('site_settings_data', JSON.stringify({ ...defaultSiteSettings, ...setRes.data }));
+          }
         }
 
         const { data: msRes } = await supabase
@@ -286,7 +298,18 @@ export default function About() {
           .maybeSingle();
 
         if (msRes?.data && Array.isArray(msRes.data)) {
-          setMilestones(msRes.data);
+          // Guarantee 37th BCS priority
+          const sanitizedMilestones = msRes.data.map((m: any) => ({
+            ...m,
+            titleEn: m.titleEn ? m.titleEn.replace(/38th/g, '37th').replace(/38(?=\s*BCS)/g, '37') : m.titleEn,
+            titleBn: m.titleBn ? m.titleBn.replace(/৩৮তম/g, '৩৭তম').replace(/৩৮(?=\s*বিসিএস)/g, '৩৭') : m.titleBn,
+            descBn: m.descBn ? m.descBn.replace(/৩৮তম/g, '৩৭তম').replace(/৩৮(?=\s*বিসিএস)/g, '৩৭') : m.descBn,
+            descEn: m.descEn ? m.descEn.replace(/38th/g, '37th').replace(/38(?=\s*BCS)/g, '37') : m.descEn,
+          }));
+          setMilestones(sanitizedMilestones);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('about_milestones_data', JSON.stringify(sanitizedMilestones));
+          }
         }
 
         const { data: stRes } = await supabase
@@ -297,6 +320,9 @@ export default function About() {
 
         if (stRes?.data && Array.isArray(stRes.data)) {
           setQuickStats(stRes.data);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('about_stats_data', JSON.stringify(stRes.data));
+          }
         }
       } catch (err) {}
     };

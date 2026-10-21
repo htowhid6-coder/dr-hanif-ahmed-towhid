@@ -1,6 +1,6 @@
 export interface HeroSlide {
   id: string;
-  type: 'welcome' | 'doctor-intro' | 'conditions' | 'chamber' | 'custom';
+  type: 'welcome' | 'doctor-intro' | 'symptoms' | 'conditions' | 'chamber' | 'custom';
   is_active: boolean;
   order_index: number;
 
@@ -101,10 +101,25 @@ export const defaultHeroSlides: HeroSlide[] = [
     secondary_cta_href: '/about',
   },
   {
+    id: 'symptoms',
+    type: 'symptoms',
+    is_active: true,
+    order_index: 2,
+    eyebrow_en: 'Symptom Evaluation · 14 Key Symptoms',
+    eyebrow_bn: 'লক্ষণ ভিত্তিক মূল্যায়ন · ১৪টি সাধারণ শারীরিক লক্ষণ',
+    title_en: 'Are You Suffering From Any of These Issues?',
+    title_bn: 'আপনি কি এই সমস্যায় ভুগছেন?',
+    lead_en: 'Click on any symptom to explore underlying causes, red flags, and doctor consultation advice.',
+    lead_bn: 'যেকোনো লক্ষণে ক্লিক করে কারণ, জরুরি করণীয় ও সঠিক চিকিৎসকের পরামর্শ জানুন।',
+    secondary_cta_text_en: 'Symptom Checker',
+    secondary_cta_text_bn: 'সকল লক্ষণ বিস্তারিত',
+    secondary_cta_href: '#symptoms-section',
+  },
+  {
     id: 'conditions',
     type: 'conditions',
     is_active: true,
-    order_index: 2,
+    order_index: 3,
     title_en: 'Diseases We Treat',
     title_bn: 'যেসব রোগের চিকিৎসা দেওয়া হয়',
     lead_en: 'Tap any condition for instant clinical insights',
@@ -117,7 +132,7 @@ export const defaultHeroSlides: HeroSlide[] = [
     id: 'chamber',
     type: 'chamber',
     is_active: true,
-    order_index: 3,
+    order_index: 4,
     eyebrow_en: 'Chamber Location',
     eyebrow_bn: 'চেম্বারের ঠিকানা ও সময়সূচী',
     title_en: 'Popular Medical Center Ltd., Sylhet.',

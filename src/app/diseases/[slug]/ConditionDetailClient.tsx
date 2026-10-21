@@ -109,7 +109,7 @@ export default function ConditionDetailClient() {
         if (!error && data && data.length > 0) {
           const mapped: Disease[] = data.map((d: any) => ({
             slug: d.slug,
-            image: d.image || '/Diseases_Images/diabetes.jpg',
+            image: d.image || diseaseData.find((x) => x.slug === d.slug)?.image || '/diseases/diabetes.png',
             title: { en: d.title_en, bn: d.title_bn },
             shortDesc: { en: d.short_desc_en, bn: d.short_desc_bn },
             fullDesc: { en: d.full_desc_en, bn: d.full_desc_bn },

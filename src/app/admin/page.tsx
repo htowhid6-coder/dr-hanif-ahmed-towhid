@@ -135,6 +135,7 @@ export default function AdminDashboard() {
     phone: '01721291297',
     bioEn: 'Dr. Hanif is dedicated to patients seeking general internal medicine care...',
     bioBn: 'ডা. হানিফ জেনারেল মেডিসিন সেবা প্রার্থীদের নিবেদিত...',
+    image: '/doctor-hero.png',
   });
 
   // Chamber Form States
@@ -390,6 +391,10 @@ export default function AdminDashboard() {
 
       alert(language === 'bn' ? 'রোগের লক্ষণ সফলভাবে ডাটাবেজে সংরক্ষিত হয়েছে!' : 'Symptom saved to database successfully!');
       setIsSymptomModalOpen(false);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('symptoms_updated'));
+        window.dispatchEvent(new Event('hero_updated'));
+      }
       fetchSymptoms();
     } catch (err: any) {
       console.error(err);
@@ -416,6 +421,10 @@ export default function AdminDashboard() {
       if (selectedSymptom?.slug === symptom.slug) {
         setIsSymptomModalOpen(false);
         setSelectedSymptom(null);
+      }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('symptoms_updated'));
+        window.dispatchEvent(new Event('hero_updated'));
       }
       fetchSymptoms();
     } catch (err: any) {
@@ -463,6 +472,10 @@ export default function AdminDashboard() {
       if (error) throw error;
 
       alert(language === 'bn' ? 'সকল ১৪টি রোগের লক্ষণ ডাটাবেজে সফলভাবে যুক্ত হয়েছে!' : 'All 14 clinical symptoms seeded to Supabase successfully!');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('symptoms_updated'));
+        window.dispatchEvent(new Event('hero_updated'));
+      }
       fetchSymptoms();
     } catch (err: any) {
       console.error(err);
@@ -1035,6 +1048,19 @@ export default function AdminDashboard() {
         .eq('id', '00000000-0000-0000-0000-000000000000')
         .maybeSingle();
       
+      // Fetch doctor_image from hero_slides or fallback to default
+      let heroDocImage = '/doctor-hero.png';
+      try {
+        const { data: heroSlideRow } = await supabase
+          .from('hero_slides')
+          .select('doctor_image')
+          .eq('id', 'doctor-intro')
+          .maybeSingle();
+        if (heroSlideRow?.doctor_image) {
+          heroDocImage = heroSlideRow.doctor_image;
+        }
+      } catch (e) {}
+
       if (profData) {
         setProfile({
           nameEn: profData.full_name_en,
@@ -1046,7 +1072,10 @@ export default function AdminDashboard() {
           phone: profData.phone,
           bioEn: profData.bio_en || '',
           bioBn: profData.bio_bn || '',
+          image: profData.avatar_url || heroDocImage,
         });
+      } else {
+        setProfile(prev => ({ ...prev, image: heroDocImage }));
       }
 
       // Fetch Chamber
@@ -1256,7 +1285,8 @@ export default function AdminDashboard() {
   const saveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { error } = await supabase.from('profiles').upsert({
+      // 1. Save to profiles table
+      const profilePayload: any = {
         id: '00000000-0000-0000-0000-000000000000',
         full_name_en: profile.nameEn,
         full_name_bn: profile.nameBn,
@@ -1267,9 +1297,100 @@ export default function AdminDashboard() {
         email: profile.email,
         bio_en: profile.bioEn,
         bio_bn: profile.bioBn,
-      });
-      if (error) throw error;
-      alert(language === 'bn' ? 'প্রোফাইল তথ্য সফলভাবে সেভ হয়েছে!' : 'Profile details saved successfully!');
+      };
+      if (profile.image) {
+        profilePayload.avatar_url = profile.image;
+      }
+
+      const { error } = await supabase.from('profiles').upsert(profilePayload);
+      if (error) {
+        // If avatar_url column does not exist yet in profiles table, retry without it
+        if (error.message?.includes('avatar_url') || error.code === '42703') {
+          delete profilePayload.avatar_url;
+          const retry = await supabase.from('profiles').upsert(profilePayload);
+          if (retry.error) throw retry.error;
+        } else {
+          throw error;
+        }
+      }
+
+      // 2. Synchronize to hero_slides doctor-intro slide in Supabase & LocalStorage
+      try {
+        const slideUpdate: any = {
+          title_en: profile.nameEn,
+          title_bn: profile.nameBn,
+          doctor_designation_en: profile.designationEn,
+          doctor_designation_bn: profile.designationBn,
+        };
+        if (profile.image) {
+          slideUpdate.doctor_image = profile.image;
+        }
+        await supabase.from('hero_slides').update(slideUpdate).eq('id', 'doctor-intro');
+
+        if (typeof window !== 'undefined') {
+          const localStr = localStorage.getItem('hero_slides_data');
+          if (localStr) {
+            try {
+              const slidesArr = JSON.parse(localStr);
+              if (Array.isArray(slidesArr)) {
+                const updatedArr = slidesArr.map((s: any) => {
+                  if (s.id === 'doctor-intro' || s.type === 'doctor-intro') {
+                    return { ...s, ...slideUpdate };
+                  }
+                  return s;
+                });
+                localStorage.setItem('hero_slides_data', JSON.stringify(updatedArr));
+              }
+            } catch (e) {}
+          }
+        }
+      } catch (slideErr) {
+        console.warn("Hero slide doctor-intro sync:", slideErr);
+      }
+
+      // 3. Synchronize to site_settings (global_settings)
+      try {
+        const { data: existingSettings } = await supabase
+          .from('site_settings')
+          .select('data')
+          .eq('id', 'global_settings')
+          .maybeSingle();
+
+        const updatedSettingsData = {
+          ...(existingSettings?.data || {}),
+          doctorNameEn: profile.nameEn,
+          doctorNameBn: profile.nameBn,
+          doctorDesignationEn: profile.designationEn,
+          doctorDesignationBn: profile.designationBn,
+          bmdcRegistrationNumber: profile.bmdc,
+          doctorPhone: profile.phone,
+          doctorEmail: profile.email,
+          specialistIntroBioEn: profile.bioEn,
+          specialistIntroBioBn: profile.bioBn,
+          doctorImage: profile.image || existingSettings?.data?.doctorImage,
+        };
+
+        await supabase.from('site_settings').upsert({
+          id: 'global_settings',
+          data: updatedSettingsData,
+        });
+
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('site_settings_data', JSON.stringify(updatedSettingsData));
+        }
+      } catch (setErr) {
+        console.warn("Site settings profile sync:", setErr);
+      }
+
+      // 4. Dispatch real-time events for instant frontend reactivity
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('profile_updated_at', String(Date.now()));
+        window.dispatchEvent(new Event('hero_updated'));
+        window.dispatchEvent(new Event('profile_updated'));
+        window.dispatchEvent(new Event('site_settings_updated'));
+      }
+
+      alert(language === 'bn' ? 'প্রোফাইল তথ্য সফলভাবে সেভ হয়েছে এবং ওয়েবসাইটে আপডেট হয়েছে!' : 'Profile details saved and updated across website!');
     } catch (err) {
       console.error(err);
       alert(language === 'bn' ? 'সেভ করতে ত্রুটি ঘটেছে!' : 'Failed to save profile!');
@@ -1284,6 +1405,7 @@ export default function AdminDashboard() {
         localStorage.setItem('chamber_direct_map_link', chamber.directMapLink);
       }
 
+      // 1. Save to chambers table
       const { error } = await supabase.from('chambers').upsert({
         id: '00000000-0000-0000-0000-000000000000',
         name_en: chamber.nameEn,
@@ -1301,7 +1423,63 @@ export default function AdminDashboard() {
         console.warn("Supabase chamber update:", error);
       }
 
-      alert(language === 'bn' ? 'চেম্বার তথ্য ও গুগল ম্যাপ লিংক সফলভাবে সেভ হয়েছে!' : 'Chamber details & Google Map saved successfully!');
+      // 2. Synchronize to hero_slides chamber slide in Supabase
+      try {
+        await supabase.from('hero_slides').update({
+          title_en: chamber.nameEn,
+          title_bn: chamber.nameBn,
+          chamber_address_en: chamber.addressEn,
+          chamber_address_bn: chamber.addressBn,
+          chamber_hours_en: chamber.hoursEn,
+          chamber_hours_bn: chamber.hoursBn,
+          chamber_ticket_phone: chamber.ticketPhone,
+        }).eq('id', 'chamber');
+      } catch (slideErr) {
+        console.warn("Hero slide chamber sync:", slideErr);
+      }
+
+      // 3. Synchronize to site_settings (global_settings)
+      try {
+        const { data: existingSettings } = await supabase
+          .from('site_settings')
+          .select('data')
+          .eq('id', 'global_settings')
+          .maybeSingle();
+
+        const updatedSettingsData = {
+          ...(existingSettings?.data || {}),
+          chamberNameEn: chamber.nameEn,
+          chamberNameBn: chamber.nameBn,
+          chamberAddressEn: chamber.addressEn,
+          chamberAddressBn: chamber.addressBn,
+          chamberVisitingHoursEn: chamber.hoursEn,
+          chamberVisitingHoursBn: chamber.hoursBn,
+          serialHotline: chamber.ticketPhone,
+          chamberMapEmbedUrl: chamber.mapUrl,
+          googleMapLink: chamber.directMapLink,
+        };
+
+        await supabase.from('site_settings').upsert({
+          id: 'global_settings',
+          data: updatedSettingsData,
+        });
+
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('site_settings_data', JSON.stringify(updatedSettingsData));
+        }
+      } catch (setErr) {
+        console.warn("Site settings chamber sync:", setErr);
+      }
+
+      // 4. Dispatch real-time events for instant frontend reactivity
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('chamber_updated_at', String(Date.now()));
+        window.dispatchEvent(new Event('hero_updated'));
+        window.dispatchEvent(new Event('chamber_updated'));
+        window.dispatchEvent(new Event('site_settings_updated'));
+      }
+
+      alert(language === 'bn' ? 'চেম্বার তথ্য ও গুগল ম্যাপ লিংক সফলভাবে সেভ হয়েছে এবং ওয়েবসাইটে আপডেট হয়েছে!' : 'Chamber details & Google Map saved and updated across website!');
     } catch (err) {
       console.error(err);
       alert(language === 'bn' ? 'চেম্বার তথ্য সংরক্ষিত হয়েছে!' : 'Chamber details saved!');
@@ -2188,6 +2366,18 @@ export default function AdminDashboard() {
               </div>
 
               <form onSubmit={saveProfile} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Doctor Portrait Image Picker */}
+                <div className="md:col-span-2">
+                  <ImagePickerField
+                    label={language === 'bn' ? 'ডাক্তারের মূল পোর্ট্রেট ছবি (Hero & Profile Photo):' : 'Doctor Main Portrait Photo (Hero & Profile):'}
+                    value={profile.image || ''}
+                    onChange={(val) => setProfile({ ...profile, image: val })}
+                    placeholder="/doctor-hero.png"
+                    defaultFallback="/doctor-hero.png"
+                    helperText={language === 'bn' ? 'হোম পেজের হিরো সেকশন এবং পাবলিক প্রোফাইলে এই ছবিটি প্রদর্শিত হবে। লোকাল ডিভাইস থেকে পরিবর্তন করুন।' : 'This photo is displayed in the homepage Hero section and Doctor profile. Upload from local device or choose from gallery.'}
+                  />
+                </div>
+
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-ink">Name (English)</label>
                   <input
@@ -3004,18 +3194,20 @@ export default function AdminDashboard() {
                           </div>
                         </div>
 
-                        {/* Image selector */}
+                        {/* Image selector with local upload, replace & preview */}
                         <div className="flex flex-col gap-2 p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                          <label className="text-xs font-bold text-ink">Symptom Image Path or URL</label>
-                          <input
-                            type="text"
+                          <ImagePickerField
+                            label={language === 'bn' ? 'লক্ষণ আইকন / ছবি (Symptom Icon / Image):' : 'Symptom Icon / Image:'}
                             value={symptomForm.image}
-                            onChange={(e) => setSymptomForm({ ...symptomForm, image: e.target.value })}
+                            onChange={(val) => setSymptomForm({ ...symptomForm, image: val })}
                             placeholder="/symptoms/fever.png"
-                            className="p-2.5 text-xs font-mono rounded-xl border border-slate-300 bg-white focus:border-teal-600 focus:outline-none"
+                            defaultFallback="/symptoms/fever.png"
+                            helperText={language === 'bn' ? 'লোকাল ডিভাইস থেকে লক্ষণ ছবি আপলোড করুন অথবা নিচের প্রিসেট বেছে নিন' : 'Upload symptom icon from local device or pick a preset below'}
                           />
 
-                          <span className="text-[11px] text-muted font-bold mt-1">Quick Select Image Presets:</span>
+                          <span className="text-[11px] text-muted font-bold mt-2">
+                            {language === 'bn' ? 'অথবা দ্রুত প্রিসেট আইকন বেছে নিন:' : 'Or Quick Select Image Presets:'}
+                          </span>
                           <div className="flex flex-wrap gap-2">
                             {symptomImagePresets.map(preset => (
                               <button

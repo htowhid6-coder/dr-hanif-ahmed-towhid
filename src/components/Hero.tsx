@@ -3,11 +3,32 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { GlassPanel } from './GlassPanel';
-import { MapPin, Clock, Phone, PhoneCall, MessageCircle, Sparkles, ArrowRight, Activity, Droplets, HeartPulse, Dna, Heart, Bean, Thermometer } from 'lucide-react';
+import {
+  MapPin,
+  Clock,
+  Phone,
+  PhoneCall,
+  MessageCircle,
+  Sparkles,
+  ArrowRight,
+  Activity,
+  Droplets,
+  HeartPulse,
+  Dna,
+  Heart,
+  Bean,
+  Thermometer,
+  ChevronLeft,
+  ChevronRight,
+  ShieldCheck,
+  CheckCircle2,
+} from 'lucide-react';
 import Link from 'next/link';
 import { diseaseData, Disease } from '@/locales/diseaseData';
 import { HeroSlide, defaultHeroSlides, defaultHeroBgImage } from '@/data/heroData';
 import supabase from '@/lib/supabase';
+import { SymptomDetailModal, SYMPTOM_ICON_MAP, GenericSymptom } from './SymptomDetailModal';
+import { symptomsList, SymptomItem } from './SymptomCheckerSection';
 
 interface SectionStat {
   value: string;
@@ -34,12 +55,20 @@ interface HeroProps {
 
 export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
   const { language, t } = useLanguage();
+  const isBn = language === 'bn';
   const [activeSection, setActiveSection] = useState(0);
   const sectionRefs = useRef<(HTMLElement | null)[]>([]);
   const [slides, setSlides] = useState<HeroSlide[]>(defaultHeroSlides);
   const [bgImage, setBgImage] = useState<string>(defaultHeroBgImage);
 
-  // Load Hero Slides from Supabase / localStorage
+  // Symptoms and live database data states (Database 1st priority)
+  const [symptoms, setSymptoms] = useState<GenericSymptom[]>(symptomsList);
+  const [symptomPage, setSymptomPage] = useState<number>(0);
+  const [selectedSymptomForModal, setSelectedSymptomForModal] = useState<GenericSymptom | null>(null);
+  const [liveProfile, setLiveProfile] = useState<any>(null);
+  const [liveChamber, setLiveChamber] = useState<any>(null);
+
+  // Load Hero Slides and Database data from Supabase / localStorage
   useEffect(() => {
     const loadHeroData = async () => {
       // 1. Try local storage first for instant rendering
@@ -60,17 +89,73 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
         }
       }
 
-      // 2. Fetch live data from Supabase
+      // 2. Fetch live data from Supabase (Database 1st priority)
       try {
-        const { data, error } = await supabase
-          .from('hero_slides')
-          .select('*')
-          .order('order_index', { ascending: true });
+        const [slidesRes, symptomsRes, profileRes, chamberRes, bgRes] = await Promise.all([
+          supabase.from('hero_slides').select('*').order('order_index', { ascending: true }),
+          supabase.from('symptoms').select('*').order('order_index', { ascending: true }),
+          supabase.from('profiles').select('*').eq('id', '00000000-0000-0000-0000-000000000000').maybeSingle(),
+          supabase.from('chambers').select('*').eq('id', '00000000-0000-0000-0000-000000000000').maybeSingle(),
+          supabase.from('site_settings').select('data').eq('id', 'hero_bg_image').maybeSingle(),
+        ]);
 
-        if (!error && data && data.length > 0) {
-          setSlides(data as HeroSlide[]);
+        if (bgRes?.data?.data?.url) {
+          setBgImage(bgRes.data.data.url);
           if (typeof window !== 'undefined') {
-            localStorage.setItem('hero_slides_data', JSON.stringify(data));
+            localStorage.setItem('hero_bg_image', bgRes.data.data.url);
+          }
+        }
+
+        if (profileRes.data) {
+          setLiveProfile(profileRes.data);
+        }
+        if (chamberRes.data) {
+          setLiveChamber(chamberRes.data);
+        }
+
+        // Merge DB symptoms with static icons/notes (DB data takes 1st priority)
+        if (symptomsRes.data && symptomsRes.data.length > 0) {
+          const merged: GenericSymptom[] = symptomsRes.data.map((dbItem: any, idx: number) => {
+            const staticMatch = symptomsList.find((s) => s.slug === dbItem.slug) || symptomsList[idx];
+            return {
+              id: dbItem.id || idx + 1,
+              slug: dbItem.slug,
+              titleBn: dbItem.title_bn || staticMatch?.bn,
+              titleEn: dbItem.title_en || staticMatch?.en,
+              bn: dbItem.title_bn || staticMatch?.bn,
+              en: dbItem.title_en || staticMatch?.en,
+              categoryBn: dbItem.category_bn || staticMatch?.categoryBn,
+              categoryEn: dbItem.category_en || staticMatch?.categoryEn,
+              organBn: dbItem.organ_bn || staticMatch?.organBn,
+              organEn: dbItem.organ_en || staticMatch?.organEn,
+              noteBn: staticMatch?.noteBn || (dbItem.short_desc_bn && dbItem.short_desc_bn.length < 250 ? dbItem.short_desc_bn : '') || staticMatch?.noteBn || '',
+              noteEn: staticMatch?.noteEn || (dbItem.short_desc_en && dbItem.short_desc_en.length < 250 ? dbItem.short_desc_en : '') || staticMatch?.noteEn || '',
+              shortDescBn: staticMatch?.noteBn || (dbItem.short_desc_bn && dbItem.short_desc_bn.length < 250 ? dbItem.short_desc_bn : '') || staticMatch?.noteBn || '',
+              shortDescEn: staticMatch?.noteEn || (dbItem.short_desc_en && dbItem.short_desc_en.length < 250 ? dbItem.short_desc_en : '') || staticMatch?.noteEn || '',
+              image: dbItem.image || staticMatch?.image || `/symptoms/${dbItem.slug}.png`,
+              icon: SYMPTOM_ICON_MAP[dbItem.slug] || staticMatch?.icon,
+            };
+          });
+          setSymptoms(merged);
+        }
+
+        // Process Hero Slides (Ensure Symptoms slide is always included right after doctor-intro)
+        if (!slidesRes.error && slidesRes.data && slidesRes.data.length > 0) {
+          let list = [...slidesRes.data];
+          const hasSymptoms = list.some((s: HeroSlide) => s.type === 'symptoms' || s.id === 'symptoms');
+          if (!hasSymptoms) {
+            const defaultSymptomsSlide = defaultHeroSlides.find((s) => s.type === 'symptoms')!;
+            const docIntroIdx = list.findIndex((s) => s.type === 'doctor-intro' || s.id === 'doctor-intro');
+            if (docIntroIdx !== -1) {
+              list.splice(docIntroIdx + 1, 0, defaultSymptomsSlide);
+            } else {
+              list.push(defaultSymptomsSlide);
+            }
+            list = list.map((s, idx) => ({ ...s, order_index: idx }));
+          }
+          setSlides(list as HeroSlide[]);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('hero_slides_data', JSON.stringify(list));
           }
         }
       } catch (err) {
@@ -80,13 +165,21 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
 
     loadHeroData();
 
-    // Listen for live updates from admin panel in same window
+    // Listen for live updates from admin panel in real-time
     const handleUpdate = () => loadHeroData();
     window.addEventListener('hero_updated', handleUpdate);
+    window.addEventListener('symptoms_updated', handleUpdate);
+    window.addEventListener('profile_updated', handleUpdate);
+    window.addEventListener('chamber_updated', handleUpdate);
+    window.addEventListener('site_settings_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
 
     return () => {
       window.removeEventListener('hero_updated', handleUpdate);
+      window.removeEventListener('symptoms_updated', handleUpdate);
+      window.removeEventListener('profile_updated', handleUpdate);
+      window.removeEventListener('chamber_updated', handleUpdate);
+      window.removeEventListener('site_settings_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
   }, []);
@@ -127,9 +220,9 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
   };
 
   const diseaseIconMap: Record<string, React.ReactNode> = {
-    'diabetes': <Droplets className="w-4 h-4" />,
-    'hypertension': <HeartPulse className="w-4 h-4" />,
-    'dyslipidemia': <Dna className="w-4 h-4" />,
+    diabetes: <Droplets className="w-4 h-4" />,
+    hypertension: <HeartPulse className="w-4 h-4" />,
+    dyslipidemia: <Dna className="w-4 h-4" />,
     'ischemic-heart-disease': <Heart className="w-4 h-4" />,
     'fatty-liver': <Bean className="w-4 h-4" />,
     'enteric-fever': <Thermometer className="w-4 h-4" />,
@@ -144,20 +237,23 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
     diseaseData.find((d) => d.slug === 'enteric-fever'),
   ].filter(Boolean) as Disease[];
 
+  // Helper for Bengali numerals
+  const toBn = (num: number) => num.toString().replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[+d]);
+
   // Build active sections data from dynamic slides
-  const activeSlides = slides.filter(s => s.is_active !== false).sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+  const activeSlides = slides
+    .filter((s) => s.is_active !== false)
+    .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
 
   const sectionsData: SectionItem[] = activeSlides.map((slide) => {
-    const isBn = language === 'bn';
-
     // 1. Welcome Slide
     if (slide.type === 'welcome') {
       return {
         id: slide.id || 'welcome',
-        eyebrow: isBn ? (slide.eyebrow_bn || t('hero.eyebrow')) : (slide.eyebrow_en || t('hero.eyebrow')),
-        title: isBn ? (slide.title_bn || t('hero.title')) : (slide.title_en || t('hero.title')),
-        lead: isBn ? (slide.lead_bn || t('hero.lead')) : (slide.lead_en || t('hero.lead')),
-        cta: isBn ? (slide.cta_text_bn || t('hero.cta')) : (slide.cta_text_en || t('hero.cta')),
+        eyebrow: isBn ? slide.eyebrow_bn || t('hero.eyebrow') : slide.eyebrow_en || t('hero.eyebrow'),
+        title: isBn ? slide.title_bn || t('hero.title') : slide.title_en || t('hero.title'),
+        lead: isBn ? slide.lead_bn || t('hero.lead') : slide.lead_en || t('hero.lead'),
+        cta: isBn ? slide.cta_text_bn || t('hero.cta') : slide.cta_text_en || t('hero.cta'),
         ctaHref: slide.cta_href || 'https://wa.me/8801346132486',
         ctaType: slide.cta_type || 'whatsapp',
         secondaryCta: isBn ? slide.secondary_cta_text_bn : slide.secondary_cta_text_en,
@@ -165,18 +261,30 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
       };
     }
 
-    // 2. Doctor Intro Slide
+    // 2. Doctor Intro Slide (Database 1st priority via liveProfile & liveChamber)
     if (slide.type === 'doctor-intro') {
-      const docName = isBn ? (slide.title_bn || t('doctorIntro.name')) : (slide.title_en || t('doctorIntro.name'));
-      const specialty = isBn ? (slide.doctor_specialty_bn || 'মেডিসিন বিশেষজ্ঞ') : (slide.doctor_specialty_en || 'Medicine Specialist');
-      const degrees = isBn ? (slide.doctor_degrees_bn || t('doctorIntro.degrees')) : (slide.doctor_degrees_en || t('doctorIntro.degrees'));
-      const designation = isBn ? (slide.doctor_designation_bn || t('doctorIntro.designation')) : (slide.doctor_designation_en || t('doctorIntro.designation'));
-      const hoursText = isBn 
-        ? (slide.chamber_hours_highlight_bn || t('chamber.hours')) 
-        : (slide.chamber_hours_highlight_en || t('chamber.hours'));
+      const docName = isBn
+        ? liveProfile?.full_name_bn || slide.title_bn || t('doctorIntro.name')
+        : liveProfile?.full_name_en || slide.title_en || t('doctorIntro.name');
+      const specialty = isBn
+        ? slide.doctor_specialty_bn || 'মেডিসিন বিশেষজ্ঞ'
+        : slide.doctor_specialty_en || 'Medicine Specialist';
+      const degrees = isBn
+        ? slide.doctor_degrees_bn || t('doctorIntro.degrees')
+        : slide.doctor_degrees_en || t('doctorIntro.degrees');
+      const designation = isBn
+        ? liveProfile?.designation_bn || slide.doctor_designation_bn || t('doctorIntro.designation')
+        : liveProfile?.designation_en || slide.doctor_designation_en || t('doctorIntro.designation');
+      const hoursText = isBn
+        ? liveChamber?.hours_bn || slide.chamber_hours_highlight_bn || t('chamber.hours')
+        : liveChamber?.hours_en || slide.chamber_hours_highlight_en || t('chamber.hours');
       const addressText = isBn
-        ? (slide.chamber_address_highlight_bn || 'পপুলার মেডিকেল সেন্টার লিমিটেড (রুম-৬০৫), নিউ মেডিকেল রোড, কাজলশাহ, সিলেট।')
-        : (slide.chamber_address_highlight_en || 'Popular Medical Center Ltd. (Room 605), New Medical Road, Kazalshah, Sylhet.');
+        ? liveChamber?.address_bn ||
+          slide.chamber_address_highlight_bn ||
+          'পপুলার মেডিকেল সেন্টার লিমিটেড (রুম-৬০৫), নিউ মেডিকেল রোড, কাজলশাহ, সিলেট।'
+        : liveChamber?.address_en ||
+          slide.chamber_address_highlight_en ||
+          'Popular Medical Center Ltd. (Room 605), New Medical Road, Kazalshah, Sylhet.';
       const docImg = slide.doctor_image || '/doctor-hero.png';
 
       return {
@@ -231,19 +339,173 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
             </div>
           </div>
         ),
-        cta: isBn ? (slide.cta_text_bn || t('hero.cta')) : (slide.cta_text_en || t('hero.cta')),
+        cta: isBn ? slide.cta_text_bn || t('hero.cta') : slide.cta_text_en || t('hero.cta'),
         ctaHref: slide.cta_href || 'https://wa.me/8801346132486',
         ctaType: slide.cta_type || 'whatsapp',
-        secondaryCta: isBn ? (slide.secondary_cta_text_bn || "ডাক্তারের জীবন ও ডিগ্রি") : (slide.secondary_cta_text_en || "Doctor's Journey"),
+        secondaryCta: isBn
+          ? slide.secondary_cta_text_bn || 'ডাক্তারের জীবন ও ডিগ্রি'
+          : slide.secondary_cta_text_en || "Doctor's Journey",
         secondaryCtaHref: slide.secondary_cta_href || '/about',
       };
     }
 
-    // 3. Conditions Slide
+    // 3. Clinical Symptoms Slide (7 items per page with Next/Prev arrows and interactive detail popup)
+    if (slide.type === 'symptoms') {
+      const totalCount = symptoms.length;
+      const itemsPerPage = 7;
+      const totalPages = Math.ceil(totalCount / itemsPerPage) || 2;
+      const safePage = Math.min(symptomPage, totalPages - 1);
+      const startIdx = safePage * itemsPerPage;
+      const currentBatch = symptoms.slice(startIdx, startIdx + itemsPerPage);
+      const endIdx = Math.min(startIdx + itemsPerPage, totalCount);
+
+      const rangeBadge = isBn
+        ? `${toBn(startIdx + 1)}–${toBn(endIdx)} / ${toBn(totalCount)}`
+        : `${startIdx + 1}–${endIdx} / ${totalCount}`;
+
+      return {
+        id: slide.id || 'symptoms',
+        eyebrow: isBn
+          ? slide.eyebrow_bn || 'লক্ষণ ভিত্তিক মূল্যায়ন · ১৪টি সাধারণ শারীরিক লক্ষণ'
+          : slide.eyebrow_en || 'Symptom Evaluation · 14 Key Symptoms',
+        title: isBn
+          ? (slide.title_bn === 'আপনার কি এই অসুবিধাগুলো হচ্ছে?' ? 'আপনি কি এই সমস্যায় ভুগছেন?' : (slide.title_bn || 'আপনি কি এই সমস্যায় ভুগছেন?'))
+          : (slide.title_en === 'Are You Experiencing Any of These Symptoms?' ? 'Are You Suffering From Any of These Issues?' : (slide.title_en || 'Are You Suffering From Any of These Issues?')),
+        lead: (
+          <div className="flex flex-col gap-3.5 pt-1">
+            {/* Top Header Bar matching user screenshot: Badge + Count + Navigation arrows */}
+            <div className="flex items-center justify-between gap-2 p-2.5 sm:p-3 rounded-2xl bg-white/75 border border-white/80 shadow-2xs backdrop-blur-md">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-accent text-white text-[11px] sm:text-xs font-bold tracking-wide shadow-xs shrink-0">
+                  <Sparkles className="w-3 h-3" />
+                  <span>{isBn ? 'লক্ষণ তালিকা (১৪টি)' : 'Symptoms List (14)'}</span>
+                </span>
+                <span className="text-[11px] sm:text-xs font-mono font-bold text-slate-700 bg-white/90 border border-slate-200/80 px-2 py-0.5 rounded-lg shrink-0">
+                  {rangeBadge}
+                </span>
+              </div>
+
+              {/* Prev / Next Pagination Controls */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setSymptomPage((p) => Math.max(0, p - 1))}
+                  disabled={safePage === 0}
+                  aria-label="Previous Symptoms"
+                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all ${
+                    safePage === 0
+                      ? 'opacity-35 cursor-not-allowed bg-slate-100 text-slate-400'
+                      : 'bg-white hover:bg-accent hover:text-white text-ink shadow-xs border border-white/90 cursor-pointer active:scale-95'
+                  }`}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSymptomPage((p) => Math.min(totalPages - 1, p + 1))}
+                  disabled={safePage >= totalPages - 1}
+                  aria-label="Next Symptoms"
+                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all ${
+                    safePage >= totalPages - 1
+                      ? 'opacity-35 cursor-not-allowed bg-slate-100 text-slate-400'
+                      : 'bg-white hover:bg-accent hover:text-white text-ink shadow-xs border border-white/90 cursor-pointer active:scale-95'
+                  }`}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <p className="text-xs sm:text-[13px] text-muted font-medium px-1">
+              {isBn
+                ? slide.lead_bn || 'ক্লিক করে যেকোনো লক্ষণ বিস্তারিত দেখুন বা ডানে-বামে স্ক্রল করুন'
+                : slide.lead_en || 'Tap any symptom for instant clinical review or swipe pages'}
+            </p>
+
+            {/* 7 Symptoms Grid (1 featured banner + 6 in 2 cols) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
+              {currentBatch.map((symptom, idx) => {
+                const globalIndex = startIdx + idx;
+                const IconComp = symptom.icon || SYMPTOM_ICON_MAP[symptom.slug] || Activity;
+                const sTitle = isBn ? symptom.titleBn || symptom.bn : symptom.titleEn || symptom.en;
+                const sCategory = isBn ? symptom.categoryBn || '' : symptom.categoryEn || '';
+                const isFeatured = idx === 0;
+
+                return (
+                  <button
+                    key={symptom.slug}
+                    type="button"
+                    onClick={() => setSelectedSymptomForModal(symptom)}
+                    className={`group relative overflow-hidden flex items-center justify-between p-2.5 sm:p-3 rounded-2xl text-left cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 active:scale-[0.98] bg-white/80 hover:bg-white border border-white/90 hover:border-accent/40 shadow-xs hover:shadow-md ${
+                      isFeatured
+                        ? 'sm:col-span-2 bg-gradient-to-r from-emerald-50/70 via-white to-teal-50/60 border-emerald-200/60'
+                        : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-2">
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-accent/10 text-accent group-hover:bg-accent group-hover:text-white flex items-center justify-center shrink-0 transition-all duration-300 shadow-2xs">
+                        <IconComp className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <h4 className="text-xs sm:text-sm font-bold text-ink leading-snug group-hover:text-accent transition-colors truncate">
+                          {sTitle}
+                        </h4>
+                        {sCategory && (
+                          <span className="text-[10px] sm:text-[11px] text-muted truncate leading-tight mt-0.5">
+                            {sCategory}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="shrink-0 flex items-center justify-center w-7 h-7 rounded-xl bg-accent/5 group-hover:bg-accent text-accent/40 group-hover:text-white transition-all shadow-2xs">
+                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Bottom Pagination Dots & Jump to full section */}
+            <div className="flex items-center justify-between pt-2 border-t border-line/60">
+              <div className="flex items-center gap-2">
+                {Array.from({ length: totalPages }).map((_, pIdx) => (
+                  <button
+                    key={pIdx}
+                    type="button"
+                    onClick={() => setSymptomPage(pIdx)}
+                    aria-label={`Go to page ${pIdx + 1}`}
+                    className={`h-2 rounded-full transition-all cursor-pointer ${
+                      safePage === pIdx ? 'w-6 bg-accent' : 'w-2 bg-slate-300 hover:bg-slate-400'
+                    }`}
+                  />
+                ))}
+                <span className="text-[10px] text-muted ml-1">
+                  {isBn ? `পৃষ্ঠা ${toBn(safePage + 1)} / ${toBn(totalPages)}` : `Page ${safePage + 1} of ${totalPages}`}
+                </span>
+              </div>
+
+              <a
+                href="#symptoms-section"
+                className="text-[11px] font-bold text-accent hover:text-ink inline-flex items-center gap-1 transition-colors"
+              >
+                <span>{isBn ? 'সম্পূর্ণ লক্ষণ তালিকা' : 'View Full List'}</span>
+                <ArrowRight className="w-3 h-3" />
+              </a>
+            </div>
+          </div>
+        ),
+        secondaryCta: isBn
+          ? slide.secondary_cta_text_bn || 'সকল লক্ষণ বিস্তারিত'
+          : slide.secondary_cta_text_en || 'Symptom Checker',
+        secondaryCtaHref: slide.secondary_cta_href || '#symptoms-section',
+      };
+    }
+
+    // 4. Conditions Slide
     if (slide.type === 'conditions') {
       return {
         id: slide.id || 'conditions',
-        title: isBn ? (slide.title_bn || 'যেসব রোগের চিকিৎসা দেওয়া হয়') : (slide.title_en || 'Diseases We Treat'),
+        title: isBn ? slide.title_bn || 'যেসব রোগের চিকিৎসা দেওয়া হয়' : slide.title_en || 'Diseases We Treat',
         lead: (
           <div className="flex flex-col gap-5">
             <div className="flex items-center gap-2.5">
@@ -253,8 +515,8 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
               </span>
               <p className="text-xs md:text-sm text-muted font-medium tracking-wide">
                 {isBn
-                  ? (slide.lead_bn || 'যেকোনো রোগে ক্লিক করে চিকিৎসা পরামর্শ জানুন')
-                  : (slide.lead_en || 'Tap any condition for instant clinical insights')}
+                  ? slide.lead_bn || 'যেকোনো রোগে ক্লিক করে চিকিৎসা পরামর্শ জানুন'
+                  : slide.lead_en || 'Tap any condition for instant clinical insights'}
               </p>
             </div>
 
@@ -301,25 +563,47 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
             </div>
           </div>
         ),
-        secondaryCta: isBn ? (slide.secondary_cta_text_bn || 'আরও দেখুন') : (slide.secondary_cta_text_en || 'View More'),
+        secondaryCta: isBn ? slide.secondary_cta_text_bn || 'আরও দেখুন' : slide.secondary_cta_text_en || 'View More',
         secondaryCtaHref: slide.secondary_cta_href || '/diseases',
       };
     }
 
-    // 4. Chamber Slide
+    // 5. Chamber Slide (Database 1st priority via liveChamber)
     if (slide.type === 'chamber') {
-      const chamberTitle = isBn ? (slide.title_bn || t('chamber.title')) : (slide.title_en || t('chamber.title'));
-      const chamberEyebrow = isBn ? (slide.eyebrow_bn || t('chamber.eyebrow')) : (slide.eyebrow_en || t('chamber.eyebrow'));
-      const roomText = isBn ? (slide.chamber_room_bn || '৬ষ্ঠ তলা, রুম নং-৬০৫') : (slide.chamber_room_en || '6th Floor, Room No-605');
-      const roomBadge = isBn ? (slide.chamber_room_badge_bn || 'প্রধান চেম্বার') : (slide.chamber_room_badge_en || 'Main Chamber');
-      const addressText = isBn ? (slide.chamber_address_bn || 'নিউ মেডিকেল রোড, কাজলশাহ, সিলেট।') : (slide.chamber_address_en || 'New Medical Road, Kazalshah, Sylhet.');
-      const hoursText = isBn ? (slide.chamber_hours_bn || 'প্রতিদিন বিকাল ৫:০০টা – রাত ৯:০০টা') : (slide.chamber_hours_en || '5:00 PM – 9:00 PM (Daily)');
-      const offDaysText = isBn ? (slide.chamber_off_days_bn || 'শুক্রবার ও মঙ্গলবার চেম্বার বন্ধ থাকে') : (slide.chamber_off_days_en || 'Friday & Tuesday Closed');
-      const ticketPhone = slide.chamber_ticket_phone || '01346-132486';
-      const ticketBadge = isBn ? (slide.chamber_ticket_badge_bn || 'সিরিয়াল হটলাইন') : (slide.chamber_ticket_badge_en || 'Serial Hotline');
-      const ticketNote = isBn 
-        ? (slide.chamber_ticket_note_bn || 'সকাল ৯:০০টার পর কল করে সিরিয়াল বুকিং নিশ্চিত করুন') 
-        : (slide.chamber_ticket_note_en || 'Call after 9:00 AM to confirm your appointment serial');
+      const chamberTitle = isBn
+        ? liveChamber?.name_bn || slide.title_bn || t('chamber.title')
+        : liveChamber?.name_en || slide.title_en || t('chamber.title');
+      const chamberEyebrow = isBn ? slide.eyebrow_bn || t('chamber.eyebrow') : slide.eyebrow_en || t('chamber.eyebrow');
+      const roomText = isBn
+        ? slide.chamber_room_bn || '৬ষ্ঠ তলা, রুম নং-৬০৫'
+        : slide.chamber_room_en || '6th Floor, Room No-605';
+      const roomBadge = isBn
+        ? slide.chamber_room_badge_bn || 'প্রধান চেম্বার'
+        : slide.chamber_room_badge_en || 'Main Chamber';
+      const addressText = isBn
+        ? liveChamber?.address_bn ||
+          slide.chamber_address_bn ||
+          'নিউ মেডিকেল রোড, কাজলশাহ, সিলেট।'
+        : liveChamber?.address_en ||
+          slide.chamber_address_en ||
+          'New Medical Road, Kazalshah, Sylhet.';
+      const hoursText = isBn
+        ? liveChamber?.hours_bn ||
+          slide.chamber_hours_bn ||
+          'প্রতিদিন বিকাল ৫:০০টা – রাত ৯:০০টা'
+        : liveChamber?.hours_en ||
+          slide.chamber_hours_en ||
+          '5:00 PM – 9:00 PM (Daily)';
+      const offDaysText = isBn
+        ? slide.chamber_off_days_bn || 'শুক্রবার ও মঙ্গলবার চেম্বার বন্ধ থাকে'
+        : slide.chamber_off_days_en || 'Friday & Tuesday Closed';
+      const ticketPhone = liveChamber?.ticket_phone || slide.chamber_ticket_phone || '01346-132486';
+      const ticketBadge = isBn
+        ? slide.chamber_ticket_badge_bn || 'সিরিয়াল হটলাইন'
+        : slide.chamber_ticket_badge_en || 'Serial Hotline';
+      const ticketNote = isBn
+        ? slide.chamber_ticket_note_bn || 'সকাল ৯:০০টার পর কল করে সিরিয়াল বুকিং নিশ্চিত করুন'
+        : slide.chamber_ticket_note_en || 'Call after 9:00 AM to confirm your appointment serial';
 
       return {
         id: slide.id || 'chamber',
@@ -343,9 +627,7 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] sm:text-xs text-muted leading-relaxed">
-                  {addressText}
-                </p>
+                <p className="text-[11px] sm:text-xs text-muted leading-relaxed">{addressText}</p>
               </div>
             </div>
 
@@ -356,9 +638,7 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
               </div>
               <div className="flex flex-col gap-0.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs sm:text-sm font-bold text-ink">
-                    {hoursText}
-                  </span>
+                  <span className="text-xs sm:text-sm font-bold text-ink">{hoursText}</span>
                 </div>
                 {offDaysText && (
                   <p className="text-[11px] sm:text-xs text-rose-600 font-semibold flex items-center gap-1.5">
@@ -388,24 +668,22 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
                     </span>
                   )}
                 </div>
-                {ticketNote && (
-                  <p className="text-[11px] sm:text-xs text-muted">
-                    {ticketNote}
-                  </p>
-                )}
+                {ticketNote && <p className="text-[11px] sm:text-xs text-muted">{ticketNote}</p>}
               </div>
             </div>
           </div>
         ),
-        cta: isBn ? (slide.cta_text_bn || t('chamber.button')) : (slide.cta_text_en || t('chamber.button')),
+        cta: isBn ? slide.cta_text_bn || t('chamber.button') : slide.cta_text_en || t('chamber.button'),
         ctaHref: slide.cta_href || 'https://wa.me/8801346132486',
         ctaType: slide.cta_type || 'whatsapp',
-        secondaryCta: isBn ? (slide.secondary_cta_text_bn || 'সরাসরি কল করুন') : (slide.secondary_cta_text_en || 'Direct Call'),
+        secondaryCta: isBn
+          ? slide.secondary_cta_text_bn || 'সরাসরি কল করুন'
+          : slide.secondary_cta_text_en || 'Direct Call',
         secondaryCtaHref: slide.secondary_cta_href || 'tel:01346132486',
       };
     }
 
-    // 5. Custom Slide Fallback
+    // 6. Custom Slide Fallback
     return {
       id: slide.id,
       eyebrow: isBn ? slide.eyebrow_bn : slide.eyebrow_en,
@@ -414,7 +692,11 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
         <div className="flex flex-col gap-4">
           {slide.custom_image && (
             <div className="w-full max-h-56 rounded-2xl overflow-hidden shadow-md">
-              <img src={slide.custom_image} alt={isBn ? slide.title_bn : slide.title_en} className="w-full h-full object-cover" />
+              <img
+                src={slide.custom_image}
+                alt={isBn ? slide.title_bn : slide.title_en}
+                className="w-full h-full object-cover"
+              />
             </div>
           )}
           <p className="text-sm md:text-base leading-relaxed text-muted">
@@ -437,7 +719,11 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
         <img
           src={bgImage || defaultHeroBgImage}
           className="w-full h-full object-cover object-[75%_38%] sm:object-[76%_45%] md:object-[78%_55%] animate-floating pointer-events-none"
-          alt={language === 'bn' ? 'ডা. হানিফ আহমেদ তৌহিদ - মেডিসিন বিশেষজ্ঞ' : 'Dr. Hanif Ahmed Towhid - Medicine Specialist'}
+          alt={
+            language === 'bn'
+              ? 'ডা. হানিফ আহমেদ তৌহিদ - মেডিসিন বিশেষজ্ঞ'
+              : 'Dr. Hanif Ahmed Towhid - Medicine Specialist'
+          }
         />
         {/* Subtle backdrop overlay to enhance readability on mobile and desktop */}
         <div className="absolute inset-0 bg-gradient-to-r from-white/80 via-white/45 to-white/10 sm:from-white/55 sm:via-white/20 sm:to-transparent pointer-events-none backdrop-blur-[0.5px]"></div>
@@ -473,7 +759,13 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
             className="min-h-screen w-full flex items-center justify-center sm:justify-start px-3 sm:px-6 md:px-[6vw] relative py-12 sm:py-20"
           >
             {/* Scroll Reveal Animation Styles */}
-            <div className={`w-full ${sec.id === 'doctor-intro' || sec.id === 'chamber' ? 'max-w-[95vw] sm:max-w-[720px] md:max-w-[740px]' : 'max-w-[95vw] sm:max-w-[640px]'} mx-auto sm:mx-0 sm:mr-auto opacity-0 translate-y-10 transition-all duration-[1000ms] cubic-bezier(0.22, 0.9, 0.3, 1) [.in-view_&]:opacity-100 [.in-view_&]:translate-y-0`}>
+            <div
+              className={`w-full ${
+                sec.id === 'doctor-intro' || sec.id === 'chamber' || sec.id === 'symptoms'
+                  ? 'max-w-[95vw] sm:max-w-[720px] md:max-w-[760px]'
+                  : 'max-w-[95vw] sm:max-w-[640px]'
+              } mx-auto sm:mx-0 sm:mr-auto opacity-0 translate-y-10 transition-all duration-[1000ms] cubic-bezier(0.22, 0.9, 0.3, 1) [.in-view_&]:opacity-100 [.in-view_&]:translate-y-0`}
+            >
               <GlassPanel className="flex flex-col gap-4 sm:gap-6 p-5 sm:p-7 md:p-8">
                 <div>
                   {sec.eyebrow && (
@@ -488,9 +780,7 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
                 </div>
 
                 {sec.lead && typeof sec.lead === 'string' && (
-                  <p className="text-sm md:text-base leading-relaxed text-muted">
-                    {sec.lead}
-                  </p>
+                  <p className="text-sm md:text-base leading-relaxed text-muted">{sec.lead}</p>
                 )}
 
                 {sec.lead && typeof sec.lead !== 'string' && sec.lead}
@@ -535,9 +825,7 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
                         target={sec.ctaType === 'whatsapp' ? '_blank' : undefined}
                         rel={sec.ctaType === 'whatsapp' ? 'noopener noreferrer' : undefined}
                         className={`inline-flex items-center gap-2 px-5 py-3.5 rounded-xl font-semibold text-xs md:text-sm text-white shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer ${
-                          sec.ctaType === 'whatsapp'
-                            ? 'bg-accent hover:bg-ink'
-                            : 'bg-ink hover:bg-accent'
+                          sec.ctaType === 'whatsapp' ? 'bg-accent hover:bg-ink' : 'bg-ink hover:bg-accent'
                         }`}
                       >
                         {sec.ctaType === 'whatsapp' ? (
@@ -565,6 +853,33 @@ export const Hero: React.FC<HeroProps> = ({ onSelectDisease }) => {
           </section>
         ))}
       </main>
+
+      {/* Modal Popup for Symptom Detail matching user screenshot */}
+      <SymptomDetailModal
+        isOpen={!!selectedSymptomForModal}
+        symptom={selectedSymptomForModal}
+        onClose={() => setSelectedSymptomForModal(null)}
+        onNext={() => {
+          if (!selectedSymptomForModal) return;
+          const curIdx = symptoms.findIndex((s) => s.slug === selectedSymptomForModal.slug);
+          const nextIdx = (curIdx + 1) % symptoms.length;
+          setSelectedSymptomForModal(symptoms[nextIdx]);
+        }}
+        onPrev={() => {
+          if (!selectedSymptomForModal) return;
+          const curIdx = symptoms.findIndex((s) => s.slug === selectedSymptomForModal.slug);
+          const prevIdx = (curIdx - 1 + symptoms.length) % symptoms.length;
+          setSelectedSymptomForModal(symptoms[prevIdx]);
+        }}
+        currentIndex={
+          selectedSymptomForModal
+            ? symptoms.findIndex((s) => s.slug === selectedSymptomForModal.slug) + 1
+            : 1
+        }
+        totalCount={symptoms.length}
+        phone={liveChamber?.ticket_phone || '01346-132486'}
+        whatsappNumber="8801346132486"
+      />
     </div>
   );
 };

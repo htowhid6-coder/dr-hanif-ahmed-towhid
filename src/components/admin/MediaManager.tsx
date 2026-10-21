@@ -15,6 +15,8 @@ import {
   FolderOpen
 } from 'lucide-react';
 
+import supabase from '@/lib/supabase';
+
 interface MediaItem {
   name: string;
   category: string;
@@ -28,6 +30,7 @@ export const MediaManager: React.FC = () => {
 
   const [copiedPath, setCopiedPath] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [isUploading, setIsUploading] = useState(false);
   const [customUploads, setCustomUploads] = useState<{ name: string; url: string }[]>(() => {
     if (typeof window !== 'undefined') {
       const local = localStorage.getItem('custom_media_uploads');
@@ -133,25 +136,109 @@ export const MediaManager: React.FC = () => {
     setTimeout(() => setCopiedPath(null), 2500);
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
+    if (!file.type.startsWith('image/')) {
+      alert(isBn ? 'অনুগ্রহ করে একটি বৈধ ইমেজ ফাইল (PNG, JPG, WebP) সিলেক্ট করুন।' : 'Please select a valid image file (PNG, JPG, WebP).');
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      // 1. Client-side Canvas optimization (max 1920px, compressed WebP/JPEG)
+      const optimized: { blob: Blob; dataUrl: string } = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (uploadEvent) => {
+          const img = new Image();
+          img.onload = () => {
+            const MAX_DIM = 1920;
+            let width = img.width;
+            let height = img.height;
+            if (width > MAX_DIM || height > MAX_DIM) {
+              if (width > height) {
+                height = Math.round((height * MAX_DIM) / width);
+                width = MAX_DIM;
+              } else {
+                width = Math.round((width * MAX_DIM) / height);
+                height = MAX_DIM;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, width, height);
+              const format = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+              const quality = format === 'image/jpeg' ? 0.88 : undefined;
+              const dataUrl = canvas.toDataURL(format, quality);
+              canvas.toBlob((b) => {
+                resolve({ blob: b || file, dataUrl });
+              }, format, quality);
+            } else {
+              resolve({ blob: file, dataUrl: uploadEvent.target?.result as string });
+            }
+          };
+          img.src = uploadEvent.target?.result as string;
+        };
+        reader.readAsDataURL(file);
+      });
+
+      let finalUrl = optimized.dataUrl;
+
+      // 2. Attempt Supabase Storage 'uploads' upload
+      try {
+        const cleanExt = file.name.split('.').pop() || 'png';
+        const fileName = `media_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${cleanExt}`;
+        const { data: uploadRes, error: uploadErr } = await supabase.storage
+          .from('uploads')
+          .upload(fileName, optimized.blob, {
+            cacheControl: '3600',
+            upsert: true,
+            contentType: file.type || 'image/png',
+          });
+
+        if (!uploadErr && uploadRes?.path) {
+          const { data: pubData } = supabase.storage.from('uploads').getPublicUrl(uploadRes.path);
+          if (pubData?.publicUrl) {
+            finalUrl = pubData.publicUrl;
+          }
+        }
+      } catch (storageErr) {
+        // Fallback to optimized dataUrl
+      }
+
       const newItem = {
         name: file.name,
-        url: dataUrl
+        url: finalUrl,
       };
+
       const updated = [newItem, ...customUploads];
       setCustomUploads(updated);
+
       if (typeof window !== 'undefined') {
-        localStorage.setItem('custom_media_uploads', JSON.stringify(updated));
+        try {
+          localStorage.setItem('custom_media_uploads', JSON.stringify(updated));
+        } catch (storageQuotaErr) {
+          // If quota reached, save only last 10
+          try {
+            localStorage.setItem('custom_media_uploads', JSON.stringify(updated.slice(0, 10)));
+          } catch (e) {}
+        }
       }
+
       alert(isBn ? 'ইমেজ আপলোড সফল হয়েছে!' : 'Image uploaded successfully!');
-    };
-    reader.readAsDataURL(file);
+    } catch (err: any) {
+      console.error('Upload error:', err);
+      alert(isBn ? 'ইমেজ আপলোড করতে সমস্যা হয়েছে!' : 'Failed to upload image!');
+    } finally {
+      setIsUploading(false);
+      // Reset input value so same file can be chosen again if needed
+      e.target.value = '';
+    }
   };
 
   const handleDeleteUpload = (index: number) => {
@@ -187,10 +274,10 @@ export const MediaManager: React.FC = () => {
         </div>
 
         {/* Upload Button */}
-        <label className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold rounded-xl bg-accent hover:bg-ink text-white shadow-md hover:shadow-lg transition-all cursor-pointer">
-          <Upload className="w-4 h-4" />
-          <span>{isBn ? 'নতুন ছবি আপলোড করুন' : 'Upload Image'}</span>
-          <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+        <label className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold rounded-xl bg-accent hover:bg-ink text-white shadow-md hover:shadow-lg transition-all cursor-pointer ${isUploading ? 'opacity-70 pointer-events-none' : ''}`}>
+          <Upload className={`w-4 h-4 ${isUploading ? 'animate-bounce' : ''}`} />
+          <span>{isUploading ? (isBn ? 'আপলোড হচ্ছে...' : 'Uploading...') : (isBn ? 'নতুন ছবি আপলোড করুন' : 'Upload Image')}</span>
+          <input type="file" accept="image/*" onChange={handleFileUpload} disabled={isUploading} className="hidden" />
         </label>
       </div>
 

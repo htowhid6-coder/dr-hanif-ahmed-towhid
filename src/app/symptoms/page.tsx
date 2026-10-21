@@ -105,7 +105,7 @@ export default function SymptomsPage() {
             categoryBn: d.category_bn,
             organEn: d.organ_en,
             organBn: d.organ_bn,
-            image: d.image ? d.image.toLowerCase() : '/symptoms/fever.png',
+            image: d.image || '/symptoms/fever.png',
             shortDescEn: d.short_desc_en,
             shortDescBn: d.short_desc_bn,
             overviewEn: d.overview_en,
@@ -130,6 +130,9 @@ export default function SymptomsPage() {
             }
           }
           setSymptoms(merged);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('symptoms_data', JSON.stringify(merged));
+          }
         } else {
           setSymptoms(detailedSymptomsList);
         }

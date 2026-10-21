@@ -32,6 +32,9 @@ export const Navbar: React.FC = () => {
 
         if (data?.data) {
           setSettings(prev => ({ ...prev, ...data.data }));
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('site_settings_data', JSON.stringify({ ...defaultSiteSettings, ...data.data }));
+          }
         }
       } catch (err) {}
     };
